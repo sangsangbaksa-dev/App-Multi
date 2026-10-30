@@ -31,7 +31,7 @@ The design lives in Figma (colour variables, type styles, icon, logo lockup and 
 
 ## Video module
 
-The Video tab tracks edit projects for clients: delivery date, revision rounds included in the quote, timecoded change requests per round, delivery links (links only, no files are stored), client approval, and a button that turns extra rounds into invoice lines. Free keeps one project; Pro keeps any number and exports the revision list as CSV.
+The Video tab tracks edit projects for clients: delivery date, project price (one click to a quote or invoice line), revision rounds included in the quote, timecoded change requests per round (editable in place), delivery links (links only, no files are stored), client approval, and a button that turns extra rounds into invoice lines. Extra rounds count as billed only when that invoice is saved. Projects can be duplicated for repeat clients, and the list sorts past-due work first. Free keeps one project; Pro keeps any number, exports the revision list as CSV and prints a client-ready revision report.
 
 Storage and safety:
 - Video data lives under its own key, `qb.video` (`{ v, projects }`). Invoices, sheets and documents are never rewritten by it.

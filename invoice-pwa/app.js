@@ -271,6 +271,8 @@ $("#form").onsubmit = (e) => {
   const idx = invoices.findIndex((x) => x.id === inv.id);
   if (idx >= 0) invoices[idx] = inv; else invoices.unshift(inv);
   persist();
+  // Invoices started from a video project count their extra rounds as billed only once they are saved.
+  if (inv.videoRef && !prev && !L.isQuote(inv)) ws.video.markBilled(inv.videoRef.id, inv.videoRef.upTo);
   runRecurring();
   closeEditor();
 };
@@ -364,6 +366,7 @@ const ws = initWorkspace({
   getInvoices: () => invoices,
   getFrom: () => invoices.find((i) => i.from)?.from ?? "",
   createInvoice: (items, extra = {}) => newDoc("invoice", { items, ...extra }),
+  createDoc: (type, extra = {}) => newDoc(type, extra),
 });
 fullRender();
 renderTime();

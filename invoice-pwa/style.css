@@ -123,3 +123,17 @@ dialog form input{flex:1 1 100%}
 .req.done .txt{color:var(--mute);text-decoration:line-through}
 .req .x{border:0;height:1.8rem;padding:0 .5rem;font-size:1.2rem;color:var(--mute)}
 @media(max-width:640px){.reqform,.delform{grid-template-columns:1fr 1fr}.reqform label:nth-child(2),.reqform label:nth-child(3),.delform label:nth-child(2){grid-column:1/-1}.reqform button,.delform button{grid-column:1/-1}}
+
+/* touch screens: 44px targets, and no cramped summary rows */
+@media(pointer:coarse){
+  button,.btn{height:2.75rem}
+  select,input:not([type=checkbox]){min-height:2.75rem}
+  summary{padding-top:.7rem;padding-bottom:.7rem}
+  .req input[type=checkbox]{width:1.3rem;height:1.3rem}
+  .req .x{height:2.75rem;min-width:2.75rem}
+}
+#vid-report{display:none}
+.req .edit{flex:1;display:grid;grid-template-columns:6rem 1fr 8rem;gap:.5rem}
+.req .edit .row{grid-column:1/-1;margin-top:0}
+@media print{#vid-report.on{display:block;margin:0;border:0;box-shadow:none;padding:0}#vid-report ul{padding-left:1.1rem}}
+@media(max-width:640px){.req .edit{grid-template-columns:1fr 1fr}.req .edit input:nth-child(2){grid-column:1/-1}}

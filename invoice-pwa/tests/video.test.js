@@ -49,12 +49,33 @@ test("extra rounds are billed once", () => {
   const label = (n) => `Round ${n}`;
   const a = V.billExtra(p, label);
   assert.deepEqual(a.items, [{ desc: "Round 3", qty: 1, price: 50000 }, { desc: "Round 4", qty: 1, price: 50000 }]);
-  assert.equal(V.unbilledRounds(a.project), 0);
-  assert.equal(V.billExtra(a.project, label).items.length, 0);
+  assert.equal(a.upTo, 2);
+  // nothing is marked until the invoice is saved
+  assert.equal(V.unbilledRounds(p), 2);
+  const billed = V.markBilled(p, a.upTo);
+  assert.equal(V.unbilledRounds(billed), 0);
+  assert.equal(V.billExtra(billed, label).items.length, 0);
+  // saving the same invoice twice changes nothing, and a stale value never lowers the count
+  assert.equal(V.markBilled(billed, 2).billedRounds, 2);
+  assert.equal(V.markBilled(billed, 1).billedRounds, 2);
   // a fifth round later bills only itself
-  const b = V.billExtra(V.addRound(a.project), label);
-  assert.deepEqual(b.items.map((i) => i.desc), ["Round 5"]);
-  assert.equal(V.unbilledRounds(V.resetBilled(b.project)), 3);
+  const b = V.billExtra(V.addRound(V.addRound(billed)), label);
+  assert.deepEqual(b.items.map((i) => i.desc), ["Round 5", "Round 6"]);
+  assert.equal(V.unbilledRounds(V.resetBilled(V.markBilled(V.addRound(billed), 3))), 3);
+});
+
+test("editing, duplicating, sorting and summarising", () => {
+  let p = V.addRequest(proj(), { tc: "0:10", text: "Louder", by: "A" }, "a", "2026-10-02").project;
+  assert.equal(V.editRequest(p, "a", { tc: "bad", text: "x" }).error, "tc");
+  assert.equal(V.editRequest(p, "a", { tc: "0:10", text: " " }).error, "text");
+  const e = V.editRequest(p, "a", { tc: "1:05", text: "Much louder", by: "B" }).project;
+  assert.deepEqual([e.requests[0].tc, e.requests[0].text, e.requests[0].by, e.requests[0].done], [65, "Much louder", "B", false]);
+  const d = V.duplicate({ ...e, base: 900, status: "approved", due: "2026-10-09", billedRounds: 1, approval: { by: "x", date: "d" } }, "p2", "2026-10-20");
+  assert.deepEqual([d.id, d.base, d.fee, d.included, d.rounds, d.requests.length, d.approval, d.status, d.due], ["p2", 900, 50000, 2, 0, 0, null, "working", ""]);
+  const list = [proj({ id: "ok", due: "2026-12-01" }), proj({ id: "done", status: "approved", due: "2026-01-01" }), proj({ id: "late", due: "2026-10-05" }), proj({ id: "nodate" })];
+  assert.deepEqual(V.sortProjects(list, "2026-10-20").map((x) => x.id), ["late", "ok", "nodate", "done"]);
+  assert.deepEqual(V.summary([...list, e], "2026-10-20"), { active: 4, late: 1, open: 1 });
+  assert.deepEqual(V.projectItems(proj({ title: "Promo", base: 1200 })), [{ desc: "Promo", qty: 1, price: 1200 }]);
 });
 
 test("rounds within the included count cost nothing", () => {

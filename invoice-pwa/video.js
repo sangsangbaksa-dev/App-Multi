@@ -28,7 +28,7 @@ export function formatTimecode(sec) {
 
 export function newProject(id, today, defaults = {}) {
   return {
-    id, title: "", client: "", status: "working", due: "", included: 2, fee: 0,
+    id, title: "", client: "", status: "working", due: "", included: 2, fee: 0, base: 0,
     currency: defaults.currency || "USD", rounds: 0, billedRounds: 0,
     requests: [], deliveries: [], approval: null, created: today, ...defaults,
   };
@@ -47,6 +47,14 @@ export function addRequest(p, { tc, text, by }, id, today) {
   const base = p.rounds === 0 ? addRound(p) : p;
   const req = { id, round: base.rounds, tc: sec, text: body, by: String(by ?? "").trim(), date: today, done: false };
   return { project: { ...base, requests: [...base.requests, req] } };
+}
+
+export function editRequest(p, reqId, { tc, text, by }) {
+  const sec = parseTimecode(tc);
+  if (Number.isNaN(sec)) return { error: "tc" };
+  const body = String(text ?? "").trim();
+  if (!body) return { error: "text" };
+  return { project: { ...p, requests: p.requests.map((r) => (r.id === reqId ? { ...r, tc: sec, text: body, by: String(by ?? "").trim() } : r)) } };
 }
 
 export function toggleRequest(p, reqId) {
@@ -96,18 +104,40 @@ export const unbilledRounds = (p) => Math.max(0, extraRounds(p) - (p.billedRound
 export const extraCost = (p) => round2(unbilledRounds(p) * (Number(p.fee) || 0));
 
 // Invoice lines for every extra round not billed yet. `label(n)` supplies the translated description.
+// Nothing is marked as billed here: the invoice carries `upTo` and the app calls markBilled once it is saved,
+// so an invoice that is abandoned in the editor does not eat the rounds.
 export function billExtra(p, label) {
   const n = unbilledRounds(p);
-  if (!n) return { items: [], project: p };
+  if (!n) return { items: [], upTo: p.billedRounds || 0 };
   const first = (p.billedRounds || 0) + Math.max(0, Number(p.included) || 0) + 1;
   const items = Array.from({ length: n }, (_, k) => ({ desc: label(first + k), qty: 1, price: Number(p.fee) || 0 }));
-  return { items, project: { ...p, billedRounds: extraRounds(p) } };
+  return { items, upTo: extraRounds(p) };
 }
+export const markBilled = (p, upTo) => ({ ...p, billedRounds: Math.max(p.billedRounds || 0, Math.min(Number(upTo) || 0, extraRounds(p))) });
 export const resetBilled = (p) => ({ ...p, billedRounds: 0 });
+
+// The agreed project price as one invoice or quote line.
+export const projectItems = (p) => [{ desc: p.title || "", qty: 1, price: Number(p.base) || 0 }];
+
+// Same client and terms again, without the history.
+export function duplicate(p, id, today) {
+  return { ...p, id, status: "working", due: "", rounds: 0, billedRounds: 0, requests: [], deliveries: [], approval: null, created: today };
+}
 
 // ---- summaries and export ----
 export function isLate(p, today) {
   return !!p.due && p.status !== "approved" && p.due < today;
+}
+
+// Past due first, then by delivery date (no date last), finished work at the bottom.
+export function sortProjects(list, today) {
+  const rank = (p) => (p.status === "approved" ? 2 : isLate(p, today) ? 0 : 1);
+  return [...list].sort((a, b) => rank(a) - rank(b) || (a.due || "9999").localeCompare(b.due || "9999") || (b.created || "").localeCompare(a.created || ""));
+}
+
+export function summary(list, today) {
+  const active = list.filter((p) => p.status !== "approved");
+  return { active: active.length, late: active.filter((p) => isLate(p, today)).length, open: list.reduce((n, p) => n + openCount(p), 0) };
 }
 
 // Spreadsheet programs run cells that start with = + - @ as formulas, so text from clients gets a leading quote.

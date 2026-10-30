@@ -19,6 +19,7 @@ export function initVideo(ctx) {
   let projects = state.projects;
   const locked = state.locked;
   let curId = null;
+  let editReq = null; // id of the request being edited in place
   const cur = () => projects.find((p) => p.id === curId) ?? null;
   const money = (n, c) => L.formatMoney(n, c, I.locale());
 
@@ -46,7 +47,10 @@ export function initVideo(ctx) {
     $("#vid-broken").hidden = !state.broken;
     $("#vid-empty").hidden = projects.length > 0;
     const t = today();
-    $("#vid-list").innerHTML = projects.map((p) => {
+    const sm = V.summary(projects, t);
+    $("#vid-summary").hidden = !projects.length;
+    $("#vid-summary").textContent = I.t("vidSummary", sm);
+    $("#vid-list").innerHTML = V.sortProjects(projects, t).map((p) => {
       const late = V.isLate(p, t), open = V.openCount(p);
       return `<div class="card" data-vid="${esc(p.id)}" role="button" tabindex="0"><div><b>${esc(p.title || "—")}</b>${p.client ? ` · ${esc(p.client)}` : ""}<br>
         <span class="muted">${esc(I.t("st" + p.status[0].toUpperCase() + p.status.slice(1)))}${p.due ? ` · ${esc(I.formatDate(p.due))}` : ""}</span>${late ? ` <span class="late">${esc(I.t("vidLate"))}</span>` : ""}</div>
@@ -67,6 +71,7 @@ export function initVideo(ctx) {
 
   function openProject(id) {
     curId = id;
+    editReq = null;
     $("#vid-list-view").hidden = true;
     $("#vid-edit").hidden = false;
     renderEditor();
@@ -101,6 +106,7 @@ export function initVideo(ctx) {
     setVal("#vid-due", p.due);
     setVal("#vid-included", p.included);
     setVal("#vid-fee", p.fee);
+    setVal("#vid-base", p.base || 0);
     if (![...$("#vid-cur").options].some((o) => o.value === p.currency)) $("#vid-cur").add(new Option(p.currency, p.currency));
     $("#vid-cur").value = p.currency;
 
@@ -116,10 +122,15 @@ export function initVideo(ctx) {
       const list = V.requestsOf(p, r);
       const isExtra = r > (Number(p.included) || 0);
       html += `<section class="round"><h4>${esc(I.t("vidRound", { n: r }))}${isExtra ? ` <span class="badge">${esc(I.t("vidExtraTag"))}</span>` : ""}</h4>` +
-        (list.length ? `<ul class="reqs">${list.map((q) => `<li class="req${q.done ? " done" : ""}">
+        (list.length ? `<ul class="reqs">${list.map((q) => q.id === editReq ? `<li class="req"><div class="edit">
+          <input id="ed-tc" value="${esc(V.formatTimecode(q.tc))}" placeholder="00:00" aria-label="${esc(I.t("vidTc"))}" autocomplete="off">
+          <input id="ed-text" value="${esc(q.text)}" maxlength="500" aria-label="${esc(I.t("vidReqText"))}" autocomplete="off">
+          <input id="ed-by" value="${esc(q.by)}" maxlength="80" aria-label="${esc(I.t("vidBy"))}" autocomplete="off">
+          <div class="row"><button type="button" class="primary" data-edit-save="${esc(q.id)}">${esc(I.t("save"))}</button><button type="button" data-edit-cancel>${esc(I.t("back"))}</button><span class="late" id="ed-err" role="alert"></span></div></div></li>` : `<li class="req${q.done ? " done" : ""}">
           <input type="checkbox" data-done="${esc(q.id)}" ${q.done ? "checked" : ""} aria-label="${esc(I.t("csvDone"))}">
           <span class="tc">${esc(V.formatTimecode(q.tc) || "—")}</span>
           <span class="txt">${esc(q.text)}<br><span class="muted">${esc([q.by, I.formatDate(q.date)].filter(Boolean).join(" · "))}</span></span>
+          <button type="button" class="x" data-edit="${esc(q.id)}" aria-label="${esc(I.t("vidEdit"))}">✎</button>
           <button type="button" class="x" data-rm="${esc(q.id)}" aria-label="${esc(I.t("del"))}">×</button></li>`).join("")}</ul>`
           : `<p class="muted">${esc(I.t("vidNoReq"))}</p>`) + `</section>`;
     }
@@ -146,6 +157,7 @@ export function initVideo(ctx) {
   field("#vid-due", (p, v) => ({ ...p, due: /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "" }));
   field("#vid-included", (p, v) => ({ ...p, included: Math.min(99, Math.max(0, Math.floor(Number(v)) || 0)) }));
   field("#vid-fee", (p, v) => ({ ...p, fee: Math.max(0, Number(v) || 0) }));
+  field("#vid-base", (p, v) => ({ ...p, base: Math.max(0, Number(v) || 0) }));
   field("#vid-cur", (p, v) => ({ ...p, currency: /^[A-Z]{3}$/.test(v) ? v : p.currency }));
 
   // revision requests
@@ -160,7 +172,23 @@ export function initVideo(ctx) {
   };
   $("#vid-newround").onclick = () => change((p) => V.addRound(p));
   $("#vid-rounds").addEventListener("change", (e) => { const id = e.target.dataset.done; if (id) change((p) => V.toggleRequest(p, id)); });
-  $("#vid-rounds").addEventListener("click", (e) => { const id = e.target.dataset.rm; if (id) change((p) => V.removeRequest(p, id)); });
+  $("#vid-rounds").addEventListener("click", (e) => {
+    const d = e.target.dataset;
+    if (d.rm) change((p) => V.removeRequest(p, d.rm));
+    if (d.edit) { editReq = d.edit; renderEditor(); $("#ed-text")?.focus(); }
+    if ("editCancel" in d) { editReq = null; renderEditor(); }
+    if (d.editSave) saveEdit(d.editSave);
+  });
+  $("#vid-rounds").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.id?.startsWith("ed-")) { e.preventDefault(); saveEdit(editReq); }
+    if (e.key === "Escape" && editReq) { editReq = null; renderEditor(); }
+  });
+  function saveEdit(id) {
+    const r = change((p) => V.editRequest(p, id, { tc: $("#ed-tc").value, text: $("#ed-text").value, by: $("#ed-by").value }));
+    if (r?.error) { $("#ed-err").textContent = I.t(r.error === "tc" ? "vidBadTc" : "vidNeedText"); return; }
+    editReq = null;
+    renderEditor();
+  }
 
   // deliveries and approval
   $("#vid-delform").onsubmit = (e) => {
@@ -181,13 +209,26 @@ export function initVideo(ctx) {
   // billing and export
   $("#vid-bill").onclick = () => {
     const p = cur();
-    const { items, project } = V.billExtra(p, (n) => I.t("vidBillItem", { n, title: p.title || "—" }));
+    const { items, upTo } = V.billExtra(p, (n) => I.t("vidBillItem", { n, title: p.title || "—" }));
     if (!items.length) return toast(I.t("vidNoExtra"));
     // The invoice editor refuses (and shows the upgrade dialog) when the free invoice limit is reached.
-    if (!ctx.createInvoice(items, { client: p.client, currency: p.currency })) return;
-    change(() => project);
+    if (!ctx.createInvoice(items, { client: p.client, currency: p.currency, videoRef: { id: p.id, upTo } })) return;
     toast(I.t("vidBilled", { n: items.length }));
     showTab("invoices");
+  };
+  const fromProject = (type) => () => {
+    const p = cur();
+    if (ctx.createDoc(type, { client: p.client, currency: p.currency, items: V.projectItems(p) })) showTab("invoices");
+  };
+  $("#vid-quote").onclick = fromProject("quote");
+  $("#vid-invoice").onclick = fromProject("invoice");
+  $("#vid-dup").onclick = () => {
+    if (!isPro() && projects.length >= V.FREE_VIDEO) return openUpgrade(I.t("vidLimit", { n: V.FREE_VIDEO }));
+    const np = V.duplicate(cur(), crypto.randomUUID(), today());
+    projects = [np, ...projects];
+    save();
+    openProject(np.id);
+    $("#vid-title").focus();
   };
   $("#vid-reset-billed").onclick = () => change((p) => V.resetBilled(p));
   $("#vid-copy").onclick = async () => {
@@ -201,6 +242,22 @@ export function initVideo(ctx) {
     ctx.download(`${(p.title || "revisions").replace(/[^\w\-]+/g, "_")}.csv`, "text/csv", S.toCSV(V.toRows(p, head)));
   };
 
+  $("#vid-print").onclick = () => {
+    if (!isPro()) return openUpgrade(I.t("vidPrintPro"));
+    const p = cur(), extra = V.unbilledRounds(p);
+    let h = `<h2>${esc(I.t("vidRepTitle"))}: ${esc(p.title || "—")}</h2><p>${esc([p.client, I.t("st" + p.status[0].toUpperCase() + p.status.slice(1)), p.due && `${I.t("vidDue")}: ${I.formatDate(p.due)}`].filter(Boolean).join(" · "))}</p>` +
+      `<p>${esc(I.t("vidRoundsLine", { used: p.rounds, inc: p.included }))}${extra ? `<br>${esc(I.t("vidExtraLine", { n: extra, each: money(p.fee, p.currency), total: money(V.extraCost(p), p.currency) }))}` : ""}</p>`;
+    for (let r = 1; r <= p.rounds; r++) {
+      h += `<h4>${esc(I.t("vidRound", { n: r }))}</h4><ul>${V.requestsOf(p, r).map((q) => `<li>${q.done ? "☑" : "☐"} <b>${esc(V.formatTimecode(q.tc) || "—")}</b> ${esc(q.text)} <span class="muted">${esc([q.by, I.formatDate(q.date)].filter(Boolean).join(", "))}</span></li>`).join("") || `<li>${esc(I.t("vidNoReq"))}</li>`}</ul>`;
+    }
+    if (p.deliveries.length) h += `<h4>${esc(I.t("vidDelivTitle"))}</h4><ul>${p.deliveries.map((d) => `<li>${esc(d.label)}${d.final ? ` (${esc(I.t("vidFinalTag"))})` : ""}: ${esc(d.url)}</li>`).join("")}</ul>`;
+    h += `<p>${esc(p.approval ? I.t("vidApprovedBy", { name: p.approval.by || "—", date: I.formatDate(p.approval.date) }) : I.t("vidNotApproved"))}</p>`;
+    $("#vid-report").innerHTML = h;
+    $("#vid-report").classList.add("on");
+    window.print();
+  };
+  window.addEventListener("afterprint", () => $("#vid-report").classList.remove("on"));
+
   function render() {
     if (curId && cur()) renderEditor(); else renderList();
   }
@@ -208,6 +265,14 @@ export function initVideo(ctx) {
     render,
     exportProjects: () => projects,
     // Used by restore. The caller has already validated every project.
+    // Called after an invoice that bills extra rounds is saved.
+    markBilled(id, upTo) {
+      const p = projects.find((x) => x.id === id);
+      if (!p) return;
+      projects = projects.map((x) => (x === p ? V.markBilled(p, upTo) : x));
+      save();
+      render();
+    },
     replaceProjects(list) { if (locked) return false; projects = list; curId = null; const ok = save(); render(); return ok; },
   };
 }

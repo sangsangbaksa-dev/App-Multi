@@ -77,7 +77,12 @@ const PRO = "PRO-TEST-0001-ZCUY";
   assert.match(await p.textContent("#vid-appr"), /Approved by Mina/);
   assert.equal(await p.inputValue("#vid-status"), "approved");
 
-  // bill the extra round: opens an invoice with the client, currency and line
+  // billing: abandoning the invoice leaves the round unbilled, saving it marks it billed
+  await p.click("#vid-bill");
+  await p.waitForSelector("#edit-view:not([hidden])");
+  await p.click("#btn-back");
+  await p.click("[data-tab=video]");
+  assert.match(await p.textContent("#vid-money"), /1 extra/);
   await p.click("#vid-bill");
   await p.waitForSelector("#edit-view:not([hidden])");
   assert.equal(await p.inputValue("[name=client]"), "Acme");
@@ -89,6 +94,29 @@ const PRO = "PRO-TEST-0001-ZCUY";
   assert.ok(await p.isVisible("#vid-edit")); // the project stays open behind the invoice
   assert.match(await p.textContent("#vid-money"), /No extra rounds/);
   assert.match(await p.textContent("#vid-money"), /already billed: 1/);
+
+  // project price becomes a quote line
+  await p.fill("#vid-base", "1200"); await p.click("#vid-title");
+  await p.click("#vid-quote");
+  await p.waitForSelector("#edit-view:not([hidden])");
+  assert.equal(await p.inputValue("[name=client]"), "Acme");
+  assert.equal(await p.inputValue("#items [data-k=desc]"), "Promo");
+  assert.equal(await p.inputValue("#items [data-k=price]"), "1200");
+  await p.click("#btn-back");
+  await p.click("[data-tab=video]");
+
+  // edit a request in place, with validation
+  await p.click("[data-edit]");
+  await p.fill("#ed-tc", "nope"); await p.click("[data-edit-save]");
+  assert.match(await p.textContent("#ed-err"), /mm:ss/);
+  await p.fill("#ed-tc", "0:15"); await p.fill("#ed-text", "Music a bit lower"); await p.press("#ed-text", "Enter");
+  await p.waitForFunction(() => !document.querySelector("#ed-text"));
+  assert.match(await p.textContent("#vid-rounds"), /Music a bit lower|Cut the intro/);
+
+  // print report is Pro; with the print call stubbed we can read what would be printed
+  await p.click("#vid-print");
+  assert.ok(await p.isVisible("#dlg"));
+  await p.keyboard.press("Escape");
 
   // copy list works or fails politely (clipboard permission is not granted here)
   await p.click("#vid-copy");
@@ -105,15 +133,31 @@ const PRO = "PRO-TEST-0001-ZCUY";
   await p.fill("#lic", PRO); await p.click("#dlg button[value=ok]");
   await p.waitForFunction(() => document.querySelector("#plan").textContent === "Pro");
 
+  await p.click("#vid-list .card");
+  await p.evaluate(() => { window.print = () => { window.__printed = document.querySelector("#vid-report").innerText; }; });
+  await p.click("#vid-print");
+  const rep = await p.evaluate(() => window.__printed);
+  assert.match(rep, /Revision report: Promo/);
+  assert.match(rep, /Round 2/);
+  assert.match(rep, /Approved by Mina/);
+  await p.click("#vid-dup");
+  assert.equal(await p.inputValue("#vid-title"), "Promo");
+  assert.equal(await p.inputValue("#vid-fee"), "80");
+  assert.equal(await p.$$eval(".req", (e) => e.length), 0);
+  await p.fill("#vid-title", "Promo 2"); await p.click("#vid-client");
+  await p.click("#vid-back");
+  assert.match(await p.textContent("#vid-summary"), /1 active/);
+
   // persistence across reload, and one previous generation kept
   await p.reload();
   await p.click("[data-tab=video]");
   assert.match(await p.textContent("#vid-list"), /Promo/);
-  assert.doesNotMatch(await p.textContent("#vid-list"), /past due/); // approved work is never late
-  await p.click("#vid-list .card");
+  assert.match(await p.textContent("#vid-list .card:last-child"), /Approved/); // finished work sinks to the bottom
+  assert.doesNotMatch(await p.textContent("#vid-list .card:last-child"), /past due/); // approved work is never late
+  await p.click("#vid-list .card:last-child");
   await p.click("#vid-clear-appr");
   await p.click("#vid-back");
-  assert.match(await p.textContent("#vid-list"), /past due/);
+  assert.match(await p.textContent("#vid-list .card:first-child"), /past due/);
   assert.ok(await p.evaluate(() => localStorage.getItem("qb.video.bak") !== null));
 
   // Pro: CSV, with formulas neutralised
@@ -126,23 +170,23 @@ const PRO = "PRO-TEST-0001-ZCUY";
   assert.match(csv, /'=SUM\(1,2\)/);
   await p.click("#vid-back");
   await p.click("#vid-new"); await p.fill("#vid-title", "Second"); await p.click("#vid-back");
-  assert.equal((await p.$$("#vid-list .card")).length, 2);
+  assert.equal((await p.$$("#vid-list .card")).length, 3);
 
   // backup holds video; restoring an old backup (no video key) leaves the projects alone
   const [bk] = await Promise.all([p.waitForEvent("download"), (async () => { await p.click("[data-tab=invoices]"); await p.click("#btn-backup"); })()]);
   const backup = JSON.parse(fs.readFileSync(await bk.path(), "utf8"));
   assert.equal(backup.v, 2);
-  assert.equal(backup.video.length, 2);
+  assert.equal(backup.video.length, 3);
   await p.setInputFiles("#file-restore", { name: "old.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ app: "quickbill", v: 1, invoices: old })) });
   await p.waitForFunction(() => /Restored/i.test(document.querySelector("#toast").textContent));
   await p.click("[data-tab=video]");
-  assert.equal((await p.$$("#vid-list .card")).length, 2);
+  assert.equal((await p.$$("#vid-list .card")).length, 3);
   // a broken video section is refused before anything changes
   await p.click("[data-tab=invoices]");
   await p.setInputFiles("#file-restore", { name: "bad.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ app: "quickbill", v: 2, invoices: old, video: [{ id: 1 }] })) });
   await p.waitForFunction(() => /not a valid|invalid|couldn/i.test(document.querySelector("#toast").textContent));
   await p.click("[data-tab=video]");
-  assert.equal((await p.$$("#vid-list .card")).length, 2);
+  assert.equal((await p.$$("#vid-list .card")).length, 3);
   // full restore with video
   await p.click("[data-tab=invoices]");
   await p.setInputFiles("#file-restore", { name: "full.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ ...backup, video: [backup.video[0]] })) });

@@ -152,6 +152,7 @@
     <div class="row"><button id="vid-new" class="primary" data-i18n="vidNew"></button></div>
     <p id="vid-lock" class="late" hidden data-i18n="vidLocked"></p>
     <p id="vid-broken" class="late" hidden data-i18n="vidBroken"></p>
+    <p id="vid-summary" class="muted"></p>
     <p id="vid-empty" class="muted" data-i18n="vidEmpty"></p>
     <div id="vid-list"></div>
   </section>
@@ -163,12 +164,15 @@
       <label><span data-i18n="vidDue"></span><input id="vid-due" type="date"></label>
       <label><span data-i18n="vidIncluded"></span><input id="vid-included" type="number" min="0" max="99" step="1" inputmode="numeric"></label>
       <label><span data-i18n="vidFee"></span><input id="vid-fee" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label><span data-i18n="vidBase"></span><input id="vid-base" type="number" min="0" step="0.01" inputmode="decimal"></label>
       <label><span data-i18n="vidCurrency"></span><select id="vid-cur"><option>USD</option><option>EUR</option><option>GBP</option><option>KRW</option><option>JPY</option><option>CNY</option><option>CAD</option><option>AUD</option></select></label>
     </div>
     <p id="vid-money" class="muted" aria-live="polite"></p>
     <div class="row">
       <button id="vid-bill" class="accent" type="button" data-i18n="vidBill"></button>
       <button id="vid-reset-billed" type="button" data-i18n="vidResetBilled" hidden></button>
+      <button id="vid-quote" type="button" data-i18n="vidMakeQuote"></button>
+      <button id="vid-invoice" type="button" data-i18n="vidMakeInvoice"></button>
     </div>
 
     <h3 data-i18n="vidReqTitle"></h3>
@@ -184,6 +188,7 @@
       <button id="vid-newround" type="button" data-i18n="vidNewRound"></button>
       <button id="vid-copy" type="button" data-i18n="vidCopy"></button>
       <button id="vid-csv" type="button" data-pro data-i18n="vidCsv"></button>
+      <button id="vid-print" type="button" data-pro data-i18n="vidPrint"></button>
     </div>
 
     <h3 data-i18n="vidDelivTitle"></h3>
@@ -203,9 +208,10 @@
       <button id="vid-clear-appr" type="button" data-i18n="vidClearApproval" hidden></button>
     </div>
 
-    <div class="row"><button id="vid-back" type="button" data-i18n="back"></button><button id="vid-del" class="danger" type="button" data-i18n="del"></button></div>
+    <div class="row"><button id="vid-back" type="button" data-i18n="back"></button><button id="vid-dup" type="button" data-i18n="vidDup"></button><button id="vid-del" class="danger" type="button" data-i18n="del"></button></div>
   </section>
 </div>
+<article id="vid-report" class="sheet-paper"></article>
 <p id="toast" class="toast noprint" hidden></p>
 </main>
 
