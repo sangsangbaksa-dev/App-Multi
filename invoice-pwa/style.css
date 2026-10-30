@@ -1,0 +1,26 @@
+:root{--b:#2563eb;--bg:#f8fafc;--t:#0f172a;--m:#64748b;--l:#e2e8f0}
+@media(prefers-color-scheme:dark){:root{--bg:#0f172a;--t:#f1f5f9;--m:#94a3b8;--l:#334155}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--t)}
+.bar{display:flex;gap:.5rem;align-items:center;padding:.75rem 1rem;border-bottom:1px solid var(--l)}
+.bar h1{font-size:1.2rem;margin:0;flex:1}
+main{max-width:760px;margin:0 auto;padding:1rem}
+button{background:var(--b);color:#fff;border:0;border-radius:8px;padding:.55rem .9rem;font:inherit;cursor:pointer}
+button.ghost{background:transparent;color:var(--b);border:1px solid var(--b)}
+button.danger{color:#dc2626;border-color:#dc2626}
+button.pro{background:#f59e0b;color:#111}
+input,select,textarea{width:100%;padding:.5rem;border:1px solid var(--l);border-radius:6px;background:transparent;color:inherit;font:inherit}
+label{display:block;font-size:.8rem;color:var(--m)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem}
+.item{display:grid;grid-template-columns:3fr 1fr 1fr auto;gap:.4rem;margin-bottom:.4rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+.card{display:flex;justify-content:space-between;padding:.8rem;border:1px solid var(--l);border-radius:8px;margin-bottom:.5rem;cursor:pointer}
+.badge{font-size:.75rem;padding:.15rem .5rem;border-radius:99px;border:1px solid var(--l);color:var(--m)}
+.muted{color:var(--m)}.late{color:#dc2626;font-weight:600}
+#preview{margin-top:1.5rem;padding:1.5rem;border:1px solid var(--l);border-radius:8px;background:#fff;color:#111}
+#preview table{width:100%;border-collapse:collapse;margin:1rem 0}
+#preview td,#preview th{padding:.4rem;border-bottom:1px solid #ddd;text-align:left}
+#preview .r{text-align:right}
+.wm{margin-top:1.5rem;font-size:.75rem;color:#888;text-align:center}
+dialog{border-radius:12px;border:1px solid var(--l);background:var(--bg);color:var(--t)}
+@media print{.noprint{display:none!important}body{background:#fff}#preview{border:0;margin:0}}
