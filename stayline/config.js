@@ -3,7 +3,7 @@
    PLACEHOLDERS: checkoutUrl and supportEmail are not real yet. */
 (function (root) {
   var CFG = {
-    siteUrl: 'https://stayline-days.vercel.app',
+    siteUrl: 'https://stayline-family.pages.dev',
     checkoutUrl: 'https://example.com/PLACEHOLDER-checkout',
     supportEmail: 'support@example.com',
     price: '$12',
