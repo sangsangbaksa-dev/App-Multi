@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /app/
 
-Sitemap: https://stampbook-lessons.vercel.app/sitemap.xml
+Sitemap: https://stampbook-5kf.pages.dev/sitemap.xml
