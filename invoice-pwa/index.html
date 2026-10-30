@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>QuickBill – Invoices for freelancers</title>
-<meta name="description" content="Private, offline invoice maker for freelancers. Pay once, no subscription. English, 한국어, 日本語, 中文, Español.">
+<meta name="description" content="A small offline invoicing tool for people who work alone. Pay once, no account. English, 한국어, 日本語, 中文, Español.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <meta name="theme-color" content="#2563eb">
@@ -18,23 +18,25 @@
     <p data-i18n="heroSub"></p>
     <a class="btn" href="app.html" data-i18n="open"></a>
   </section>
-  <section><h3 data-i18n="polTitle"></h3>
-    <div class="cards">
-      <div class="pc"><b data-i18n="p1t"></b><p data-i18n="p1d"></p></div>
-      <div class="pc"><b data-i18n="p2t"></b><p data-i18n="p2d"></p></div>
-      <div class="pc"><b data-i18n="p3t"></b><p data-i18n="p3d"></p></div>
-      <div class="pc"><b data-i18n="p4t"></b><p data-i18n="p4d"></p></div>
-    </div></section>
-  <section><h3 data-i18n="featTitle"></h3>
+  <section class="block"><h3 data-i18n="polTitle"></h3>
+    <dl>
+      <div><dt data-i18n="p1t"></dt><dd data-i18n="p1d"></dd></div>
+      <div><dt data-i18n="p2t"></dt><dd data-i18n="p2d"></dd></div>
+      <div><dt data-i18n="p3t"></dt><dd data-i18n="p3d"></dd></div>
+      <div><dt data-i18n="p4t"></dt><dd data-i18n="p4d"></dd></div>
+    </dl></section>
+  <section class="block"><h3 data-i18n="featTitle"></h3>
     <ul><li data-i18n="f1"></li><li data-i18n="f2"></li><li data-i18n="f3"></li><li data-i18n="f4"></li><li data-i18n="f5"></li><li data-i18n="f6"></li></ul></section>
-  <section><h3 data-i18n="priceTitle"></h3>
-    <div class="cards">
-      <div class="pc"><b data-i18n="freeName"></b> <span data-i18n="priceFree"></span><p data-i18n="freeList"></p></div>
-      <div class="pc hl"><b data-i18n="proName"></b> <span data-i18n="priceProV"></span><p data-i18n="proList"></p></div>
-    </div>
-    <p><a class="btn" href="app.html" data-i18n="open"></a></p></section>
+  <section class="block"><h3 data-i18n="priceTitle"></h3>
+    <div>
+      <div class="priceline"><b><span data-i18n="freeName"></span></b><span data-i18n="priceFree"></span></div>
+      <p class="muted" data-i18n="freeList"></p>
+      <div class="priceline"><b><span data-i18n="proName"></span></b><span data-i18n="priceProV"></span></div>
+      <p class="muted" data-i18n="proList"></p>
+      <p><a class="btn" href="app.html" data-i18n="open"></a></p>
+    </div></section>
 </main>
-<footer class="muted" data-i18n="footer"></footer>
+<footer data-i18n="footer"></footer>
 <script type="module">
 import * as I from "./i18n.js";
 let saved = null; try { saved = localStorage.getItem("qb.lang"); } catch {}

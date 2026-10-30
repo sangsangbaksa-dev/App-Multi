@@ -11,7 +11,7 @@ const store = {
 let invoices = store.get("qb.invoices", []);
 let license = store.get("qb.license", "");
 let logo = store.get("qb.logo", "");
-let editing = null; // current invoice object
+let editing = null; // the document open in the form
 const isPro = () => L.validLicense(license);
 const today = () => new Date().toISOString().slice(0, 10);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -36,11 +36,12 @@ function renderList() {
   $("#list").innerHTML = invoices.map((i) => {
     const q = L.isQuote(i), bal = L.balanceOf(i);
     return `<div class="card" data-id="${esc(i.id)}"><div><b>${esc(i.number)}</b> · ${esc(i.client)}<br>
-      <span class="muted">${q ? I.t("validUntil") : I.t("dueWord")} ${esc(I.formatDate(i.dueDate))} · ${I.t(i.status)}${i.recur ? " · ↻" : ""}</span>
+      <span class="muted">${q ? I.t("validUntil") : I.t("dueWord")} ${esc(I.formatDate(i.dueDate))} · ${I.t(i.status)}${i.recur ? " · " + I.t(i.recur) : ""}</span>
       ${L.overdue(i) ? `<span class="late"> ${I.t("overdue")}</span>` : ""}</div>
       <div class="r"><b>${money(L.totalOf(i), i.currency)}</b>${!q && i.paid > 0 && bal > 0 ? `<br><span class="muted">${I.t("balance")} ${money(bal, i.currency)}</span>` : ""}</div></div>`;
   }).join("");
   renderDash();
+  renderAgeing();
 }
 
 function renderDash() {
@@ -53,12 +54,69 @@ function renderDash() {
   $("#clientsum").innerHTML = !rows.length ? "" : isPro()
     ? `<details open><summary>${I.t("byClient")}</summary><table class="mini">${rows.map((r) =>
         `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td></tr>`).join("")}</table></details>`
-    : `<p class="muted">🔒 ${I.t("byClientPro")}</p>`;
+    : `<p class="muted">${I.t("byClientPro")}</p>`;
 }
+
+function renderAgeing() {
+  const rows = L.ageing(invoices, today());
+  $("#ageing").innerHTML = !rows.length || !isPro() ? "" : `<details open><summary>${I.t("ageingTitle")}</summary><table class="mini">
+    <tr><th></th><th class="r">${I.t("d30")}</th><th class="r">${I.t("d60")}</th><th class="r">${I.t("d90")}</th><th class="r">${I.t("older")}</th></tr>
+    ${rows.map((r) => `<tr><td>${esc(r.currency)}</td>${["d30", "d60", "d90", "older"].map((k) => `<td class="r">${money(r[k], r.currency)}</td>`).join("")}</tr>`).join("")}</table></details>`;
+}
+
+// ---- time tracker ----
+let entries = store.get("qb.time", []);
+let running = store.get("qb.timer", null); // { client, desc, at }
+let rate = store.get("qb.rate", 0);
+let tick;
+const fmtClock = (secs) => [Math.floor(secs / 3600), Math.floor(secs / 60) % 60, secs % 60].map((n) => String(n).padStart(2, "0")).join(":");
+function renderTime() {
+  $("#t-toggle").textContent = I.t(running ? "stop" : "start");
+  $("#t-rate").value = rate;
+  const groups = L.unbilledByClient(entries);
+  $("#t-list").innerHTML = groups.length ? groups.map((g) =>
+    `<button type="button" class="ghost" data-bill="${esc(g.client)}">${esc(I.t("billTime", { client: g.client, h: L.hoursOf(g.secs) }))}</button>`).join(" ")
+    : `<p class="muted">${I.t("timeEmpty")}</p>`;
+  clearInterval(tick);
+  const clock = () => ($("#t-clock").textContent = running ? fmtClock(Math.floor((Date.now() - running.at) / 1000)) : "");
+  clock();
+  if (running) tick = setInterval(clock, 1000);
+}
+$("#t-toggle").onclick = () => {
+  if (!running) {
+    const client = $("#t-client").value.trim();
+    if (!client) return $("#t-client").focus();
+    running = { client, desc: $("#t-desc").value.trim(), at: Date.now() };
+    store.set("qb.timer", running);
+  } else {
+    const secs = Math.max(1, Math.round((Date.now() - running.at) / 1000));
+    entries.push({ id: crypto.randomUUID(), client: running.client, desc: running.desc, secs, billed: false });
+    store.set("qb.time", entries);
+    running = null;
+    store.del("qb.timer");
+  }
+  renderTime();
+};
+$("#t-rate").onchange = (e) => { rate = Number(e.target.value) || 0; store.set("qb.rate", rate); };
+$("#t-list").onclick = (e) => {
+  const b = e.target.closest("[data-bill]");
+  if (!b) return;
+  if (!isPro()) return openUpgrade(I.t("timePro"));
+  if (!L.canSave(invoices, true, null)) return;
+  const client = b.dataset.bill;
+  const items = L.timeItems(entries, client, rate);
+  const n = items.length;
+  const doc = newDoc("invoice", { client, items });
+  entries = entries.map((x) => (x.client === client && !x.billed ? { ...x, billed: true } : x));
+  store.set("qb.time", entries);
+  renderTime();
+  toast(I.t("timeBilled", { n, num: doc.number }));
+};
 
 function itemRow(it = { desc: "", qty: 1, price: 0 }) {
   const d = document.createElement("div");
   d.className = "item";
+  if (it.lateFee) d.dataset.fee = "1";
   d.innerHTML = `<input placeholder="${esc(I.t("desc"))}" value="${esc(it.desc)}" data-k="desc">
     <input type="number" min="0" step="any" value="${esc(it.qty)}" data-k="qty" aria-label="${esc(I.t("qty"))}">
     <input type="number" min="0" step="any" value="${esc(it.price)}" data-k="price" aria-label="${esc(I.t("price"))}">
@@ -75,10 +133,12 @@ function readForm() {
   inv.discount = Number(inv.discount) || 0;
   inv.recur = inv.recur || "";
   inv.paid = Number(inv.paid) || 0;
+  inv.lateFeePct = Number(inv.lateFeePct) || 0;
   inv.items = [...document.querySelectorAll("#items .item")].map((r) => ({
     desc: r.querySelector('[data-k="desc"]').value,
     qty: Number(r.querySelector('[data-k="qty"]').value) || 0,
     price: Number(r.querySelector('[data-k="price"]').value) || 0,
+    ...(r.dataset.fee ? { lateFee: true } : {}),
   }));
   return inv;
 }
@@ -88,6 +148,9 @@ function renderPreview() {
   const i = readForm();
   const t = L.calcTotals(i.items, i.taxRate, i.discount);
   const m = (n) => money(n, i.currency);
+  const late = L.overdue({ ...i, paid: L.isQuote(i) ? 0 : i.paid }, today());
+  $("#btn-latefee").hidden = !late;
+  $("#btn-remind").hidden = !late;
   const showLogo = logo && isPro();
   $("#btn-logo-rm").hidden = !logo;
   $("#preview").innerHTML = `${showLogo ? `<img class="logo" alt="" src="${esc(logo)}">` : ""}<h2>${I.t(L.isQuote(i) ? "quote" : "invoice")} ${esc(i.number)}</h2>
@@ -144,18 +207,21 @@ function fullRender() {
   document.title = "QuickBill";
   renderList();
   renderPreview();
+  renderTime();
 }
 
 // ---- events ----
-function newDoc(type) {
+function newDoc(type, extra = {}) {
   if (!L.canSave(invoices, isPro(), null)) return openUpgrade(limitMsg());
   const last = invoices[0];
-  openEditor({
+  const doc = {
     id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
     currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
     taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, status: "draft", notes: "", payinfo: last?.payinfo ?? "", recur: "", nextRun: "",
-    items: [{ desc: "", qty: 1, price: 0 }],
-  });
+    items: [{ desc: "", qty: 1, price: 0 }], lateFeePct: last?.lateFeePct ?? 0, ...extra,
+  };
+  openEditor(doc);
+  return doc;
 }
 $("#btn-new").onclick = () => newDoc("invoice");
 $("#btn-new-quote").onclick = () => newDoc("quote");
@@ -170,6 +236,19 @@ $("#btn-convert").onclick = () => {
   closeEditor();
   toast(I.t("converted", { n: inv.number }));
   openEditor(structuredClone(inv));
+};
+$("#btn-latefee").onclick = () => {
+  const inv = readForm();
+  const next = L.applyLateFee(inv, today(), inv.lateFeePct, I.t("feeItem"));
+  editing = next;
+  $("#items").replaceChildren(...next.items.map(itemRow));
+  renderPreview();
+};
+$("#btn-remind").onclick = async () => {
+  const inv = readForm();
+  const text = I.t("reminderText", { client: inv.client, number: inv.number, amount: money(L.balanceOf(inv), inv.currency), date: I.formatDate(inv.dueDate), from: inv.from });
+  try { await navigator.clipboard.writeText(text); toast(I.t("reminderCopied")); }
+  catch { window.prompt(I.t("reminder"), text); }
 };
 $("#btn-add").onclick = () => $("#items").append(itemRow());
 $("#form").addEventListener("input", renderPreview);
@@ -268,4 +347,5 @@ I.setLang(I.detectLang(saved));
 I.langSelect($("#lang"), (l) => { I.setLang(l); try { localStorage.setItem("qb.lang", l); } catch {} fullRender(); });
 runRecurring();
 fullRender();
+renderTime();
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});

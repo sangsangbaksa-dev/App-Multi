@@ -14,9 +14,9 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
   // landing page: localized + links to app
   await p.goto("http://localhost:8123/index.html");
-  assert.match(await p.textContent("h2"), /Pay once/);
+  assert.match(await p.textContent("h2"), /stay on your own computer/);
   await p.selectOption("#lang", "ja");
-  assert.match(await p.textContent("h2"), /フリーランス/);
+  assert.match(await p.textContent("h2"), /自分のパソコン/);
   assert.equal(await p.getAttribute("html", "lang"), "ja");
   await p.selectOption("#lang", "en");
 
@@ -73,6 +73,24 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await p.setInputFiles("#file-restore", { name: "ok.json", mimeType: "application/json", buffer: fs.readFileSync(path) });
   await p.waitForFunction((n) => document.querySelector("#toast").textContent.includes(String(n)), n);
 
+  // ageing + tracked-time billing (Pro)
+  await p.evaluate(() => {
+    const inv = JSON.parse(localStorage.getItem("qb.invoices"));
+    inv.push({ id: "old1", type: "invoice", number: "INV-0099", from: "Me", client: "Old", currency: "USD", status: "sent", paid: 0,
+      issueDate: "2020-01-01", dueDate: "2020-01-15", taxRate: 0, discount: 0, items: [{ desc: "x", qty: 1, price: 70 }] });
+    localStorage.setItem("qb.invoices", JSON.stringify(inv));
+    localStorage.setItem("qb.time", JSON.stringify([{ id: "t1", client: "Old", desc: "Consulting", secs: 5400, billed: false }]));
+    localStorage.setItem("qb.rate", "80");
+  });
+  await p.reload();
+  assert.match(await p.textContent("#ageing"), /70/);
+  await p.click("#time summary");
+  await p.click("[data-bill=Old]");
+  await p.waitForFunction(() => /Consulting/.test(document.querySelector("#preview").textContent));
+  assert.match(await p.textContent("#preview"), /Consulting1\.5.80.120/); // 1.5 h at 80
+  await p.click("button[type=submit]");
+  assert.match(await p.textContent("#t-list"), /기록된 시간이 없습니다/); // entry is marked billed
+
   // free user: recurring is gated
   const ctx2 = await b.newContext({ locale: "es-ES" });
   const q = await ctx2.newPage();
@@ -119,6 +137,25 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await r.click("button[type=submit]");
   assert.match(await r.textContent("#list"), /paid/);
   assert.match(await r.textContent("#dash"), /Outstanding:\s*\$0\.00/);
+
+  // late fee + reminder + timer paywall (free plan)
+  await r.click("#btn-new");
+  await r.fill("[name=from]", "Me"); await r.fill("[name=client]", "Slow Payer");
+  await r.fill("#items [data-k=price]", "100");
+  await r.selectOption("[name=status]", "sent");
+  await r.fill("[name=issueDate]", "2020-01-01"); await r.fill("[name=dueDate]", "2020-01-15");
+  await r.fill("[name=lateFeePct]", "2");
+  await r.click("#btn-latefee"); await r.click("#btn-latefee"); // second click must not stack
+  assert.equal((await r.$$("#items .item")).length, 2);
+  assert.match(await r.textContent("#preview"), /Late fee/);
+  await r.click("#btn-remind");
+  await r.click("button[type=submit]");
+  assert.match(await r.textContent("#list"), /overdue/);
+  await r.evaluate(() => localStorage.setItem("qb.time", JSON.stringify([{ id: "t", client: "Z", desc: "d", secs: 3600, billed: false }])));
+  await r.reload();
+  await r.click("#time summary");
+  await r.click("[data-bill=Z]");
+  assert.ok(await r.isVisible("#dlg"), "time billing paywall");
 
   assert.deepEqual(errs, []);
   console.log("e2e OK"); await b.close();

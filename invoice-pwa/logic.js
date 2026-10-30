@@ -1,4 +1,4 @@
-// Pure business logic (no DOM) so it can be unit-tested with `node --test`.
+// Everything here is DOM-free so `npm test` can cover it directly.
 export const FREE_LIMIT = 3;
 
 export function round2(n) {
@@ -44,9 +44,9 @@ export function toCSV(invoices) {
   return [head.join(","), ...rows].join("\n");
 }
 
-// Offline license format: PRO-XXXX-XXXX-CCCC where CCCC is a checksum of the
-// first two groups. Issue keys from your payment provider's fulfilment hook.
-// NOTE: client-side only = soft gate; swap for a server check when you scale.
+// Keys look like PRO-AAAA-BBBB-CCCC, where CCCC is derived from the first two
+// groups. It runs entirely in the browser, so it only keeps honest people honest;
+// move the check to a server if piracy ever becomes a real cost.
 function checksum(s) {
   let h = 7;
   for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 46656;
@@ -69,7 +69,7 @@ export function overdue(inv, today = new Date().toISOString().slice(0, 10)) {
     !!inv.dueDate && inv.dueDate < today;
 }
 
-// Keeps status and paid amount consistent: fully paid <=> status "paid".
+// Makes status and paid amount agree: fully paid means status "paid" and vice versa.
 export function settle(inv) {
   if (isQuote(inv)) return { ...inv, paid: 0 };
   const total = totalOf(inv);
@@ -94,7 +94,7 @@ export function convertQuote(quote, invoices, newId, today) {
   };
 }
 
-// Per-currency money summary over real invoices (quotes and drafts are not receivables).
+// Money summary per currency. Quotes and drafts aren't owed to you yet, so they're skipped.
 export function summarize(invoices, today = new Date().toISOString().slice(0, 10)) {
   const out = {};
   for (const i of invoices) {
@@ -146,8 +146,8 @@ export function dayDiff(a, b) {
   return Math.round((new Date(b + "T00:00:00Z") - new Date(a + "T00:00:00Z")) / 864e5);
 }
 
-// Creates a draft copy for every elapsed period of each recurring invoice.
-// Returns { invoices, created } and never mutates the input.
+// For each recurring invoice, adds a draft for every period that has passed.
+// Returns a new list; the input is left alone.
 export function runRecurring(invoices, today, newId) {
   let list = invoices.map((i) => ({ ...i }));
   let created = 0;
@@ -168,10 +168,59 @@ export function runRecurring(invoices, today, newId) {
   return { invoices: list, created };
 }
 
-// Shape check for restored backups (never trust imported JSON).
+// Sanity check for backup files before we trust them.
 export function validInvoice(i) {
   return !!i && typeof i === "object" && typeof i.id === "string" && typeof i.number === "string" &&
     Array.isArray(i.items) && i.items.every((x) => x && typeof x === "object") &&
     ["draft", "sent", "paid", "accepted"].includes(i.status) && /^[A-Z]{3}$/.test(i.currency || "") &&
     /^\d{4}-\d{2}-\d{2}$/.test(i.issueDate || "") && /^\d{4}-\d{2}-\d{2}$/.test(i.dueDate || "");
+}
+
+
+// ---- late fees, ageing, tracked time ----
+export function lateFeeAmount(inv, today, pctPerMonth) {
+  const days = dayDiff(inv.dueDate, today);
+  const bal = balanceOf(inv);
+  if (days <= 0 || bal <= 0 || !(pctPerMonth > 0)) return 0;
+  return round2(bal * (pctPerMonth / 100) * Math.ceil(days / 30));
+}
+
+// Adds (or refreshes) a single late-fee line. The fee is worked out on the
+// balance without any earlier fee line, so pressing the button twice is harmless.
+export function applyLateFee(inv, today, pctPerMonth, label) {
+  const base = { ...inv, items: inv.items.filter((x) => !x.lateFee) };
+  const fee = lateFeeAmount(base, today, pctPerMonth);
+  if (!fee) return base;
+  return { ...base, items: [...base.items, { desc: label, qty: 1, price: fee, lateFee: true }] };
+}
+
+export function ageing(invoices, today) {
+  const out = {};
+  for (const i of invoices) {
+    if (!overdue(i, today)) continue;
+    const days = dayDiff(i.dueDate, today);
+    const o = (out[i.currency] ??= { currency: i.currency, d30: 0, d60: 0, d90: 0, older: 0 });
+    const k = days <= 30 ? "d30" : days <= 60 ? "d60" : days <= 90 ? "d90" : "older";
+    o[k] = round2(o[k] + balanceOf(i));
+  }
+  return Object.values(out);
+}
+
+export const hoursOf = (secs) => round2(secs / 3600);
+
+export function unbilledByClient(entries) {
+  const m = new Map();
+  for (const e of entries) {
+    if (e.billed) continue;
+    const r = m.get(e.client) ?? { client: e.client, secs: 0, count: 0 };
+    r.secs += e.secs;
+    r.count++;
+    m.set(e.client, r);
+  }
+  return [...m.values()];
+}
+
+export function timeItems(entries, client, rate) {
+  return entries.filter((e) => !e.billed && e.client === client)
+    .map((e) => ({ desc: e.desc || client, qty: hoursOf(e.secs), price: Number(rate) || 0 }));
 }

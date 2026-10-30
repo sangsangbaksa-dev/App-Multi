@@ -1,32 +1,24 @@
-# QuickBill – freelancer invoice PWA
+# QuickBill
 
-**Why this idea:** every freelancer needs invoices, demand is evergreen, the app is
-100% client-side (no server, no hosting cost, no user data liability), and it's
-installable as a PWA. One person can maintain it.
+A small invoicing tool for people who work alone. Static files, no backend: data sits in the
+browser's localStorage, so hosting costs nothing and there is no customer data to protect.
 
-**Monetization:** Free = 3 invoices + footer watermark. Pro (one-time ~$19) = unlimited,
-no watermark, CSV export. Sell via Stripe Payment Link / Lemon Squeezy / Gumroad and
-email the buyer a key made with `makeLicense()` (see `logic.js`).
-The key check is offline (soft gate); move to server validation if piracy matters.
+Free: 3 documents, every currency and language, print to PDF, JSON backup/restore.
+Full license ($19, once): unlimited documents, no footer, logo, repeat billing, tracked-time
+billing, CSV export, client ledger and overdue ageing.
 
-**Launch checklist:** set `checkoutUrl`/`price` in `config.js`, host the folder on any
-static host (Vercel, Netlify, GitHub Pages), list on Product Hunt / r/freelance.
-Ideas next: recurring invoices, client list, multi-language, Stripe pay-link on invoice.
+## What it does
+- Invoices and quotes (QUO- numbering); a quote converts to an invoice in one click.
+- Tax, discount, deposits and part-payments; status follows the balance.
+- Late fees (per started 30 days) and a copy-paste payment reminder per language.
+- Dashboard per currency, ageing buckets, per-client ledger.
+- Timer that turns tracked hours into invoice lines.
+- English, Korean, Japanese, Chinese, Spanish with local currency/date formats.
 
-## v2 additions
-- 5 languages (en/ko/ja/zh/es): auto-detected, switchable, localized currency + date formats.
-- Landing page (`index.html`); the app lives at `app.html`.
-- Positioning vs. subscription invoice tools: private (data never leaves the device), pay once, no account,
-  usable free plan (3 invoices, PDF print, JSON backup/restore), 30-day refund.
-- Pro features: logo, recurring invoices (weekly/monthly, drafts auto-created), CSV export, no watermark.
+## Selling it
+Put your checkout link in `config.js`, deploy the folder to any static host, and email buyers a key
+made with `makeLicense()` in `logic.js`. The key check runs client-side, so treat it as a courtesy lock.
 
-## v3 additions
-- Quotes (`QUO-` numbering) that convert to invoices in one click (quote is marked accepted).
-- Partial payments / deposits with balance due; status auto-flips to paid at 100%.
-- Overdue = sent, unpaid balance, past due date. Quotes and drafts are never receivables.
-- Dashboard per currency (outstanding / overdue / collected); per-client history is Pro.
-- Payment instructions printed on the invoice (prefilled from the previous one).
-
-## Dev
-- `npm test` – unit tests (node:test)
-- `python3 -m http.server 8123` then `node tests/e2e.cjs` – browser e2e (Playwright)
+## Development
+- `npm test` runs the unit tests (`node --test`).
+- `python3 -m http.server 8123` then `node tests/e2e.cjs` runs the browser test (needs Playwright).

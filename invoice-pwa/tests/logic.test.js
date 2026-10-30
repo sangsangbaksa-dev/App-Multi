@@ -116,3 +116,34 @@ test("csv has type and balance", () => {
   assert.match(csv, /^"?type"?,/);
   assert.match(csv, /"invoice","INV-1".*"110","10","100"/);
 });
+
+test("late fee grows per started month and is idempotent", () => {
+  const o = inv({ number: "INV-9", taxRate: 0, dueDate: "2024-01-15" }); // 100 owed
+  assert.equal(L.lateFeeAmount(o, "2024-01-15", 2), 0);
+  assert.equal(L.lateFeeAmount(o, "2024-01-16", 2), 2);
+  assert.equal(L.lateFeeAmount(o, "2024-02-14", 2), 2);   // 30 days = one month
+  assert.equal(L.lateFeeAmount(o, "2024-02-15", 2), 4);   // 31 days = two
+  assert.equal(L.lateFeeAmount({ ...o, paid: 100 }, "2025-01-01", 2), 0);
+  const once = L.applyLateFee(o, "2024-03-01", 2, "Late fee");
+  const twice = L.applyLateFee(once, "2024-03-01", 2, "Late fee");
+  assert.deepEqual(once.items, twice.items);
+  assert.equal(once.items.filter((x) => x.lateFee).length, 1);
+  assert.equal(L.applyLateFee(o, "2024-01-01", 2, "x").items.length, 1); // not late yet
+});
+test("ageing buckets", () => {
+  const list = [
+    inv({ number: "A", taxRate: 0, dueDate: "2024-05-20" }),  // 12 days
+    inv({ number: "B", taxRate: 0, dueDate: "2024-04-01" }),  // 61 days
+    inv({ number: "C", taxRate: 0, dueDate: "2023-01-01" }),  // very old
+    inv({ number: "D", taxRate: 0, dueDate: "2024-05-20", status: "paid", paid: 100 }),
+  ];
+  assert.deepEqual(L.ageing(list, "2024-06-01"), [{ currency: "USD", d30: 100, d60: 0, d90: 100, older: 100 }]);
+});
+test("tracked time becomes invoice lines", () => {
+  const e = [
+    { client: "A", desc: "Design", secs: 5400 }, { client: "A", desc: "Calls", secs: 1800 },
+    { client: "B", desc: "x", secs: 3600 }, { client: "A", desc: "old", secs: 3600, billed: true },
+  ];
+  assert.deepEqual(L.unbilledByClient(e), [{ client: "A", secs: 7200, count: 2 }, { client: "B", secs: 3600, count: 1 }]);
+  assert.deepEqual(L.timeItems(e, "A", 80), [{ desc: "Design", qty: 1.5, price: 80 }, { desc: "Calls", qty: 0.5, price: 80 }]);
+});
