@@ -121,7 +121,7 @@ export function initVideo(ctx) {
     for (let r = p.rounds; r >= 1; r--) {
       const list = V.requestsOf(p, r);
       const isExtra = r > (Number(p.included) || 0);
-      html += `<section class="round"><h4>${esc(I.t("vidRound", { n: r }))}${isExtra ? ` <span class="badge">${esc(I.t("vidExtraTag"))}</span>` : ""}</h4>` +
+      html += `<section class="round"><h3>${esc(I.t("vidRound", { n: r }))}${isExtra ? ` <span class="badge">${esc(I.t("vidExtraTag"))}</span>` : ""}</h3>` +
         (list.length ? `<ul class="reqs">${list.map((q) => q.id === editReq ? `<li class="req"><div class="edit">
           <input id="ed-tc" value="${esc(V.formatTimecode(q.tc))}" placeholder="00:00" aria-label="${esc(I.t("vidTc"))}" autocomplete="off">
           <input id="ed-text" value="${esc(q.text)}" maxlength="500" aria-label="${esc(I.t("vidReqText"))}" autocomplete="off">

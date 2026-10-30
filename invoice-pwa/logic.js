@@ -226,3 +226,18 @@ export function timeItems(entries, client, rate) {
   return entries.filter((e) => !e.billed && e.client === client)
     .map((e) => ({ desc: e.desc || client, qty: hoursOf(e.secs), price: Number(rate) || 0 }));
 }
+
+// ---- list search and filters ----
+// f: all | unpaid | overdue | paid | quotes. q matches number, client, notes and line descriptions.
+export function filterInvoices(list, { q = "", f = "all" } = {}, today = new Date().toISOString().slice(0, 10)) {
+  const needle = String(q).trim().toLowerCase();
+  const has = (i) => !needle || [i.number, i.client, i.notes, ...(i.items || []).map((x) => x.desc)].some((s) => String(s ?? "").toLowerCase().includes(needle));
+  const ok = {
+    all: () => true,
+    unpaid: (i) => !isQuote(i) && i.status !== "draft" && balanceOf(i) > 0,
+    overdue: (i) => overdue(i, today),
+    paid: (i) => !isQuote(i) && i.status === "paid",
+    quotes: isQuote,
+  }[f] ?? (() => true);
+  return list.filter((i) => ok(i) && has(i));
+}

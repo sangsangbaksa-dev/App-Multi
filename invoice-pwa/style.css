@@ -4,7 +4,7 @@
 @font-face{font-family:"Inter";font-weight:500;font-style:normal;font-display:swap;src:url(fonts/inter-latin-500-normal.woff2) format("woff2")}
 @font-face{font-family:"Inter";font-weight:600;font-style:normal;font-display:swap;src:url(fonts/inter-latin-600-normal.woff2) format("woff2")}
 :root{
-  --paper:#f3eee4; --ink:#211e18; --mute:#6f675a; --rule:#d6cdb9; --line:#bfb49b; --accent:#a4401a; --danger:#b3261e; --sheet:#fffdf8;
+  --paper:#f3eee4; --ink:#211e18; --mute:#665e51; --rule:#d6cdb9; --line:#bfb49b; --accent:#a4401a; --danger:#b3261e; --sheet:#fffdf8;
   --serif:Newsreader,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
 }
 @media(prefers-color-scheme:dark){
@@ -94,7 +94,7 @@ table.mini td{color:var(--ink)}
 #preview td,#preview th{padding:.4rem;border-bottom:1px solid #d9d2c1;text-align:left}
 #preview .r{text-align:right}
 #preview .logo{max-height:60px;max-width:200px;display:block;margin-bottom:.8rem}
-.wm{margin-top:1.5rem;font-size:.75rem;color:#8a8171}
+.wm{margin-top:1.5rem;font-size:.75rem;color:#6b6355}
 
 dialog{border:1px solid var(--ink);border-radius:2px;background:var(--paper);color:var(--ink);max-width:28rem}
 dialog::backdrop{background:rgba(0,0,0,.4)}
@@ -114,7 +114,7 @@ dialog form input{flex:1 1 100%}
 .reqform{display:grid;grid-template-columns:7rem 1fr 11rem auto;gap:.6rem;align-items:end;margin-top:.6rem}
 .delform{display:grid;grid-template-columns:12rem 1fr auto;gap:.6rem;align-items:end;margin-top:.6rem}
 .apprrow{align-items:end}.apprrow label{flex:1;min-width:12rem}
-.round{margin:1.1rem 0}.round h4{margin:0 0 .2rem;font-family:var(--serif);font-size:1.1rem;font-weight:600}
+.round{margin:1.1rem 0}.round h3{margin:0 0 .2rem;font-family:var(--serif);font-size:1.1rem;font-weight:600}
 .reqs{list-style:none;margin:0;padding:0}
 .req{display:flex;gap:.7rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid var(--rule)}
 .req input[type=checkbox]{width:auto;margin-top:.3rem;accent-color:var(--accent)}
@@ -137,3 +137,20 @@ dialog form input{flex:1 1 100%}
 .req .edit .row{grid-column:1/-1;margin-top:0}
 @media print{#vid-report.on{display:block;margin:0;border:0;box-shadow:none;padding:0}#vid-report ul{padding-left:1.1rem}}
 @media(max-width:640px){.req .edit{grid-template-columns:1fr 1fr}.req .edit input:nth-child(2){grid-column:1/-1}}
+
+.h{font-size:1.15rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* the light paper inside a dark page keeps its own light-theme colours */
+.window,.vmock,.sheet-paper,.paper{--ink:#211e18;--mute:#665e51;--rule:#d6cdb9;--line:#bfb49b;--accent:#a4401a}
+@media(prefers-color-scheme:dark){button.accent,.btn.accent{color:#1a1814}}
+.warn{margin:.8rem 0;padding:.6rem .8rem;border:1px solid var(--danger);color:var(--danger)}
+.filters{margin:1rem 0 .4rem}.filters #q{width:min(22rem,100%)}.filters #f{width:10rem}
+.card:focus-visible,.cards:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#dlg h2{margin-top:0}#dlg .h{margin:1rem 0 .2rem}
+#dlg .reason{margin:.2rem 0 1rem;padding:.6rem .8rem;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent)}
+#dlg .proList{margin:.4rem 0 .8rem}
+#dlg .buyrow{display:flex;gap:.8rem;align-items:center;margin:1rem 0 .4rem;font-size:1.1rem}
+#dlg #lic-form{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}#dlg #lic{flex:1;min-width:12rem}
+.ticks{list-style:none;margin:0 0 1.8rem;padding:0}
+.ticks li{padding:.5rem 0 .5rem 1.6rem;border-bottom:1px solid var(--rule);position:relative}
+.ticks li::before{content:"";position:absolute;left:0;top:1.05rem;width:.7rem;height:.35rem;border-left:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg)}

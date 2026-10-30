@@ -8,11 +8,13 @@ import { ensureSchema } from "./storage.js";
 const $ = (s) => document.querySelector(s);
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { $("#store-warn").hidden = false; return false; } },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
 try { ensureSchema(localStorage); } catch {}
 let invoices = store.get("qb.invoices", []);
+let filters = { q: "", f: "all" };
+try { localStorage.setItem("qb.probe", "1"); localStorage.removeItem("qb.probe"); } catch { document.addEventListener("DOMContentLoaded", () => ($("#store-warn").hidden = false)); }
 let license = store.get("qb.license", "");
 let logo = store.get("qb.logo", "");
 let editing = null; // the document open in the form
@@ -38,9 +40,12 @@ function renderList() {
   $("#empty").hidden = invoices.length > 0;
   $("#clients").innerHTML = [...new Set(invoices.map((i) => i.client).filter(Boolean))]
     .map((c) => `<option value="${esc(c)}">`).join("");
-  $("#list").innerHTML = invoices.map((i) => {
+  $("#filters").hidden = invoices.length < 4;
+  const shown = invoices.length < 4 ? invoices : L.filterInvoices(invoices, filters, today());
+  $("#nomatch").hidden = !(invoices.length && !shown.length);
+  $("#list").innerHTML = shown.map((i) => {
     const q = L.isQuote(i), bal = L.balanceOf(i);
-    return `<div class="card" data-id="${esc(i.id)}"><div><b>${esc(i.number)}</b> · ${esc(i.client)}<br>
+    return `<div class="card" data-id="${esc(i.id)}" role="button" tabindex="0"><div><b>${esc(i.number)}</b> · ${esc(i.client)}<br>
       <span class="muted">${q ? I.t("validUntil") : I.t("dueWord")} ${esc(I.formatDate(i.dueDate))} · ${I.t(i.status)}${i.recur ? " · " + I.t(i.recur) : ""}</span>
       ${L.overdue(i) ? `<span class="late"> ${I.t("overdue")}</span>` : ""}</div>
       <div class="r"><b>${money(L.totalOf(i), i.currency)}</b>${!q && i.paid > 0 && bal > 0 ? `<br><span class="muted">${I.t("balance")} ${money(bal, i.currency)}</span>` : ""}</div></div>`;
@@ -192,9 +197,15 @@ function closeEditor() {
 }
 
 function openUpgrade(reason = "") {
+  // Until a real checkout link is set, don't send people to the placeholder page.
+  const live = !/example\.com/.test(CONFIG.checkoutUrl);
   $("#price").textContent = CONFIG.price;
   $("#buy").href = CONFIG.checkoutUrl;
+  $("#buy").hidden = !live;
+  $("#price").hidden = !live;
+  $("#buy-soon").hidden = live;
   $("#lic-msg").textContent = reason;
+  $("#lic-msg").hidden = !reason;
   $("#dlg").showModal();
 }
 const limitMsg = () => I.t("freeLimit", { n: L.FREE_LIMIT });
@@ -284,9 +295,22 @@ $("#btn-delete").onclick = () => {
   persist();
   closeEditor();
 };
-$("#list").onclick = (e) => {
+const openCard = (e) => {
   const c = e.target.closest(".card");
   if (c) openEditor(structuredClone(invoices.find((x) => x.id === c.dataset.id)));
+};
+$("#list").onclick = openCard;
+$("#list").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCard(e); } };
+$("#q").oninput = (e) => { filters.q = e.target.value; renderList(); };
+$("#f").onchange = (e) => { filters.f = e.target.value; renderList(); };
+$("#btn-dup").onclick = () => {
+  const src = readForm();
+  const copy = newDoc(src.type, {
+    from: src.from, client: src.client, currency: src.currency, taxRate: src.taxRate, discount: src.discount,
+    notes: src.notes, payinfo: src.payinfo, lateFeePct: src.lateFeePct,
+    items: src.items.filter((x) => !x.lateFee).map((x) => ({ ...x })),
+  });
+  if (copy) toast(I.t("dupNote"));
 };
 $("#btn-upgrade").onclick = () => openUpgrade();
 

@@ -147,3 +147,24 @@ test("tracked time becomes invoice lines", () => {
   assert.deepEqual(L.unbilledByClient(e), [{ client: "A", secs: 7200, count: 2 }, { client: "B", secs: 3600, count: 1 }]);
   assert.deepEqual(L.timeItems(e, "A", 80), [{ desc: "Design", qty: 1.5, price: 80 }, { desc: "Calls", qty: 0.5, price: 80 }]);
 });
+
+test("filterInvoices searches and filters", () => {
+  const base = { type: "invoice", from: "Me", currency: "USD", issueDate: "2026-10-01", dueDate: "2026-10-15", taxRate: 0, discount: 0, paid: 0, notes: "", items: [{ desc: "Logo design", qty: 1, price: 100 }] };
+  const list = [
+    { ...base, id: "1", number: "INV-0001", client: "Acme", status: "sent" },
+    { ...base, id: "2", number: "INV-0002", client: "Beta Co", status: "paid", paid: 100 },
+    { ...base, id: "3", number: "INV-0003", client: "Gamma", status: "draft", dueDate: "2026-09-01" },
+    { ...base, id: "4", type: "quote", number: "QUO-0001", client: "Acme", status: "draft" },
+  ];
+  const ids = (o) => L.filterInvoices(list, o, "2026-10-20").map((i) => i.id).join();
+  assert.equal(ids({}), "1,2,3,4");
+  assert.equal(ids({ f: "unpaid" }), "1");
+  assert.equal(ids({ f: "overdue" }), "1");
+  assert.equal(ids({ f: "paid" }), "2");
+  assert.equal(ids({ f: "quotes" }), "4");
+  assert.equal(ids({ q: "acme" }), "1,4");
+  assert.equal(ids({ q: " LOGO " }), "1,2,3,4");
+  assert.equal(ids({ q: "beta", f: "paid" }), "2");
+  assert.equal(ids({ q: "zzz" }), "");
+  assert.equal(ids({ f: "nonsense" }), "1,2,3,4");
+});

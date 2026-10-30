@@ -149,7 +149,7 @@ export function initWorkspace(ctx) {
     return { client: d?.client ?? "", from: $("#doc-from").value.trim() || ctx.getFrom(), date: I.formatDate(new Date().toISOString().slice(0, 10)) };
   }
   function renderDocList() {
-    $("#doc-list").innerHTML = docs.map((d) => `<div class="card" data-doc="${esc(d.id)}"><div><b>${esc(d.title || "—")}</b><br><span class="muted">${esc(d.client || "")}</span></div></div>`).join("");
+    $("#doc-list").innerHTML = docs.map((d) => `<div class="card" data-doc="${esc(d.id)}" role="button" tabindex="0"><div><b>${esc(d.title || "—")}</b><br><span class="muted">${esc(d.client || "")}</span></div></div>`).join("");
     $("#doc-empty").hidden = docs.length > 0;
   }
   function templateOptions() {
@@ -188,10 +188,12 @@ export function initWorkspace(ctx) {
     if (!isPro() && docs.length >= L.FREE_DOCS) return openUpgrade(I.t("docLimit", { n: L.FREE_DOCS }));
     openDoc({ id: id(), title: "", client: "", body: "" });
   };
-  $("#doc-list").onclick = (e) => {
+  const openDocCard = (e) => {
     const c = e.target.closest("[data-doc]");
     if (c) openDoc(structuredClone(docs.find((x) => x.id === c.dataset.doc)));
   };
+  $("#doc-list").onclick = openDocCard;
+  $("#doc-list").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDocCard(e); } };
   $("#doc-from").addEventListener("change", (e) => store.set("qb.me", e.target.value.trim()));
   for (const sel of ["#doc-title", "#doc-client", "#doc-from", "#doc-body"]) $(sel).addEventListener("input", renderDocPreview);
   $("#doc-template").onchange = (e) => {

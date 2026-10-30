@@ -40,4 +40,10 @@ Storage and safety:
 - Backups are `v: 2` and include `video`. Older backups without it restore the invoices and leave video projects alone.
 - Delivery links must be http(s). CSV cells that start with `= + - @` are quoted so spreadsheets don't run them.
 
-Tests: `npm test` (logic and storage), `node tests/e2e.cjs` and `node tests/e2e-video.cjs` against `python3 -m http.server 8123`.
+Everyday details:
+- With four or more invoices a search box and a status filter (all, unpaid, overdue, paid, quotes) appear above the list. Any invoice can be duplicated as a new draft.
+- Invoice and document cards work from the keyboard (Tab, Enter, Space).
+- If the browser refuses to save (private window, full storage), a banner says so and points to Backup.
+- While `checkoutUrl` in `config.js` is still the placeholder, the upgrade dialog hides the buy button and says purchases are not open, instead of sending people to a dead link.
+
+Tests: `npm test` (logic and storage), `node tests/e2e.cjs`, `node tests/e2e-video.cjs` and `node tests/e2e-polish.cjs` against `python3 -m http.server 8123`.
