@@ -95,7 +95,7 @@ const srv = http.createServer((q, r) => {
   await p3.goto(base + '/app/'); await p3.waitForSelector('.empty');
   await p3.fill('#lic', require('../app/core.js').makeKey('TESTKEY1')); await p3.click('.settings .pri'); await p3.waitForSelector('.toast'); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false, 'offline key refused once the server is configured');
   await p3.waitForTimeout(2400); await p3.fill('#lic', 'WRONG-KEY-00000'); await p3.click('.settings .pri'); await p3.waitForTimeout(500); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false);
-  await p3.waitForTimeout(2400); await p3.fill('#lic', 'REAL-KEY-12345'); await p3.click('.settings .pri'); await p3.waitForFunction(() => JSON.parse(localStorage['stampbook.v1']).pro === true);
+  await p3.waitForTimeout(2400); await p3.fill('#lic', 'REAL-KEY-12345'); await p3.click('.settings .pri'); await p3.waitForFunction(() => (localStorage['stampbook.v1'] && JSON.parse(localStorage['stampbook.v1']).pro === true));
   assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1']).licMode), 'server');
   global.fetch = realFetch; delete process.env.LS_STORE_ID; delete process.env.LS_PRODUCT_ID;
   const pv = await ctx.newPage(); assert.equal((await pv.goto(base + '/privacy')).status(), 200);

@@ -232,7 +232,7 @@
   function openNew() {
     if (!state.pro && activeCount() >= CFG.freeLimit) { showUpgrade(); return; }
     var d = document.getElementById('dlg'); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
-    setTimeout(function () { document.getElementById('f-name').focus(); }, 30);
+    document.getElementById('f-name').focus();
   }
 
   /* ---------- settings: teacher name, backup, csv, licence ---------- */
