@@ -45,3 +45,8 @@ dialog{background:var(--card);color:var(--ink);border:1px solid var(--line);bord
 .printonly{display:none}
 @media print{body{background:#fff;color:#000}header,.tabs,.foot,.rowhead button,.rowbtns,#plan-out,.card:has(#p-arrive){display:none}.board,.card{border-color:#999;background:#fff;color:#000;break-inside:avoid}.digits b{background:#fff;color:#000;border:1px solid #000}.printonly{display:block}.strip i.in{background:#000}.strip i{background:#ddd}.dates,.muted,.sub,.line,.unit{color:#333}}
 @media (prefers-reduced-motion:no-preference){.digits b{animation:flip .35s ease-out}@keyframes flip{from{transform:rotateX(70deg);opacity:.2}}}
+
+.permit{font-weight:600}.permit.p-ok{color:var(--good)}.permit.p-soon{color:var(--warn)}.permit.p-gone{color:var(--bad)}
+.editc{margin-top:10px}.chip.plan{margin-top:4px;color:var(--mute);border-color:var(--mute)}
+.row.center{justify-content:center;flex-wrap:wrap}a.btnlink{display:inline-flex;align-items:center;padding:9px 14px;border-radius:8px;text-decoration:none;min-height:40px}
+@media (prefers-contrast:more){:root{--mute:#c7ced2;--line:#56616a}}

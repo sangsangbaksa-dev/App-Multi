@@ -96,3 +96,30 @@ test('i18n: every language has every English key and the same placeholders', () 
   }
   assert.equal(I.pick('ko'), 'ko'); assert.equal(I.pick('fr'), 'en');
 });
+
+test('permit: days to expiry and state', () => {
+  const t = tr([]); t.expires = '2026-07-10';
+  assert.deepEqual(C.summary(t, '2026-06-01').permit, { days: 39, state: 'ok' });
+  assert.equal(C.summary(t, '2026-06-25').permit.state, 'soon');
+  assert.equal(C.summary(t, '2026-07-10').permit.days, 0);
+  assert.equal(C.summary(t, '2026-07-11').permit.state, 'gone');
+  assert.equal(C.summary(tr([]), '2026-06-01').permit, null);
+});
+test('updateTrip edits, re-sorts and rejects bad dates', () => {
+  const t = tr([['2026-05-01', '2026-05-10'], ['2026-06-01', '2026-06-05']]);
+  const id = t.trips.filter(x => x.from === '2026-06-01')[0].id;
+  assert.equal(C.updateTrip(t, id, { from: '2026-04-01', to: '2026-04-03', place: 'Rome' }), true);
+  assert.deepEqual(t.trips.map(x => x.from), ['2026-05-01', '2026-04-01']); assert.equal(t.trips[1].place, 'Rome');
+  assert.equal(C.updateTrip(t, id, { from: '2026-04-05', to: '2026-04-03' }), false);
+  assert.equal(t.trips[1].from, '2026-04-01', 'unchanged after rejection');
+  assert.equal(C.updateTrip(t, 'nope', { from: '2026-04-05' }), false);
+});
+test('sanitize drops malformed data and clamps rules', () => {
+  const out = C.sanitize([
+    { id: 'a', name: 'x'.repeat(100), rule: { kind: 'rolling', limit: 9999, window: 1 }, expires: 'bad', trips: [{ from: '2026-01-01', to: '2026-01-05' }, { from: 'nope' }, null, { from: '2026-02-02', to: '2026-02-01' }] },
+    null, 'str', { trips: 'x' }
+  ]);
+  assert.equal(out.length, 2); assert.equal(out[0].name.length, 40); assert.equal(out[0].rule.limit, 366);
+  assert.equal(out[0].expires, ''); assert.equal(out[0].trips.length, 1); assert.deepEqual(out[1].trips, []);
+  assert.deepEqual(C.sanitize('nope'), []);
+});

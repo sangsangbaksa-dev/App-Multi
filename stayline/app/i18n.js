@@ -2,7 +2,7 @@
 (function (root) {
   var L = {
     en: {
-      name: 'English', unitLeft: 'days left', unitOver: 'days over', app: 'Stayline', tag: 'How many days do I have left? One answer, no account.',
+      name: 'English', expires: 'Permit or visa valid until (optional)', permitLeft: 'Permit ends in {n} days', permitToday: 'Permit ends today', permitGone: 'Permit ended {date}', planPast: 'This stay runs past your permit, which ends {date}.', edit: 'Edit', editTrip: 'Edit trip', editCounter: 'Edit counter', planned: 'Planned', quick: 'Start with Schengen 90/180', later: 'Not now', upH: 'You have reached the free limit', unitLeft: 'days left', unitOver: 'days over', app: 'Stayline', tag: 'How many days do I have left? One answer, no account.',
       newTracker: 'New counter', trackerName: 'Whose days?', namePh: 'Me', rule: 'Rule',
       r_schengen: 'Schengen: 90 days in any 180', r_tax183: 'Tax residency: 183 days a year', r_custom: 'Custom rolling window', r_customYear: 'Custom calendar-year limit',
       limit: 'Days allowed', window: 'In any … days', save: 'Save', cancel: 'Cancel', del: 'Delete counter',
@@ -24,7 +24,7 @@
       badTrip: 'Check the dates: the last day cannot be before the first.', lang: 'Language', today: 'today', printTitle: 'Days inside'
     },
     ko: {
-      name: '한국어', unitLeft: '일 남음', unitOver: '일 초과', app: '스테이라인', tag: '체류 가능 일수, 한 번에 확인. 계정은 필요 없습니다.',
+      name: '한국어', expires: '체류 허가·비자 만료일(선택)', permitLeft: '허가 만료까지 {n}일', permitToday: '허가가 오늘 만료됩니다', permitGone: '허가가 {date}에 만료됨', planPast: '이 체류는 허가 만료일({date})을 넘깁니다.', edit: '수정', editTrip: '체류 기록 수정', editCounter: '카운터 수정', planned: '예정', quick: '솅겐 90/180으로 바로 시작', later: '나중에', upH: '무료 한도에 도달했어요', unitLeft: '일 남음', unitOver: '일 초과', app: '스테이라인', tag: '체류 가능 일수, 한 번에 확인. 계정은 필요 없습니다.',
       newTracker: '카운터 추가', trackerName: '누구의 일수인가요?', namePh: '나', rule: '규칙',
       r_schengen: '솅겐: 180일 중 90일', r_tax183: '세법상 거주자: 연 183일', r_custom: '직접 입력(기간 이동)', r_customYear: '직접 입력(달력 기준 연간)',
       limit: '허용 일수', window: '최근 … 일 중', save: '저장', cancel: '취소', del: '카운터 삭제',
@@ -46,7 +46,7 @@
       badTrip: '날짜를 확인하세요. 마지막 날이 첫날보다 빠를 수 없습니다.', lang: '언어', today: '오늘', printTitle: '체류 일수'
     },
     ja: {
-      name: '日本語', unitLeft: '日 残り', unitOver: '日 超過', app: 'ステイライン', tag: '滞在できる残り日数を、ひと目で。アカウント不要。',
+      name: '日本語', expires: '在留許可・ビザの期限（任意）', permitLeft: '許可の期限まであと{n}日', permitToday: '許可は今日までです', permitGone: '許可は{date}に期限切れ', planPast: 'この滞在は許可の期限（{date}）を超えます。', edit: '編集', editTrip: '滞在を編集', editCounter: 'カウンターを編集', planned: '予定', quick: 'シェンゲン90/180ですぐ始める', later: 'あとで', upH: '無料の上限です', unitLeft: '日 残り', unitOver: '日 超過', app: 'ステイライン', tag: '滞在できる残り日数を、ひと目で。アカウント不要。',
       newTracker: 'カウンターを追加', trackerName: '誰の日数？', namePh: '自分', rule: 'ルール',
       r_schengen: 'シェンゲン：180日のうち90日', r_tax183: '税務上の居住者：年183日', r_custom: 'カスタム（移動する期間）', r_customYear: 'カスタム（暦年の上限）',
       limit: '許可日数', window: '直近…日のうち', save: '保存', cancel: 'キャンセル', del: 'カウンターを削除',
@@ -68,7 +68,7 @@
       badTrip: '日付を確認してください。最終日は初日より前にできません。', lang: '言語', today: '今日', printTitle: '滞在日数'
     },
     zh: {
-      name: '中文', unitLeft: '天 剩余', unitOver: '天 超出', app: '停留线', tag: '还能待几天？一眼看清，无需账号。',
+      name: '中文', expires: '许可或签证有效期至（可选）', permitLeft: '许可还有{n}天到期', permitToday: '许可今天到期', permitGone: '许可已于{date}到期', planPast: '此次停留超出许可到期日（{date}）。', edit: '编辑', editTrip: '编辑行程', editCounter: '编辑计数器', planned: '计划', quick: '直接从申根90/180开始', later: '以后再说', upH: '已到免费上限', unitLeft: '天 剩余', unitOver: '天 超出', app: '停留线', tag: '还能待几天？一眼看清，无需账号。',
       newTracker: '新建计数器', trackerName: '谁的天数？', namePh: '我', rule: '规则',
       r_schengen: '申根：任意180天内90天', r_tax183: '税务居民：每年183天', r_custom: '自定义（滚动窗口）', r_customYear: '自定义（自然年上限）',
       limit: '允许天数', window: '任意…天内', save: '保存', cancel: '取消', del: '删除计数器',
@@ -90,7 +90,7 @@
       badTrip: '请检查日期：最后一天不能早于第一天。', lang: '语言', today: '今天', printTitle: '停留天数'
     },
     es: {
-      name: 'Español', unitLeft: 'días restantes', unitOver: 'días de más', app: 'Stayline', tag: '¿Cuántos días me quedan? Una respuesta, sin cuenta.',
+      name: 'Español', expires: 'Permiso o visado válido hasta (opcional)', permitLeft: 'El permiso vence en {n} días', permitToday: 'El permiso vence hoy', permitGone: 'El permiso venció el {date}', planPast: 'Esta estancia supera tu permiso, que vence el {date}.', edit: 'Editar', editTrip: 'Editar viaje', editCounter: 'Editar contador', planned: 'Previsto', quick: 'Empezar con Schengen 90/180', later: 'Ahora no', upH: 'Has llegado al límite gratuito', unitLeft: 'días restantes', unitOver: 'días de más', app: 'Stayline', tag: '¿Cuántos días me quedan? Una respuesta, sin cuenta.',
       newTracker: 'Nuevo contador', trackerName: '¿De quién son los días?', namePh: 'Yo', rule: 'Regla',
       r_schengen: 'Schengen: 90 días en cualquier 180', r_tax183: 'Residencia fiscal: 183 días al año', r_custom: 'Ventana móvil personalizada', r_customYear: 'Límite anual personalizado',
       limit: 'Días permitidos', window: 'En cualquier … días', save: 'Guardar', cancel: 'Cancelar', del: 'Eliminar contador',

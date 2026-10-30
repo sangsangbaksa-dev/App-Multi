@@ -72,7 +72,12 @@
         for (var d = t + 1; d <= t + rule.window + 1; d++) if (usedOn(set, rule, d) < rule.limit) { freesOn = str(d); break; }
       } else freesOn = (new Date(t * 86400000).getUTCFullYear() + 1) + '-01-01';
     }
-    return { rule: rule, used: used, left: left, state: state, windowFrom: str(ws), freesOn: freesOn, inside: !!set[t] };
+    var permit = null;
+    if (tr.expires && validDate(tr.expires)) {
+      var pd = dn(tr.expires) - t;
+      permit = { days: pd, state: pd < 0 ? 'gone' : pd <= 30 ? 'soon' : 'ok' };
+    }
+    return { rule: rule, used: used, left: left, state: state, windowFrom: str(ws), freesOn: freesOn, inside: !!set[t], permit: permit };
   }
 
   /* how many days in a row can I stay if I arrive on `entry`? 0 means arriving already breaks the limit */
@@ -119,6 +124,29 @@
     tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
     return true;
   }
+  function updateTrip(tr, id, patch) {
+    var t = tr.trips.filter(function (x) { return x.id === id; })[0];
+    if (!t) return false;
+    var next = { place: patch.place != null ? patch.place : t.place, from: patch.from, to: patch.to || '' };
+    if (!validTrip(next)) return false;
+    t.place = String(next.place || '').slice(0, 60); t.from = next.from; t.to = next.to;
+    tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
+    return true;
+  }
+  /* rebuild a tracker list from untrusted JSON (restore from file): drop anything malformed, clamp the rest */
+  function sanitize(list) {
+    var out = [];
+    (Array.isArray(list) ? list : []).slice(0, 50).forEach(function (t) {
+      if (!t || typeof t !== 'object') return;
+      var tr = { id: String(t.id || 'k' + out.length).slice(0, 40), name: String(t.name || '').slice(0, 40), rule: cleanRule(t.rule), expires: validDate(t.expires) ? t.expires : '', trips: [] };
+      (Array.isArray(t.trips) ? t.trips : []).slice(0, 2000).forEach(function (x, i) {
+        if (x && validTrip(x)) tr.trips.push({ id: String(x.id || 't' + i).slice(0, 40), place: String(x.place || '').slice(0, 60), from: x.from, to: x.to || '' });
+      });
+      tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
+      out.push(tr);
+    });
+    return out;
+  }
   function removeTrip(tr, id) {
     var n = tr.trips.length; tr.trips = tr.trips.filter(function (t) { return t.id !== id; }); return tr.trips.length !== n;
   }
@@ -129,12 +157,12 @@
     return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function toCsv(trackers, today) {
-    var rows = [['tracker', 'rule', 'place', 'from', 'to', 'days']];
+    var rows = [['tracker', 'rule', 'permit_until', 'place', 'from', 'to', 'days']];
     trackers.forEach(function (tr) {
       var r = cleanRule(tr.rule), label = r.kind === 'year' ? r.limit + '/calendar-year' : r.limit + '/' + r.window;
       tr.trips.slice().reverse().forEach(function (t) {
         var days = Object.keys(stayDays([t], today || todayStr())).length;
-        rows.push([tr.name, label, t.place, t.from, t.to, days]);
+        rows.push([tr.name, label, tr.expires || '', t.place, t.from, t.to, days]);
       });
     });
     return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
@@ -159,7 +187,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, earliestEntry: earliestEntry, strip: strip,
-    validTrip: validTrip, addTrip: addTrip, removeTrip: removeTrip, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
+    validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;
 })(typeof window !== 'undefined' ? window : globalThis);

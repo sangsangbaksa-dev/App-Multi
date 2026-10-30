@@ -16,7 +16,7 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   await pg.goto(base + '/app/'); await pg.waitForSelector('.empty');
   await pg.screenshot({ path: out + '/app-empty.png', fullPage: true });
   // create default Schengen counter with an HTML-ish name
-  await pg.click('.empty button'); await pg.fill('#f-name', 'Ana <b>x</b>'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.board');
+  await pg.click('.empty .ghost'); await pg.fill('#f-exp', add(20)); await pg.fill('#f-name', 'Ana <b>x</b>'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.board');
   assert.equal(await pg.locator('.tab.on').textContent(), 'Ana <b>x</b>'); assert.equal(await pg.locator('.tab b').count(), 0, 'no HTML injection');
   // add a past trip: 40 days ending 10 days ago -> 40 used, 50 left
   await pg.click('.rowhead .pri'); await pg.fill('#f-place', 'Lisbon'); await pg.fill('#f-from', add(-49)); await pg.fill('#f-to', add(-10)); await pg.click('dialog button[type=submit]');
@@ -35,8 +35,20 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   const planTxt = await pg.locator('#plan-out').textContent(); assert.ok(/up to \d+ days/.test(planTxt), planTxt);
   await pg.reload(); assert.equal(await pg.locator('.digits').textContent(), '45', 'persisted');
   await pg.screenshot({ path: out + '/app-en.png', fullPage: true });
+  // permit chip, edit trip, planner permit warning
+  assert.ok((await pg.locator('.permit').textContent()).includes('20 days'));
+  await pg.locator('.trips li').nth(1).locator('.ghost', { hasText: 'Edit' }).click(); assert.equal(await pg.inputValue('#f-place'), 'Lisbon');
+  await pg.fill('#f-place', 'Porto'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.trips li:has-text("Porto")');
+  assert.equal(await pg.locator('.digits').textContent(), '45');
+  await pg.fill('#p-arrive', add(15)); await pg.fill('#p-days', '10'); assert.ok((await pg.locator('#plan-out').textContent()).includes('past your permit'));
+  // restore tolerates a malformed file
+  await pg.locator('input[type=file]').setInputFiles({ name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ trackers: [{ name: 'Z', rule: { kind: 'rolling', limit: 99999 }, trips: [{ from: 'x' }, { from: '2026-01-01', to: '2026-01-02' }] }] })) });
+  await pg.waitForSelector('.tab:has-text("Z")'); assert.equal(await pg.locator('.trips li').count(), 1);
+  await pg.evaluate(() => { localStorage.clear(); }); await pg.reload(); await pg.waitForSelector('.empty');
+  await pg.click('.empty .pri'); await pg.waitForSelector('.board'); assert.equal(await pg.locator('.digits').textContent(), '90', 'quick start');
+  await pg.click('.rowhead .pri'); await pg.fill('#f-from', add(-49)); await pg.fill('#f-to', add(-10)); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.trips li');
   // free limit: 2nd counter blocked
-  await pg.click('.tab.add'); await pg.waitForSelector('.toast'); assert.equal(await pg.locator('dialog').count(), 0);
+  await pg.click('.tab.add'); await pg.waitForSelector('dialog a.pri'); assert.ok((await pg.locator('dialog h2').textContent()).includes('free limit')); await pg.keyboard.press('Escape'); await pg.waitForSelector('dialog', { state: 'detached' });
   // pro gating
   await pg.waitForTimeout(2300);
   await pg.click('text=CSV (Pro)'); assert.ok((await pg.locator('.toast').last().textContent()).includes('Pro'));
