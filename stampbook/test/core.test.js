@@ -56,3 +56,37 @@ test('licence keys', () => {
   const k = C.makeKey('hello123'); assert.ok(C.validKey(k)); assert.ok(C.validKey(' ' + k.toLowerCase() + ' '));
   assert.equal(C.validKey(k.slice(0, -1) + (k.endsWith('A') ? 'B' : 'A')), false); assert.equal(C.validKey(''), false);
 });
+
+test('excused absences are logged but not counted; no-shows are counted', () => {
+  const p = mk({ total: 2 });
+  assert.ok(C.addStamp(p, '2026-10-02', 'sick', 'excused')); assert.equal(C.remaining(p), 2);
+  assert.ok(C.addStamp(p, '2026-10-03', '', 'noshow')); assert.equal(C.remaining(p), 1);
+  assert.ok(C.addStamp(p, '2026-10-04')); assert.equal(C.status(p, '2026-10-05'), 'done');
+  assert.equal(C.addStamp(p, '2026-10-06'), false); assert.ok(C.addStamp(p, '2026-10-06', 'late', 'excused'), 'excused allowed when full');
+  assert.equal(C.decodeCard(C.encodeCard(p, '')).dates.length, 2);
+  assert.equal(C.monthStats([p], '2026-10').lessons, 2);
+  assert.ok(C.toCsv([p]).split('\n')[1].endsWith(',1,2'));
+});
+test('legacy stamps without kind still work', () => {
+  const p = mk(); p.stamps.push({ id: 'x', date: '2026-10-01', note: '' }); assert.equal(C.remaining(p), 9);
+});
+test('notes are trimmed and settable', () => {
+  const p = mk(); C.addStamp(p, '2026-10-01', 'x'.repeat(500)); assert.equal(p.stamps[0].note.length, 200);
+  assert.ok(C.setNote(p, p.stamps[0].id, 'ok')); assert.equal(p.stamps[0].note, 'ok'); assert.equal(C.setNote(p, 'nope', 'z'), false);
+});
+test('renew copies terms; months derived for old packs', () => {
+  const old = mk({ start: '2026-10-01', expires: '2026-12-31' }); assert.equal(C.monthsOf(old), 3);
+  const n = C.renew(old, '2026-11-15', 'new1'); assert.equal(n.expires, '2027-02-15'); assert.equal(n.total, 10); assert.equal(n.stamps.length, 0); assert.equal(n.renewsFrom, 'p1');
+  assert.equal(C.renew(mk({ expires: '' }), '2026-11-15').expires, '');
+  assert.equal(C.monthsOf(mk({ months: 6 })), 6);
+});
+test('extend moves from later of expiry or today', () => {
+  const p = mk({ expires: '2026-10-01' }); assert.equal(C.extend(p, 1, '2026-10-20'), '2026-11-20');
+  const q = mk({ expires: '2026-12-10' }); assert.equal(C.extend(q, 1, '2026-10-20'), '2027-01-10');
+});
+test('attention and search', () => {
+  const a = mk({ expires: '2026-11-03' }), b = mk({ id: 'b', student: 'Joon', expires: '2027-06-01' }), c = mk({ id: 'c', student: 'Ana', total: 1 });
+  C.addStamp(c, '2026-10-01', '', ''); // done -> not attention
+  const t = '2026-10-30'; assert.deepEqual(C.attention([a, b, c], t).map(x => x.id), ['p1']);
+  assert.equal(C.matches(b, ' jo '), true); assert.equal(C.matches(b, 'zz'), false); assert.equal(C.matches(b, ''), true);
+});

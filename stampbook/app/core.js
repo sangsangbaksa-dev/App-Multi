@@ -19,7 +19,10 @@
     return todayStr(d);
   }
 
-  function used(p) { return p.stamps.length; }
+  /* a stamp is {id,date,note,kind}. kind '' = lesson, 'noshow' = student missed it, still counted;
+     'excused' = cancelled in good time, logged but not counted. Older data has no kind and stays valid. */
+  function counted(p) { return p.stamps.filter(function (s) { return s.kind !== 'excused'; }); }
+  function used(p) { return counted(p).length; }
   function remaining(p) { return Math.max(0, p.total - used(p)); }
   function perLesson(p) { return p.total > 0 ? p.price / p.total : 0; }
   /* money still owed back to the student in lessons: the unearned part of what they paid */
@@ -38,12 +41,37 @@
     return daysBetween(today || todayStr(), p.expires);
   }
 
-  function addStamp(p, date, note) {
-    if (remaining(p) <= 0) return false;
-    p.stamps.push({ id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: date, note: note || '' });
+  function addStamp(p, date, note, kind) {
+    kind = kind === 'noshow' || kind === 'excused' ? kind : '';
+    if (kind !== 'excused' && remaining(p) <= 0) return false;
+    p.stamps.push({ id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: date, note: String(note || '').slice(0, 200), kind: kind });
     p.stamps.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     return true;
   }
+  function setNote(p, id, note) {
+    for (var i = 0; i < p.stamps.length; i++) if (p.stamps[i].id === id) { p.stamps[i].note = String(note || '').slice(0, 200); return true; }
+    return false;
+  }
+  /* validity in months, remembered so a renewal can copy it; derived for packs made before it was stored */
+  function monthsOf(p) {
+    if (typeof p.months === 'number') return p.months;
+    if (!p.expires || !p.start) return 0;
+    return Math.max(1, Math.round(daysBetween(p.start, p.expires) / 30.44));
+  }
+  function renew(p, today, id) {
+    var m = monthsOf(p);
+    return { id: id || 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), student: p.student, total: p.total, price: p.price,
+      currency: p.currency, start: today, months: m, expires: m > 0 ? addMonths(today, m) : '', stamps: [], paid: true, renewsFrom: p.id };
+  }
+  function extend(p, months, today) { p.expires = addMonths(p.expires && p.expires > today ? p.expires : today, months); return p.expires; }
+  /* packs a teacher should act on today: last lesson, expiring within 7 days, or expired with lessons left */
+  function attention(packs, today) {
+    return packs.filter(function (p) {
+      var st = status(p, today), dl = daysLeft(p, today);
+      return st === 'low' || st === 'expired' || (st === 'active' && dl !== null && dl <= 7);
+    });
+  }
+  function matches(p, q) { q = String(q || '').trim().toLowerCase(); return !q || p.student.toLowerCase().indexOf(q) !== -1; }
   function removeStamp(p, id) {
     var n = p.stamps.length;
     p.stamps = p.stamps.filter(function (s) { return s.id !== id; });
@@ -55,7 +83,7 @@
     var lessons = 0, earned = 0, cash = 0;
     packs.forEach(function (p) {
       var pl = perLesson(p);
-      p.stamps.forEach(function (s) { if (s.date.slice(0, 7) === ym) { lessons++; earned += pl; } });
+      counted(p).forEach(function (s) { if (s.date.slice(0, 7) === ym) { lessons++; earned += pl; } });
       if (p.start && p.start.slice(0, 7) === ym && p.paid !== false) cash += p.price;
     });
     return { lessons: lessons, earned: Math.round(earned * 100) / 100, cash: cash };
@@ -88,7 +116,7 @@
   function encodeCard(p, teacher) {
     return b64e(JSON.stringify({
       v: 1, t: teacher || '', n: p.student, T: p.total, x: p.expires || '',
-      s: p.stamps.map(function (s) { return s.date; })
+      s: counted(p).map(function (s) { return s.date; })
     }));
   }
   function decodeCard(str) {
@@ -110,10 +138,11 @@
     return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function toCsv(packs) {
-    var rows = [['student', 'pack_start', 'expires', 'total', 'used', 'remaining', 'price', 'currency', 'lesson_dates']];
+    var rows = [['student', 'pack_start', 'expires', 'total', 'used', 'remaining', 'price', 'currency', 'lesson_dates', 'no_shows', 'excused']];
     packs.forEach(function (p) {
       rows.push([p.student, p.start || '', p.expires || '', p.total, used(p), remaining(p), p.price, p.currency || '',
-        p.stamps.map(function (s) { return s.date; }).join(' ')]);
+        counted(p).map(function (s) { return s.date; }).join(' '),
+        p.stamps.filter(function (s) { return s.kind === 'noshow'; }).length, p.stamps.filter(function (s) { return s.kind === 'excused'; }).length]);
     });
     return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
   }
@@ -136,7 +165,7 @@
 
   var API = {
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
-    used: used, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
+    counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };

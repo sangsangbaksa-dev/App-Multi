@@ -2,13 +2,13 @@
   'use strict';
   var C = window.SB, I = window.I18N, CFG = window.SB_CONFIG;
   var KEY = 'stampbook.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), editingNew = false;
+  var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true;
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.packs)) return s; } catch (e) {}
     return { v: 1, packs: [], teacher: '', pro: false, lang: '' };
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; } catch (e) { storageOk = false; } }
   function T(k, v) { return I.t(lang, k, v); }
   function h(tag, attrs, kids) {
     var e = document.createElement(tag);
@@ -16,12 +16,15 @@
       if (k === 'class') e.className = attrs[k]; else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), attrs[k]);
       else if (attrs[k] !== false && attrs[k] != null) e.setAttribute(k, attrs[k]);
     }
-    [].concat(kids == null ? [] : kids).forEach(function (c) { if (c == null) return; e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    (function flat(a) { return Array.isArray(a) ? a.reduce(function (x, y) { return x.concat(flat(y)); }, []) : [a]; })(kids == null ? [] : kids).forEach(function (c) { if (c == null) return; e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
     return e;
   }
-  function toast(msg) {
-    var t = h('div', { class: 'toast', role: 'status' }, msg); document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, 2200);
+  function toast(msg, actionLabel, action) {
+    [].forEach.call(document.querySelectorAll('.toast'), function (x) { x.remove(); });
+    var kids = [msg];
+    if (action) kids.push(h('button', { class: 'tbtn', onclick: function () { t.remove(); action(); } }, actionLabel));
+    var t = h('div', { class: 'toast', role: 'status' }, kids); document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, action ? 6000 : 2200);
   }
   function money(n, cur) {
     try { return new Intl.NumberFormat(lang, { style: 'currency', currency: cur || 'USD', maximumFractionDigits: n % 1 ? 2 : 0 }).format(n); }
@@ -38,7 +41,7 @@
     }
   }
   function activeCount() { return state.packs.filter(function (p) { var s = C.status(p); return s === 'active' || s === 'low'; }).length; }
-  function needPro() { toast(T('proOnly')); }
+  function needPro() { showUpgrade(); }
 
   /* ---------- read-only balance card (opened from a shared link) ---------- */
   function renderCard(card) {
@@ -82,13 +85,21 @@
       h('div', {}, [h('b', {}, perCur(function (ps) { return C.monthStats(ps, ym).earned; })), h('span', {}, T('earned'))]),
       h('div', {}, [h('b', {}, perCur(function (ps) { return C.totalUnearned(ps, today); })), h('span', {}, T('owed'))])
     ]));
-    root.appendChild(h('div', { class: 'row', style: 'margin-bottom:16px' }, [h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack'))]));
+    if (!storageOk) root.appendChild(h('div', { class: 'warnbar', role: 'alert' }, T('storageErr')));
+    var att = C.attention(state.packs, today);
+    root.appendChild(h('div', { class: 'row', style: 'margin-bottom:16px' }, [h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack')),
+      att.length ? h('span', { class: 'chip c-low' }, T('attn', { n: att.length })) : null]));
+    if (state.packs.length >= 4) {
+      var q = h('input', { type: 'search', 'aria-label': T('search'), placeholder: T('search'), value: query, oninput: function (e) { query = e.target.value; renderList(); } });
+      root.appendChild(h('div', { class: 'row', style: 'margin-bottom:12px' }, [h('div', { style: 'flex:1;min-width:160px' }, q),
+        ['all', 'attn'].map(function (f) { return h('button', { class: 'ghost' + (filter === f ? ' on' : ''), 'aria-pressed': String(filter === f), onclick: function () { filter = f; render(); } }, T(f === 'all' ? 'filterAll' : 'filterAttn')); })]));
+    }
+    listBox = h('div', { id: 'list' }); root.appendChild(listBox);
 
     if (!state.packs.length) {
       root.appendChild(h('div', { class: 'empty' }, [h('h2', {}, T('emptyH')), h('p', {}, T('emptyB')), h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack'))]));
     }
-    var order = { low: 0, active: 1, expired: 2, done: 3 };
-    state.packs.slice().sort(function (a, b) { return order[C.status(a, today)] - order[C.status(b, today)]; }).forEach(function (p) { root.appendChild(packCard(p, today)); });
+    renderList();
 
     var lap = C.lapsed(state.packs, today);
     if (lap.length) root.appendChild(h('div', { class: 'lapsed' }, [h('h3', {}, T('lapsedH')), h('div', { class: 'note' }, T('lapsedB'))]));
@@ -96,40 +107,86 @@
     root.appendChild(settings());
     root.appendChild(h('p', { class: 'note' }, T('privacy')));
     root.appendChild(newDialog());
+    root.appendChild(upgradeDialog());
   }
+  var listBox;
+  function renderList() {
+    if (!listBox) return;
+    var today = C.todayStr(), order = { low: 0, active: 1, expired: 2, done: 3 };
+    listBox.textContent = '';
+    var shown = state.packs.filter(function (p) { return C.matches(p, query) && (filter === 'all' || C.attention([p], today).length); })
+      .sort(function (a, b) { return order[C.status(a, today)] - order[C.status(b, today)]; });
+    shown.forEach(function (p) { listBox.appendChild(packCard(p, today)); });
+    if (state.packs.length && !shown.length) listBox.appendChild(h('p', { class: 'note', role: 'status' }, T('noMatch')));
+  }
+  function upgradeDialog() {
+    return h('dialog', { id: 'up', 'aria-labelledby': 'up-h' }, [
+      h('h2', { id: 'up-h', style: 'font:700 22px var(--serif);margin:0 0 6px' }, T('upH')),
+      h('p', {}, T('upB', { max: CFG.freeLimit })),
+      h('ul', {}, [T('upL1'), T('upL2'), T('upL3')].map(function (x) { return h('li', {}, x); })),
+      h('div', { class: 'row', style: 'justify-content:flex-end;margin-top:16px' }, [
+        h('button', { class: 'ghost', onclick: function () { document.getElementById('up').close(); } }, T('cancel')),
+        h('button', { class: 'ghost', onclick: function () { document.getElementById('up').close(); document.getElementById('lic').scrollIntoView({ behavior: 'smooth' }); document.getElementById('lic').focus(); } }, T('haveKey')),
+        h('a', { class: 'btnlink', href: CFG.checkoutUrl, target: '_blank', rel: 'noopener' }, T('upBuy'))])]);
+  }
+  function showUpgrade() { var d = document.getElementById('up'); if (d && d.showModal) d.showModal(); else toast(T('limit', { max: CFG.freeLimit })); }
 
   function packCard(p, today) {
-    var st = C.status(p, today), rem = C.remaining(p), grid = h('div', { class: 'grid' });
+    var st = C.status(p, today), rem = C.remaining(p), grid = h('div', { class: 'grid', role: 'group', 'aria-label': p.student });
+    var cs = C.counted(p);
     for (var i = 0; i < p.total; i++) {
       (function (i) {
-        var s = p.stamps[i], isNext = !s && i === p.stamps.length && st !== 'expired';
+        var s = cs[i], isNext = !s && i === cs.length && st !== 'expired';
         grid.appendChild(h('button', {
           class: 'slot' + (s ? ' on' : '') + (isNext ? ' next' : ''), type: 'button',
-          style: s ? '--r:' + (((i * 37) % 13) - 6) + 'deg' : false, title: s ? s.date : '', 'aria-label': s ? s.date : String(i + 1),
+          style: s ? '--r:' + (((i * 37) % 13) - 6) + 'deg' : false, title: s ? s.date : '',
+          'aria-label': (i + 1) + '/' + p.total + (s ? ' · ' + s.date + (s.kind === 'noshow' ? ' · ' + T('kNoshow') : '') : ''),
           onclick: function () {
             if (s) { if (confirm(T('confStamp') + ' ' + s.date)) { C.removeStamp(p, s.id); save(); render(); } }
             else if (isNext) stamp(p, today);
           }
-        }, s ? s.date.slice(5).replace('-', '/') : String(i + 1)));
+        }, s ? (s.kind === 'noshow' ? '✕' : s.date.slice(5).replace('-', '/')) : String(i + 1)));
       })(i);
     }
-    var dl = C.daysLeft(p, today), exp = !p.expires ? T('noExp') : dl < 0 ? T('expOn', { date: p.expires }) : dl === 0 ? T('expToday') : T('expIn', { d: dl });
+    var dl = C.daysLeft(p, today), soon = st === 'active' && dl !== null && dl <= 7;
+    var exp = !p.expires ? T('noExp') : dl < 0 ? T('expOn', { date: p.expires }) : dl === 0 ? T('expToday') : T('expIn', { d: dl });
     var dateIn = h('input', { type: 'date', value: today, 'aria-label': T('stampOther') });
-    var rowEls = [];
-    if (rem > 0 && st !== 'expired') rowEls = [h('button', { class: 'stampbtn', onclick: function () { stamp(p, today); } }, T('stampToday')), dateIn,
-      h('button', { class: 'ghost', onclick: function () { if (dateIn.value) stamp(p, dateIn.value); } }, T('stampOther'))];
-    return h('section', { class: 'card ' + st }, [
+    var canStamp = rem > 0 && st !== 'expired';
+    var rowEls = canStamp ? [h('button', { class: 'stampbtn', onclick: function () { stamp(p, today); } }, T('stampToday')), dateIn,
+      h('button', { class: 'ghost', onclick: function () { if (dateIn.value) stamp(p, dateIn.value); } }, T('stampOther'))] : [];
+    var more = [];
+    if (canStamp) more.push(h('button', { class: 'ghost', title: T('noshowTip'), onclick: function () { stamp(p, dateIn.value || today, 'noshow'); } }, T('kNoshow')),
+      h('button', { class: 'ghost', title: T('excusedTip'), onclick: function () { stamp(p, dateIn.value || today, 'excused'); } }, T('kExcused')));
+    var foot = [];
+    if (st === 'low' || st === 'expired' || st === 'done') foot.push(h('button', { class: 'pri', onclick: function () { renewPack(p); } }, T('renewPack')));
+    if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
+      h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
+      h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del')));
+    var log = h('details', { class: 'log' }, [h('summary', {}, T('hist') + ' (' + p.stamps.length + ')'),
+      p.stamps.length ? h('ul', {}, p.stamps.slice().reverse().map(function (s) {
+        return h('li', {}, [h('span', { class: 'ld' }, s.date), s.kind ? h('span', { class: 'tag t-' + s.kind }, T(s.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null,
+          h('span', { class: 'ln' }, s.note || ''),
+          h('button', { class: 'ghost sm', 'aria-label': T('editNote') + ' ' + s.date, onclick: function () { var v = prompt(T('notePh'), s.note || ''); if (v !== null) { C.setNote(p, s.id, v); save(); render(); } } }, T('editNote'))]);
+      })) : h('p', { class: 'note' }, T('histEmpty'))]);
+    return h('section', { class: 'card ' + st, 'aria-label': p.student }, [
       h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', { class: 'chip c-' + st }, T('s_' + st))]),
-      h('div', { class: 'meta' }, [T('left', { n: rem }), exp, money(p.price, p.currency)].join(' · ')),
-      grid, h('div', { class: 'row' }, rowEls),
-      h('div', { class: 'foot' }, [
-        h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
-        h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
-        h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del'))
-      ])
+      h('div', { class: 'meta' }, [T('left', { n: rem }), h('span', { class: soon ? 'soon' : '' }, exp + (soon ? ' · ' + T('soon') : '')), money(p.price, p.currency)].reduce(function (a, x, i) { if (i) a.push(' · '); a.push(x); return a; }, [])),
+      grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, log,
+      h('div', { class: 'foot' }, foot)
     ]);
   }
-  function stamp(p, date) { if (C.addStamp(p, date)) { save(); render(); } }
+  function renewPack(p) {
+    if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
+    if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'low') return showUpgrade();
+    var n = C.renew(p, C.todayStr()); state.packs.unshift(n); save(); render(); toast(T('renewed', { name: p.student }));
+  }
+  function stamp(p, date, kind) {
+    if (!C.addStamp(p, date, '', kind)) return;
+    var id = p.stamps.filter(function (x) { return x.date === date; }).pop().id;
+    save(); render();
+    toast(T('stamped', { date: date }), T('undo'), function () { C.removeStamp(p, id); save(); render(); });
+  }
   function shareLink(p) {
     if (!state.pro) return needPro();
     var url = location.origin + location.pathname + '#c=' + C.encodeCard(p, state.teacher);
@@ -153,11 +210,11 @@
     function lab(id, key, el) { return [h('label', { for: id }, T(key)), el]; }
     var form = h('form', { method: 'dialog', onsubmit: function (e) {
       e.preventDefault();
-      if (!state.pro && activeCount() >= CFG.freeLimit) { toast(T('limit', { max: CFG.freeLimit })); return; }
+      if (!state.pro && activeCount() >= CFG.freeLimit) { document.getElementById('dlg').close(); showUpgrade(); return; }
       var total = Math.round(+f.total.value), price = +f.price.value, months = Math.round(+f.valid.value) || 0;
       if (!f.name.value.trim() || !(total >= 1) || !(price >= 0) || !f.start.value) return;
       state.packs.unshift({ id: uid(), student: f.name.value.trim(), total: total, price: price, currency: (f.cur.value || 'USD').toUpperCase().slice(0, 3),
-        start: f.start.value, expires: months > 0 ? C.addMonths(f.start.value, months) : '', stamps: [], paid: true });
+        start: f.start.value, months: months, expires: months > 0 ? C.addMonths(f.start.value, months) : '', stamps: [], paid: true });
       save(); render();
     } }, [].concat(lab('f-name', 'student', f.name),
       [h('div', { class: 'two' }, [h('div', {}, lab('f-total', 'lessons', f.total)), h('div', {}, lab('f-price', 'price', f.price))])],
@@ -173,7 +230,7 @@
     return l.indexOf('ko') === 0 ? 'KRW' : l.indexOf('ja') === 0 ? 'JPY' : l.indexOf('zh') === 0 ? 'CNY' : l.indexOf('es') === 0 ? 'EUR' : 'USD';
   }
   function openNew() {
-    if (!state.pro && activeCount() >= CFG.freeLimit) { toast(T('limit', { max: CFG.freeLimit })); document.getElementById('lic').scrollIntoView({ behavior: 'smooth' }); return; }
+    if (!state.pro && activeCount() >= CFG.freeLimit) { showUpgrade(); return; }
     var d = document.getElementById('dlg'); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
     setTimeout(function () { document.getElementById('f-name').focus(); }, 30);
   }
