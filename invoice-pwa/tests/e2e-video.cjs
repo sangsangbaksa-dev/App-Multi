@@ -223,6 +223,18 @@ const PRO = "PRO-TEST-0001-ZCUY";
   assert.ok(over <= 1, `horizontal overflow ${over}px`);
   await m.screenshot({ path: "/tmp/vid-mobile.png", fullPage: true });
 
+  // service worker: an older version's cache is removed when the new one activates, and files load offline
+  const c4 = await b.newContext({ locale: "en-US" });
+  await c4.addInitScript(() => { caches.open("quickbill-v1").then((c) => c.put("/old.txt", new Response("old"))); });
+  const s = await open(c4);
+  await s.goto(URL);
+  await s.evaluate(() => navigator.serviceWorker.ready);
+  await s.waitForFunction(async () => (await caches.keys()).length === 1 && (await caches.keys())[0] !== "quickbill-v1");
+  await c4.setOffline(true);
+  await s.reload();
+  await s.click("[data-tab=video]");
+  assert.ok(await s.isVisible("#vid-new"));
+
   assert.deepEqual(errs, []);
   console.log("e2e video OK"); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
