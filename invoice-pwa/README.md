@@ -27,4 +27,4 @@ made with `makeLicense()` in `logic.js`. The key check runs client-side, so trea
 
 ## Brand assets
 
-The design lives in Figma (colour variables, type styles, icon, logo lockup and the OG image frame). `icon.svg`, `icon-maskable.svg` come from that file. `design/og.html` is the HTML twin of the OG frame, and `node design/render.cjs` renders `og.png` and the PNG icons from it (needs Playwright). Fonts are Newsreader and Inter, self-hosted in `fonts/` under the SIL OFL, so no request leaves the page.
+The design lives in Figma (colour variables, type styles, icon, logo lockup and the OG image frame). The wordmark style (light serif, tapered accent underline) follows the Canva logo Waldo picked; `node` is not needed for it, `python3 design/build_logo.py` (fonttools, brotli) outlines it into `logo.svg`, `icon.svg` and `icon-maskable.svg`. `design/og.html` is the HTML twin of the OG frame, and `node design/render.cjs` renders `og.png` and the PNG icons from it (needs Playwright). Fonts are Newsreader and Inter, self-hosted in `fonts/` under the SIL OFL, so no request leaves the page.

@@ -17,7 +17,7 @@ a{color:var(--accent)}
 
 .bar{display:flex;gap:.6rem;align-items:center;padding:.8rem 1.2rem;border-bottom:2px solid var(--ink);flex-wrap:wrap}
 .bar h1{font-size:1.35rem;margin:0 1rem 0 0}
-.bar h1 a{display:inline-flex;align-items:center;gap:.5rem;color:inherit;text-decoration:none}
+.bar h1 a{color:inherit;text-decoration:none}
 main{max-width:780px;margin:0 auto;padding:1.2rem}
 
 /* buttons: one quiet default, one filled primary, one accent for upgrades */
@@ -103,3 +103,9 @@ dialog form input{flex:1 1 100%}
 
 @media(max-width:640px){.tabs{order:5;width:100%}.timerow{grid-template-columns:1fr 1fr}.item{grid-template-columns:2fr 1fr 1fr auto}}
 @media print{.noprint{display:none!important}body{background:#fff}#preview{border:0;margin:0;box-shadow:none;padding:0}}
+
+/* wordmark: light serif with a tapered accent underline, no image so it follows the theme */
+.brand{position:relative;display:inline-block;padding-bottom:.2em;font-family:var(--serif);font-weight:400;font-size:1.65rem;line-height:1.1;letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+.brand::after{content:"";position:absolute;left:.2em;bottom:0;width:58%;height:.09em;background:var(--accent);clip-path:ellipse(50% 50% at 50% 50%)}
+.landing .nav .brand{margin-right:auto;font-size:2rem}
+.bar h1 .brand{font-size:1.9rem}
