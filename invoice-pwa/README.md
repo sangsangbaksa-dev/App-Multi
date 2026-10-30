@@ -24,3 +24,7 @@ made with `makeLicense()` in `logic.js`. The key check runs client-side, so trea
 ## Development
 - `npm test` runs the unit tests (`node --test`).
 - `python3 -m http.server 8123` then `node tests/e2e.cjs` runs the browser test (needs Playwright).
+
+## Brand assets
+
+The design lives in Figma (colour variables, type styles, icon, logo lockup and the OG image frame). `icon.svg`, `icon-maskable.svg` come from that file. `design/og.html` is the HTML twin of the OG frame, and `node design/render.cjs` renders `og.png` and the PNG icons from it (needs Playwright). Fonts are Newsreader and Inter, self-hosted in `fonts/` under the SIL OFL, so no request leaves the page.
