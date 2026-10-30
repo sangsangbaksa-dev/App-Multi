@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh" data-lang="zh"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!--seo:start-->
+<title>QuickBill – 数据留在本机的发票、报价单和表格</title>
+<meta name="description" content="面向个人经营者的发票、报价单、计时器、表格、文档和视频项目管理。无需账号，可离线使用，一次付费。">
+<link rel="canonical" href="https://quickbill-waldo5.vercel.app/zh/">
+<link rel="alternate" hreflang="en" href="https://quickbill-waldo5.vercel.app/">
+<link rel="alternate" hreflang="ko" href="https://quickbill-waldo5.vercel.app/ko/">
+<link rel="alternate" hreflang="ja" href="https://quickbill-waldo5.vercel.app/ja/">
+<link rel="alternate" hreflang="zh" href="https://quickbill-waldo5.vercel.app/zh/">
+<link rel="alternate" hreflang="es" href="https://quickbill-waldo5.vercel.app/es/">
+<link rel="alternate" hreflang="x-default" href="https://quickbill-waldo5.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:title" content="QuickBill – 数据留在本机的发票、报价单和表格">
+<meta property="og:description" content="面向个人经营者的发票、报价单、计时器、表格、文档和视频项目管理。无需账号，可离线使用，一次付费。">
+<meta property="og:url" content="https://quickbill-waldo5.vercel.app/zh/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://quickbill-waldo5.vercel.app/og.png">
+<meta name="twitter:title" content="QuickBill – 数据留在本机的发票、报价单和表格">
+<meta name="twitter:description" content="面向个人经营者的发票、报价单、计时器、表格、文档和视频项目管理。无需账号，可离线使用，一次付费。">
+<meta name="twitter:image" content="https://quickbill-waldo5.vercel.app/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"QuickBill","url":"https://quickbill-waldo5.vercel.app/zh/","inLanguage":"zh","applicationCategory":"BusinessApplication","operatingSystem":"Any (web browser)","description":"面向个人经营者的发票、报价单、计时器、表格、文档和视频项目管理。无需账号，可离线使用，一次付费。","image":"https://quickbill-waldo5.vercel.app/og.png","offers":[{"@type":"Offer","name":"Free","price":"0","priceCurrency":"USD"},{"@type":"Offer","name":"Pro","price":"19","priceCurrency":"USD"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"数据存在哪里？","acceptedAnswer":{"@type":"Answer","text":"存放在你所用设备的浏览器存储中。数据不会发送给我们，所以我们也无法帮你找回。请定期保存备份文件。"}},{"@type":"Question","name":"换电脑怎么办？","acceptedAnswer":{"@type":"Answer","text":"在应用里下载备份，到另一台电脑上恢复即可。许可证密钥可在你自己的设备上使用，数量以结账页面所示为准。"}},{"@type":"Question","name":"许可证是订阅吗？","acceptedAnswer":{"@type":"Answer","text":"不是。一次付款，无需续费，更新也包含在内。"}},{"@type":"Question","name":"协议模板算法律意见吗？","acceptedAnswer":{"@type":"Answer","text":"不算。模板只是起点。重要事项请请专业人士核对。"}},{"@type":"Question","name":"清除浏览器数据会怎样？","acceptedAnswer":{"@type":"Answer","text":"如果没有备份，存放在里面的发票也会消失。清除前请先备份。"}},{"@type":"Question","name":"可以退款吗？","acceptedAnswer":{"@type":"Answer","text":"可以。购买后 14 天内来信，我们会退款。"}}]}</script>
+<!--seo:end-->
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f3eee4">
+<link rel="preload" href="../fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin="">
+<link rel="preload" href="../fonts/newsreader-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin="">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../landing.css">
+</head>
+<body class="landing">
+<header class="nav">
+  <div class="wrap navin">
+    <a class="brand" href="#top">QuickBill</a>
+    <nav class="links" aria-label="Sections">
+      <a href="#features" data-i18n="navFeatures">功能</a>
+      <a href="#pricing" data-i18n="navPricing">价格</a>
+      <a href="#faq" data-i18n="navFaq">常见问题</a>
+    </nav>
+    <select id="lang" class="lang" aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option><option value="es">Español</option></select>
+    <a class="btn primary" href="../app.html" data-i18n="openApp">打开应用</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="heroEyebrow">为一人公司准备的开票工具</p>
+      <h1 data-i18n="heroTitle">留在你电脑里的开票台。</h1>
+      <p class="lead" data-i18n="heroSub">报价单、发票、计时器、表格和文档，都在一个安静的工作区里。在浏览器中运行，可离线使用，客户和金额全部留在你的设备上。</p>
+      <div class="ctas">
+        <a class="btn primary big" href="../app.html" data-i18n="ctaStart">免费开始</a>
+        <a class="btn big" href="#pricing" data-i18n="ctaPricing">查看价格</a>
+      </div>
+      <p class="note" data-i18n="heroNote">无需账号，无需绑卡，无需安装。</p>
+    </div>
+
+    <div class="wrap">
+      <div class="window" aria-hidden="true">
+        <div class="wbar"><i></i><i></i><i></i><span>quickbill / app</span></div>
+        <div class="wtabs"><b data-i18n="tabInvoices">发票</b><span data-i18n="tabSheets">表格</span><span data-i18n="tabDocs">文档</span></div>
+        <div class="wbody">
+          <div class="wleft">
+            <div class="stats">
+              <div><small data-i18n="mockStat1">待收款</small><b>$4,820.00</b></div>
+              <div><small data-i18n="mockStat2">已逾期</small><b class="red">$950.00</b></div>
+              <div><small data-i18n="mockStat3">已收款</small><b>$12,300.00</b></div>
+            </div>
+            <div class="rows">
+              <div class="r1"><span><b>INV-0042</b> · Northwind Studio</span><span>$4,620.00</span></div>
+              <div class="r1"><span><b>INV-0041</b> · Marlowe &amp; Finch</span><span>$950.00</span></div>
+              <div class="r1"><span><b>QUO-0007</b> · Kestrel Labs</span><span>$3,200.00</span></div>
+              <div class="r1"><span><b>INV-0040</b> · Hana Kitchen</span><span>$1,150.00</span></div>
+            </div>
+          </div>
+          <div class="wright">
+            <div class="paper">
+              <h4><span data-i18n="invoice">发票</span> INV-0042</h4>
+              <p data-i18n="mockClient">Northwind Studio</p>
+              <table>
+                <tbody><tr><td data-i18n="mockItem">品牌焕新</td><td>1</td><td>$1,800.00</td></tr>
+                <tr><td data-i18n="mockItem2">落地页</td><td>1</td><td>$2,400.00</td></tr>
+              </tbody></table>
+              <p class="tot"><span data-i18n="total">合计</span> <b>$4,620.00</b></p>
+              <p class="tot red"><span data-i18n="balance">待付余额</span> <b>$1,620.00</b></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="strip">
+    <div class="wrap stats4">
+      <div><b data-i18n="s1v">$19</b><span data-i18n="s1l">一次付清，无需续费</span></div>
+      <div><b data-i18n="s2v">0</b><span data-i18n="s2l">保存你数据的服务器</span></div>
+      <div><b data-i18n="s3v">5</b><span data-i18n="s3l">种语言</span></div>
+      <div><b data-i18n="s4v">30 天</b><span data-i18n="s4l">退款期</span></div>
+    </div>
+  </section>
+
+  <section id="features" class="sec">
+    <div class="wrap">
+      <h2 data-i18n="featTitle">一人公司要发出的单据，都在这里</h2>
+      <p class="sub" data-i18n="featLead">按真实流程设计：报价、做事、开票、收款、催款。</p>
+      <div class="fgrid">
+        <article><h3 data-i18n="ft1t">发票和报价单</h3><p data-i18n="ft1d">支持税额、折扣和定金。报价单有独立编号，一键转成发票。</p></article>
+        <article><h3 data-i18n="ft2t">部分付款和滞纳金</h3><p data-i18n="ft2d">记录已收款项，自动算出余额；可添加滞纳金，并用客户的语言复制一段礼貌的催款话术。</p></article>
+        <article><h3 data-i18n="ft3t">重复开票</h3><p data-i18n="ft3d">每周或每月的固定收费，到日期会自动生成草稿。</p></article>
+        <article><h3 data-i18n="ft4t">工时记录</h3><p data-i18n="ft4d">为客户开始计时、停止后，工时按你的费率变成发票明细。</p></article>
+        <article><h3 data-i18n="ft5t">表格</h3><p data-i18n="ft5d">真正可用公式的表格，支持 SUM、AVERAGE 等。可导入导出 CSV，也能把行变成发票。</p></article>
+        <article><h3 data-i18n="ft6t">文档</h3><p data-i18n="ft6d">用模板写提案、协议和工作范围。客户信息自动填入，可打印或保存为 PDF。</p></article>
+        <article><h3 data-i18n="ft7t">看板与账龄</h3><p data-i18n="ft7d">按币种查看待收、逾期和已收，逾期金额按账龄归类，并有按客户的往来账。</p></article>
+        <article><h3 data-i18n="ft8t">隐私与离线</h3><p data-i18n="ft8d">数据保存在你的浏览器里。可备份成文件，在另一台电脑恢复，飞机上也能用。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="video" class="sec">
+    <div class="wrap vsec">
+      <div>
+        <h2 data-i18n="vidLandTitle">别再免费无限改稿。</h2>
+        <p class="sub" data-i18n="vidLandLead">为视频剪辑师和小型工作室：按轮次记录客户的每条修改，并把超出的轮次变成发票明细。</p>
+        <ul class="ticks">
+          <li data-i18n="vidLandB1">记录时间码、提出人和日期</li>
+          <li data-i18n="vidLandB2">报价内含轮次，超出部分自动计算</li>
+          <li data-i18n="vidLandB3">交付链接、最终版本和客户批准记录</li>
+        </ul>
+        <a class="btn primary" href="../app.html" data-i18n="vidLandCta">打开视频标签页</a>
+      </div>
+      <div class="vmock" aria-hidden="true">
+        <h4><span data-i18n="vmRound">第 3 轮修改</span> <span class="badge" data-i18n="vidExtraTag">额外</span></h4>
+        <p><b>00:05</b> <span data-i18n="vm3">徽标颜色不对</span></p>
+        <p><b>00:10</b> <span data-i18n="vm1">旁白下方的音乐调大</span></p>
+        <p><b>02:00</b> <span data-i18n="vm2">更换片尾卡</span></p>
+        <p class="vtot" data-i18n="vmTotal">额外 1 轮 × $80 = $80</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec tint">
+    <div class="wrap">
+      <h2 data-i18n="howTitle">怎么用</h2>
+      <ol class="steps">
+        <li><h3 data-i18n="st1t">打开</h3><p data-i18n="st1d">无需注册，打开就是空白工作区。</p></li>
+        <li><h3 data-i18n="st2t">开始工作</h3><p data-i18n="st2d">写报价、记工时、发发票、记录收款。</p></li>
+        <li><h3 data-i18n="st3t">留一份备份</h3><p data-i18n="st3d">隔一段时间保存一次备份文件。那个文件就是你的全部业务记录。</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap narrow">
+      <h2 data-i18n="cmpTitle">订阅不行吗？</h2>
+      <table class="cmp">
+        <thead><tr><th class="sr" data-i18n="cmpFeature">项目</th><th>QuickBill</th><th data-i18n="cmpH2">常见的订阅制应用</th></tr></thead>
+        <tbody>
+          <tr><th data-i18n="cmpR1">三年花费</th><td data-i18n="cmpV1a">$19</td><td data-i18n="cmpV1b">每月 $9 则为 $324</td></tr>
+          <tr><th data-i18n="cmpR2">客户数据存放处</th><td data-i18n="cmpV2a">你的设备</td><td data-i18n="cmpV2b">对方的服务器</td></tr>
+          <tr><th data-i18n="cmpR3">无网络可用</th><td data-i18n="cmpV3a">可以</td><td data-i18n="cmpV3b">很少</td></tr>
+          <tr><th data-i18n="cmpR4">客户数量限制</th><td data-i18n="cmpV4a">无</td><td data-i18n="cmpV4b">低价套餐常有上限</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="pricing" class="sec tint">
+    <div class="wrap">
+      <h2 data-i18n="priceTitle">价格</h2>
+      <p class="sub" data-i18n="priceLead">先免费使用，不够用时一次付清。</p>
+      <div class="plans">
+        <div class="plan">
+          <h3 data-i18n="freeName">免费版</h3>
+          <p class="price"><b data-i18n="priceFree">$0</b></p>
+          <p class="psub" data-i18n="priceFreeSub">想用多久都行</p>
+          <ul>
+            <li data-i18n="fr1">3 份单据，任意币种和语言</li><li data-i18n="fr2">打印或保存 PDF</li><li data-i18n="fr3">表格和文档各 2 份</li><li data-i18n="fr4">备份与恢复</li>
+          </ul>
+          <a class="btn big" href="../app.html" data-i18n="ctaStart">免费开始</a>
+        </div>
+        <div class="plan dark">
+          <h3 data-i18n="proName">完整授权</h3>
+          <p class="price"><b data-i18n="priceProV">$19</b></p>
+          <p class="psub" data-i18n="priceProSub">一次付款，长期拥有</p>
+          <ul>
+            <li class="lead-in" data-i18n="pr0">包含免费版全部功能，另有</li>
+            <li data-i18n="pr1">单据、表格、文档不限数量</li><li data-i18n="pr2">无页脚，使用自己的 Logo</li><li data-i18n="pr3">重复开票和工时开票</li><li data-i18n="pr4">CSV 导入导出，由表格生成发票</li><li data-i18n="pr5">客户往来账与逾期账龄</li><li data-i18n="pr6">自定义文档模板，之后所有更新</li>
+          </ul>
+          <a class="btn accent big" href="../app.html" data-i18n="ctaStart">免费开始</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="sec">
+    <div class="wrap narrow">
+      <h2 data-i18n="faqTitle">常见问题</h2>
+      <details><summary data-i18n="q1">数据存在哪里？</summary><p data-i18n="a1">存放在你所用设备的浏览器存储中。数据不会发送给我们，所以我们也无法帮你找回。请定期保存备份文件。</p></details>
+      <details><summary data-i18n="q2">换电脑怎么办？</summary><p data-i18n="a2">在应用里下载备份，到另一台电脑上恢复即可。许可证密钥可在你自己的设备上使用，数量以结账页面所示为准。</p></details>
+      <details><summary data-i18n="q3">许可证是订阅吗？</summary><p data-i18n="a3">不是。一次付款，无需续费，更新也包含在内。</p></details>
+      <details><summary data-i18n="q4">协议模板算法律意见吗？</summary><p data-i18n="a4">不算。模板只是起点。重要事项请请专业人士核对。</p></details>
+      <details><summary data-i18n="q5">清除浏览器数据会怎样？</summary><p data-i18n="a5">如果没有备份，存放在里面的发票也会消失。清除前请先备份。</p></details>
+      <details><summary data-i18n="q6">可以退款吗？</summary><p data-i18n="a6">可以。购买后 14 天内来信，我们会退款。</p></details>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <h2 data-i18n="ctaTitle">下一张发票，就从这里发。</h2>
+      <p data-i18n="ctaSub">设置大约一分钟，需要更多功能之前无需付款。</p>
+      <a class="btn accent big" href="../app.html" data-i18n="ctaStart">免费开始</a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap footin">
+    <div><b class="brand">QuickBill</b><p data-i18n="footerTag">给独自工作的人的小工具。</p></div>
+    <div>
+      <h3 data-i18n="footerProduct">产品</h3>
+      <a href="#features" data-i18n="navFeatures">功能</a>
+      <a href="#pricing" data-i18n="navPricing">价格</a>
+      <a href="#faq" data-i18n="navFaq">常见问题</a>
+      <a href="../app.html" data-i18n="openApp">打开应用</a>
+    </div>
+    <div>
+      <h3 data-i18n="footContact">联系我们</h3>
+      <a href="../terms.html" data-i18n="footTerms">服务条款</a>
+      <a href="../privacy.html" data-i18n="footPrivacy">隐私政策</a>
+      <a id="foot-mail" href="#" hidden=""></a>
+    </div>
+    <p class="fnote" data-i18n="footerNote">你的数据不会离开你的设备。</p>
+  </div>
+</footer>
+
+<script type="module">
+import * as I from "../i18n.js";
+import { CONFIG, emailLive } from "../config.js";
+let saved = null; try { saved = localStorage.getItem("qb.lang"); } catch {}
+// Pre-rendered language pages (/ko/ and so on) name their language on <html>; a saved choice still wins.
+I.setLang(I.detectLang(saved || document.documentElement.dataset.lang));
+const meta = (sel, v) => { const m = document.querySelector(sel); if (m) m.setAttribute("content", v); };
+const go = () => {
+  I.applyI18n();
+  document.documentElement.lang = I.getLang();
+  document.title = I.t("seoTitle");
+  meta('meta[name="description"]', I.t("seoDesc"));
+  const mail = document.getElementById("foot-mail");
+  if (emailLive()) { mail.href = "mailto:" + CONFIG.supportEmail; mail.textContent = CONFIG.supportEmail; mail.hidden = false; }
+};
+I.langSelect(document.getElementById("lang"), (l) => { I.setLang(l); try { localStorage.setItem("qb.lang", l); } catch {} go(); });
+go();
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("../sw.js").catch(() => {});
+</script>
+
+
+</body></html>

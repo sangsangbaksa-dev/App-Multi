@@ -88,7 +88,7 @@ details p{margin:0 0 1.2rem;color:var(--mute);max-width:40rem}
 .cta p{margin:0 0 1.6rem;opacity:.75}
 
 .foot{padding:3rem 0 2.5rem;border-top:1px solid var(--rule)}
-.footin{display:grid;grid-template-columns:2fr 1fr;gap:2rem}
+.footin{display:grid;grid-template-columns:2fr 1fr 1fr;gap:2rem}
 .footin p{margin:.4rem 0;color:var(--mute);font-size:.92rem}
 .footin h3{margin:0 0 .6rem;font-family:inherit;font-size:.8rem;text-transform:uppercase;letter-spacing:.07em;color:var(--mute)}
 .footin a{display:block;color:var(--ink);text-decoration:none;padding:.15rem 0;font-size:.95rem}.footin a:hover{color:var(--accent)}

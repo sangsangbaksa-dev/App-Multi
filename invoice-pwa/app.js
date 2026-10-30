@@ -1,6 +1,7 @@
 import * as L from "./logic.js";
 import * as I from "./i18n.js";
-import { CONFIG } from "./config.js";
+import { CONFIG, checkoutLive } from "./config.js";
+import * as LS from "./license.js";
 import { initWorkspace } from "./workspace.js";
 import * as V from "./video.js";
 import { ensureSchema } from "./storage.js";
@@ -18,7 +19,9 @@ try { localStorage.setItem("qb.probe", "1"); localStorage.removeItem("qb.probe")
 let license = store.get("qb.license", "");
 let logo = store.get("qb.logo", "");
 let editing = null; // the document open in the form
-const isPro = () => L.validLicense(license);
+let licRec = store.get("qb.licsrv", null); // set when the key was accepted by the license server
+let srvMode = store.get("qb.srvmode", false); // the server checks keys; offline-format keys are then not accepted
+const isPro = () => LS.proStatus(license, licRec, srvMode);
 const today = () => new Date().toISOString().slice(0, 10);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const persist = () => store.set("qb.invoices", invoices);
@@ -198,7 +201,7 @@ function closeEditor() {
 
 function openUpgrade(reason = "") {
   // Until a real checkout link is set, don't send people to the placeholder page.
-  const live = !/example\.com/.test(CONFIG.checkoutUrl);
+  const live = checkoutLive();
   $("#price").textContent = CONFIG.price;
   $("#buy").href = CONFIG.checkoutUrl;
   $("#buy").hidden = !live;
@@ -374,12 +377,32 @@ $("#logo-file").onchange = async (e) => {
 };
 $("#btn-logo-rm").onclick = () => { logo = ""; store.del("qb.logo"); renderPreview(); };
 
-$("#dlg").addEventListener("close", () => {
+const licFail = { network: "licNetwork", revoked: "licRevoked", product: "licProduct", limit: "licLimit", unknown: "badKey" };
+$("#dlg").addEventListener("close", async () => {
   if ($("#dlg").returnValue !== "ok") return;
-  const k = $("#lic").value.trim().toUpperCase();
-  if (L.validLicense(k)) { license = k; store.set("qb.license", k); runRecurring(); renderList(); renderPreview(); }
-  else openUpgrade(I.t("badKey"));
+  const k = $("#lic").value.trim();
+  if (!k) return;
+  toast(I.t("licChecking"));
+  const r = await LS.activate(k, { fetchImpl: fetch.bind(window), api: CONFIG.licenseApi });
+  if (!r.ok) return openUpgrade(I.t(licFail[r.reason] || "badKey"));
+  license = k; store.set("qb.license", k);
+  licRec = r.record; if (licRec) store.set("qb.licsrv", licRec); else store.del("qb.licsrv");
+  if (r.server) { srvMode = true; store.set("qb.srvmode", true); }
+  $("#toast").hidden = true;
+  runRecurring(); renderList(); renderPreview();
 });
+
+// Ask the license server once per load whether it is switched on, and re-check a stored key about once a week.
+// Being offline or having no server never removes Pro; only a clear "refunded/disabled" answer does.
+if (/^https?:$/.test(location.protocol) && navigator.onLine !== false) (async () => {
+  const m = await LS.serverMode(fetch.bind(window), CONFIG.licenseApi);
+  if (m !== null && m !== srvMode) { srvMode = m; store.set("qb.srvmode", m); renderList(); renderPreview(); }
+  if (licRec && LS.needsRecheck(licRec)) {
+    const r = await LS.recheck(licRec, { fetchImpl: fetch.bind(window), api: CONFIG.licenseApi });
+    if (r.keep) { licRec = r.record; store.set("qb.licsrv", licRec); }
+    else { licRec = null; store.del("qb.licsrv"); toast(I.t("licLost")); renderList(); renderPreview(); }
+  }
+})();
 
 let saved = null; try { saved = localStorage.getItem("qb.lang"); } catch {}
 I.setLang(I.detectLang(saved));
