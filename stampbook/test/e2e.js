@@ -3,7 +3,7 @@ const root = path.join(__dirname, '..'), types = { '.html': 'text/html', '.js': 
 const srv = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0].split('#')[0]); if (p.endsWith('/')) p += 'index.html'; if (p === '/privacy') p = '/privacy.html';
   const f = path.join(root, p); if (!f.startsWith(root) || !fs.existsSync(f)) { r.writeHead(404); return r.end(); }
-  r.writeHead(200, { 'content-type': types[path.extname(f)] || 'text/plain' }); fs.createReadStream(f).pipe(r);
+  r.writeHead(200, { 'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'", 'content-type': types[path.extname(f)] || 'text/plain' }); fs.createReadStream(f).pipe(r);
 }).listen(0);
 (async () => {
   const port = srv.address().port, base = `http://localhost:${port}`, out = process.argv[2] || '/tmp/shots';
