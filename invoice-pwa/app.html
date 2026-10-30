@@ -17,6 +17,7 @@
     <button type="button" data-tab="invoices" data-i18n="tabInvoices"></button>
     <button type="button" data-tab="sheets" data-i18n="tabSheets"></button>
     <button type="button" data-tab="docs" data-i18n="tabDocs"></button>
+    <button type="button" data-tab="video" data-i18n="tabVideo"></button>
   </nav>
   <select id="lang" class="lang" aria-label="Language"></select>
   <span id="plan" class="badge"></span>
@@ -144,6 +145,65 @@
       </div>
     </div>
     <article id="doc-preview" class="sheet-paper"></article>
+  </section>
+</div>
+<div id="tab-video" class="noprint" hidden>
+  <section id="vid-list-view">
+    <div class="row"><button id="vid-new" class="primary" data-i18n="vidNew"></button></div>
+    <p id="vid-lock" class="late" hidden data-i18n="vidLocked"></p>
+    <p id="vid-broken" class="late" hidden data-i18n="vidBroken"></p>
+    <p id="vid-empty" class="muted" data-i18n="vidEmpty"></p>
+    <div id="vid-list"></div>
+  </section>
+  <section id="vid-edit" hidden>
+    <div class="grid">
+      <label><span data-i18n="vidTitle"></span><input id="vid-title" maxlength="120" autocomplete="off"></label>
+      <label><span data-i18n="vidClient"></span><input id="vid-client" list="clients" maxlength="120"></label>
+      <label><span data-i18n="vidStatus"></span><select id="vid-status"></select></label>
+      <label><span data-i18n="vidDue"></span><input id="vid-due" type="date"></label>
+      <label><span data-i18n="vidIncluded"></span><input id="vid-included" type="number" min="0" max="99" step="1" inputmode="numeric"></label>
+      <label><span data-i18n="vidFee"></span><input id="vid-fee" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label><span data-i18n="vidCurrency"></span><select id="vid-cur"><option>USD</option><option>EUR</option><option>GBP</option><option>KRW</option><option>JPY</option><option>CNY</option><option>CAD</option><option>AUD</option></select></label>
+    </div>
+    <p id="vid-money" class="muted" aria-live="polite"></p>
+    <div class="row">
+      <button id="vid-bill" class="accent" type="button" data-i18n="vidBill"></button>
+      <button id="vid-reset-billed" type="button" data-i18n="vidResetBilled" hidden></button>
+    </div>
+
+    <h3 data-i18n="vidReqTitle"></h3>
+    <form id="vid-reqform" class="reqform">
+      <label><span data-i18n="vidTc"></span><input id="vid-tc" placeholder="00:00" inputmode="numeric" autocomplete="off"></label>
+      <label><span data-i18n="vidReqText"></span><input id="vid-text" maxlength="500" autocomplete="off"></label>
+      <label><span data-i18n="vidBy"></span><input id="vid-by" maxlength="80" autocomplete="off"></label>
+      <button class="primary" type="submit" data-i18n="vidAddReq"></button>
+    </form>
+    <p id="vid-req-err" class="late" role="alert"></p>
+    <div id="vid-rounds"></div>
+    <div class="row">
+      <button id="vid-newround" type="button" data-i18n="vidNewRound"></button>
+      <button id="vid-copy" type="button" data-i18n="vidCopy"></button>
+      <button id="vid-csv" type="button" data-pro data-i18n="vidCsv"></button>
+    </div>
+
+    <h3 data-i18n="vidDelivTitle"></h3>
+    <form id="vid-delform" class="delform">
+      <label><span data-i18n="vidLabel"></span><input id="vid-dlabel" maxlength="60" autocomplete="off"></label>
+      <label><span data-i18n="vidUrl"></span><input id="vid-url" type="url" placeholder="https://" autocomplete="off"></label>
+      <button class="primary" type="submit" data-i18n="vidAddDeliv"></button>
+    </form>
+    <p id="vid-del-err" class="late" role="alert"></p>
+    <div id="vid-dels"></div>
+
+    <h3 data-i18n="vidApprovalTitle"></h3>
+    <p id="vid-appr"></p>
+    <div class="row apprrow">
+      <label id="vid-appr-by-label"><span data-i18n="vidApprover"></span><input id="vid-appr-by" maxlength="80" autocomplete="off"></label>
+      <button id="vid-approve" type="button" data-i18n="vidApprove"></button>
+      <button id="vid-clear-appr" type="button" data-i18n="vidClearApproval" hidden></button>
+    </div>
+
+    <div class="row"><button id="vid-back" type="button" data-i18n="back"></button><button id="vid-del" class="danger" type="button" data-i18n="del"></button></div>
   </section>
 </div>
 <p id="toast" class="toast noprint" hidden></p>

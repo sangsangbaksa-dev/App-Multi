@@ -3,9 +3,12 @@ import * as S from "./sheet.js";
 import * as D from "./docs.js";
 import * as L from "./logic.js";
 import * as I from "./i18n.js";
+import { initVideo } from "./video-ui.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const TABS = ["invoices", "sheets", "docs", "video"];
 
 export function initWorkspace(ctx) {
   const { store, toast, isPro, openUpgrade } = ctx;
@@ -17,9 +20,11 @@ export function initWorkspace(ctx) {
   const id = () => crypto.randomUUID();
   const sheet = () => sheets.find((x) => x.id === sheetId) ?? sheets[0] ?? null;
 
+  const video = initVideo({ ...ctx, showTab: (n) => showTab(n) });
+
   // ---------- tabs ----------
   function showTab(name) {
-    for (const t of ["invoices", "sheets", "docs"]) {
+    for (const t of TABS) {
       $(`#tab-${t}`).hidden = t !== name;
       const b = document.querySelector(`[data-tab="${t}"]`);
       b.setAttribute("aria-current", String(t === name));
@@ -226,9 +231,10 @@ export function initWorkspace(ctx) {
   function render() {
     renderSheets();
     renderDocList();
+    video.render();
     if (doc) { $("#doc-template").innerHTML = templateOptions(); renderDocPreview(); }
   }
   const saved = store.get("qb.tab", "invoices");
-  showTab(["invoices", "sheets", "docs"].includes(saved) ? saved : "invoices");
-  return { render, showTab };
+  showTab(TABS.includes(saved) ? saved : "invoices");
+  return { render, showTab, video };
 }

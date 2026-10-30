@@ -2,6 +2,8 @@ import * as L from "./logic.js";
 import * as I from "./i18n.js";
 import { CONFIG } from "./config.js";
 import { initWorkspace } from "./workspace.js";
+import * as V from "./video.js";
+import { ensureSchema } from "./storage.js";
 
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -9,6 +11,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
+try { ensureSchema(localStorage); } catch {}
 let invoices = store.get("qb.invoices", []);
 let license = store.get("qb.license", "");
 let logo = store.get("qb.logo", "");
@@ -296,7 +299,7 @@ $("#btn-csv").onclick = () => {
   if (!isPro()) return openUpgrade(I.t("csvPro"));
   download("invoices.csv", "text/csv", L.toCSV(invoices));
 };
-$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 1, invoices, logo }));
+$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo, video: ws.video.exportProjects() }));
 $("#btn-restore").onclick = () => $("#file-restore").click();
 $("#file-restore").onchange = async (e) => {
   const file = e.target.files[0];
@@ -305,7 +308,12 @@ $("#file-restore").onchange = async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (data.app !== "quickbill" || !Array.isArray(data.invoices) || !data.invoices.every(L.validInvoice)) throw 0;
-    if (!isPro() && data.invoices.length > L.FREE_LIMIT) return openUpgrade(limitMsg());
+    // Backups from before the video module have no "video" key; those leave the current video projects alone.
+    const hasVideo = data.video !== undefined;
+    if (hasVideo && (!Array.isArray(data.video) || !data.video.every(V.validProject))) throw 0;
+    if (!isPro() && (data.invoices.length > L.FREE_LIMIT || (hasVideo && data.video.length > V.FREE_VIDEO))) return openUpgrade(limitMsg());
+    try { localStorage.setItem("qb.invoices.bak-restore", JSON.stringify(invoices)); } catch {}
+    if (hasVideo) ws.video.replaceProjects(data.video);
     invoices = data.invoices;
     if (typeof data.logo === "string" && data.logo.startsWith("data:image/")) { logo = data.logo; store.set("qb.logo", logo); }
     persist();
@@ -355,7 +363,7 @@ const ws = initWorkspace({
   store, toast, isPro, openUpgrade, download,
   getInvoices: () => invoices,
   getFrom: () => invoices.find((i) => i.from)?.from ?? "",
-  createInvoice: (items) => newDoc("invoice", { items }),
+  createInvoice: (items, extra = {}) => newDoc("invoice", { items, ...extra }),
 });
 fullRender();
 renderTime();

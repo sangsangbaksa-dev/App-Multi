@@ -28,3 +28,16 @@ made with `makeLicense()` in `logic.js`. The key check runs client-side, so trea
 ## Brand assets
 
 The design lives in Figma (colour variables, type styles, icon, logo lockup and the OG image frame). The wordmark style (light serif, tapered accent underline) follows the Canva logo Waldo picked; `node` is not needed for it, `python3 design/build_logo.py` (fonttools, brotli) outlines it into `logo.svg`, `icon.svg` and `icon-maskable.svg`. `design/og.html` is the HTML twin of the OG frame, and `node design/render.cjs` renders `og.png` and the PNG icons from it (needs Playwright). Fonts are Newsreader and Inter, self-hosted in `fonts/` under the SIL OFL, so no request leaves the page.
+
+## Video module
+
+The Video tab tracks edit projects for clients: delivery date, revision rounds included in the quote, timecoded change requests per round, delivery links (links only, no files are stored), client approval, and a button that turns extra rounds into invoice lines. Free keeps one project; Pro keeps any number and exports the revision list as CSV.
+
+Storage and safety:
+- Video data lives under its own key, `qb.video` (`{ v, projects }`). Invoices, sheets and documents are never rewritten by it.
+- `qb.meta` holds the app schema (now 2). On the first run after an upgrade the old keys are copied to `*.bak-v1`. Data from a newer schema is opened read-only and never overwritten.
+- Each save keeps the previous video data under `qb.video.bak`. A restore first copies the current invoices to `qb.invoices.bak-restore`.
+- Backups are `v: 2` and include `video`. Older backups without it restore the invoices and leave video projects alone.
+- Delivery links must be http(s). CSV cells that start with `= + - @` are quoted so spreadsheets don't run them.
+
+Tests: `npm test` (logic and storage), `node tests/e2e.cjs` and `node tests/e2e-video.cjs` against `python3 -m http.server 8123`.
