@@ -123,3 +123,22 @@ test('sanitize drops malformed data and clamps rules', () => {
   assert.equal(out[0].expires, ''); assert.equal(out[0].trips.length, 1); assert.deepEqual(out[1].trips, []);
   assert.deepEqual(C.sanitize('nope'), []);
 });
+
+/* Cross-check against the worked examples in the European Commission's short-stay calculator user manual
+   (home-affairs.ec.europa.eu, "short_stay_schengen_calculator_user_manual_en.pdf"). See docs/verification.md. */
+test('EC manual example A: 90 days from 1 June 2014 end on 29 Aug 2014 (1 Jan stay has left the window)', () => {
+  const t = tr([['2014-01-01', '2014-01-01']]);
+  assert.equal(C.maxStay(t, '2014-06-01', '2014-05-31'), 90);
+  assert.equal(C.addDays('2014-06-01', 89), '2014-08-29');
+  const w = C.summary(tr([['2014-01-01', '2014-01-01'], ['2014-06-01', '2014-08-29']]), '2014-08-29');
+  assert.equal(w.used, 90); assert.equal(w.windowFrom, '2014-03-03'); assert.equal(w.left, 0);
+  assert.equal(C.summary(tr([['2014-01-01', '2014-01-01'], ['2014-06-01', '2014-08-30']]), '2014-08-30').left, -1);
+});
+test('EC manual example B: visa holder with three stays in 2015', () => {
+  const t = tr([['2015-01-01', '2015-01-10'], ['2015-03-01', '2015-03-30'], ['2015-05-01', '2015-06-09']]);
+  assert.equal(C.maxStay(t, '2015-06-20', '2015-06-20'), 20);
+  assert.equal(C.maxStay(t, '2015-08-07', '2015-08-07'), 20);
+  assert.equal(C.addDays('2015-08-07', 19), '2015-08-26', 'manual: leave on 26.8.2015');
+  assert.equal(C.maxStay(t, '2015-08-08', '2015-08-08'), 50);
+  assert.equal(C.maxStay(t, '2015-09-08', '2015-09-08'), 90);
+});

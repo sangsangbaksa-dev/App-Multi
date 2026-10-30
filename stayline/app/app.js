@@ -35,6 +35,16 @@
     var a = h('a', { href: URL.createObjectURL(new Blob([text], { type: type })), download: name });
     document.body.appendChild(a); a.click(); a.remove();
   }
+  /* Pro key check. If the server function is configured it decides; if it is absent (404) or not configured,
+     fall back to the built-in offline check. A network failure never unlocks anything. */
+  function verifyKey(key) {
+    if (!key) return Promise.resolve('bad');
+    return fetch(CFG.licenseApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: key }) })
+      .then(function (r) { return r.ok ? r.json() : { configured: false }; })
+      .then(function (d) { return d && d.configured ? (d.valid ? 'ok' : 'bad') : (C.validKey(key) ? 'ok' : 'bad'); })
+      .catch(function () { return 'net'; });
+  }
+  function legal(page) { return (lang === 'en' ? '/' : '/' + lang + '/') + page; }
   function needPro() { if (state.pro) return false; toast(T('proOnly')); return true; }
 
   function leftText(n) {
@@ -80,6 +90,19 @@
       ]),
       h('button', { class: 'ghost small editc', onclick: function () { editCounter = true; render(); } }, T('editCounter'))
     ]);
+  }
+
+  function ruleLabel(r) { return r.kind === 'year' ? r.limit + ' / ' + T('calYear') : r.limit + ' / ' + r.window; }
+  function overview() {
+    var today = C.todayStr(), cur = current();
+    return h('section', { class: 'card ov' }, [h('h2', null, T('overview')), h('ul', null, state.trackers.map(function (t) {
+      var s = C.summary(t, today);
+      return h('li', null, h('button', { class: 'ovrow' + (cur && cur.id === t.id ? ' on' : ''), onclick: function () { state.active = t.id; plan = {}; save(); render(); } }, [
+        h('span', null, [h('strong', null, t.name || T('namePh')), h('span', { class: 'dates' }, ruleLabel(s.rule))]),
+        h('span', { class: 'chip st-' + s.state }, leftText(s.left)),
+        s.permit && s.permit.state !== 'ok' ? h('span', { class: 'permit p-' + s.permit.state }, s.permit.state === 'gone' ? '!' : s.permit.days + 'd') : null
+      ]));
+    }))]);
   }
 
   function planner(tr) {
@@ -239,7 +262,11 @@
       h('div', { class: 'settings' }, state.pro ? h('span', { class: 'chip' }, T('pro') + ' ✓') : [
         h('label', null, [T('lic'), lic]),
         h('button', { class: 'pri', onclick: function () {
-          if (C.validKey(lic.value)) { state.pro = true; save(); toast(T('okKey')); render(); } else toast(T('badKey'));
+          var key = lic.value.trim();
+          verifyKey(key).then(function (r) {
+            if (r === 'ok') { state.pro = true; save(); toast(T('okKey')); render(); }
+            else toast(T(r === 'net' ? 'licNet' : 'badKey'));
+          });
         } }, T('activate')),
         h('a', { class: 'ghost link', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))
       ]),
@@ -247,7 +274,8 @@
         if (!confirm(T('confDel'))) return;
         state.trackers = state.trackers.filter(function (t) { return t.id !== tr.id; }); state.active = ''; save(); render();
       } }, T('del')) : null,
-      h('p', { class: 'fine' }, T('disclaimer')), h('p', { class: 'fine' }, T('privacy'))
+      h('p', { class: 'fine' }, T('disclaimer')), h('p', { class: 'fine' }, T('privacy')),
+      h('p', { class: 'fine' }, [h('a', { href: legal('privacy') }, T('privacyLink')), ' · ', h('a', { href: legal('terms') }, T('termsLink')), ' · ', h('a', { href: 'mailto:' + CFG.supportEmail }, CFG.supportEmail)])
     ]);
   }
 
@@ -256,7 +284,9 @@
     var tr = current(), kids = [header()];
     if (!tr) kids.push(h('p', { class: 'tag' }, T('tag')), empty());
     else {
-      kids.push(tabs(), board(tr), planner(tr), tripList(tr));
+      kids.push(tabs());
+      if (state.trackers.length > 1) kids.push(overview());
+      kids.push(board(tr), planner(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }

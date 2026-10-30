@@ -1,36 +1,40 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stayline — days left in the Schengen zone, or any country</title>
-<meta name="description" content="Count the days you spent inside, see how many you have left and the earliest day you can return. Schengen 90/180, 183-day tax rule, custom limits. No account, no location tracking.">
-<meta property="og:title" content="Stayline"><meta property="og:description" content="Days left in the Schengen zone or any country. No account, no location tracking."><meta property="og:type" content="website"><meta name="theme-color" content="#14171a"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="landing.css"></head>
+<title>Stayline: Schengen 90/180 day counter and stay-limit planner</title><meta name="description" content="Count the days you spent inside, see how many are left and the earliest day you can return. Schengen 90/180, 183-day tax rule or a custom limit. No account, no location tracking, one payment.">
+<link rel="canonical" href="https://stayline-days.vercel.app/">
+<link rel="alternate" hreflang="en" href="https://stayline-days.vercel.app/">
+<link rel="alternate" hreflang="ko" href="https://stayline-days.vercel.app/ko/">
+<link rel="alternate" hreflang="ja" href="https://stayline-days.vercel.app/ja/">
+<link rel="alternate" hreflang="zh" href="https://stayline-days.vercel.app/zh/">
+<link rel="alternate" hreflang="es" href="https://stayline-days.vercel.app/es/">
+<link rel="alternate" hreflang="x-default" href="https://stayline-days.vercel.app/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Stayline"><meta property="og:title" content="Stayline: Schengen 90/180 day counter and stay-limit planner"><meta property="og:description" content="Count the days you spent inside, see how many are left and the earliest day you can return. Schengen 90/180, 183-day tax rule or a custom limit. No account, no location tracking, one payment.">
+<meta property="og:url" content="https://stayline-days.vercel.app/"><meta property="og:image" content="https://stayline-days.vercel.app/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Stayline showing 62 days left on a Schengen 90/180 counter"><meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Stayline: Schengen 90/180 day counter and stay-limit planner"><meta name="twitter:description" content="Count the days you spent inside, see how many are left and the earliest day you can return. Schengen 90/180, 183-day tax rule or a custom limit. No account, no location tracking, one payment."><meta name="twitter:image" content="https://stayline-days.vercel.app/og.png">
+<meta name="theme-color" content="#14171a"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/landing.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Stayline","applicationCategory":"TravelApplication","operatingSystem":"Any (web browser)","inLanguage":"en","url":"https://stayline-days.vercel.app/","description":"Count the days you spent inside, see how many are left and the earliest day you can return. Schengen 90/180, 183-day tax rule or a custom limit. No account, no location tracking, one payment.","image":"https://stayline-days.vercel.app/og.png","offers":{"@type":"Offer","price":"12","priceCurrency":"USD","availability":"https://schema.org/InStock"}}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the count legally binding?","acceptedAnswer":{"@type":"Answer","text":"No. It is an estimate from the dates you enter. Border officers and official government sources decide. Check your passport stamps and keep your tickets."}},{"@type":"Question","name":"How are days counted?","acceptedAnswer":{"@type":"Answer","text":"The first and last day inside each count as full days. Overlapping trips count each day once."}},{"@type":"Question","name":"Where is my data?","acceptedAnswer":{"@type":"Answer","text":"In this browser only (local storage). Clear site data and it is gone, so use Backup now and then."}},{"@type":"Question","name":"Does it work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, after the first visit. You can add it to your home screen."}}]}</script></head>
 <body>
-<header class="top"><a class="brand" href="#"><span>▸</span> Stayline</a>
-  <label class="sr" for="lang">Language</label><select id="lang"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option><option value="es">Español</option></select></header>
+<header class="top"><a class="brand" href="/"><span>▸</span> Stayline</a><nav class="langs" aria-label="Language"><a href="/" hreflang="en" lang="en" aria-current="true">English</a><a href="/ko/" hreflang="ko" lang="ko">한국어</a><a href="/ja/" hreflang="ja" lang="ja">日本語</a><a href="/zh/" hreflang="zh" lang="zh">中文</a><a href="/es/" hreflang="es" lang="es">Español</a></nav></header>
 <main>
 <section class="hero"><div class="in">
-  <div class="copy"><h1 data-i="h1"></h1><p class="lead" data-i="lead"></p>
-    <p><a class="btn" href="app/" data-i="cta"></a> <span class="note" data-i="ctaNote"></span></p></div>
-  <div class="demo" aria-hidden="true"><div class="flaps"><b>6</b><b>2</b></div><div class="unit" data-i="demoUnit"></div>
+  <div class="copy"><h1>Count your days. Know when to leave and when you can come back.</h1><p class="lead">Stayline counts the days you spent inside a country or zone, tells you how many are left, and finds the earliest day you can return. Built for the Schengen 90/180 rule, the 183-day tax rule, or any limit you set.</p>
+    <p><a class="btn" href="/app/">Open the counter</a> <span class="note">Free, in your browser</span></p></div>
+  <div class="demo" aria-hidden="true"><div class="flaps"><b>6</b><b>2</b></div><div class="unit">days left</div>
     <div class="bar"><i class="in" style="--w:50%"></i><i style="--w:8%"></i><i class="in" style="--w:22%"></i><i style="--w:20%"></i></div>
-    <div class="dnote" data-i="demoNote"></div></div></div></section>
-
-<section class="paper"><div class="in"><h2 data-i="howH"></h2>
-  <ol class="steps"><li><b data-i="s1h"></b><span data-i="s1"></span></li><li><b data-i="s2h"></b><span data-i="s2"></span></li><li><b data-i="s3h"></b><span data-i="s3"></span></li></ol></div></section>
-
-<section class="paper alt"><div class="in"><h2 data-i="whyH"></h2>
-  <div class="cols"><p data-i="why1"></p><p data-i="why2"></p><p data-i="why3"></p></div></div></section>
-
-<section class="paper"><div class="in"><h2 data-i="priceH"></h2>
+    <div class="dnote">Counting back 180 days from today. Amber = days you were inside.</div></div></div></section>
+<section class="paper"><div class="in"><h2>Three steps</h2>
+  <ol class="steps"><li><b>Add your trips</b><span>First and last day inside. Past, current or planned.</span></li><li><b>See the number</b><span>Days left today, a 180-day strip, and the day room opens again.</span></li><li><b>Plan the next one</b><span>Pick an arrival date and length. Stayline says how long you can stay, or the earliest arrival that works.</span></li></ol></div></section>
+<section class="paper alt"><div class="in"><h2>Why it is built this way</h2>
+  <div class="cols"><p>No account and no location access. You type dates; nothing leaves your browser. Most trackers want your GPS or a login.</p><p>It plans forward. A counter that only tells you where you stand is half a tool. This one answers “when can I come back for 3 weeks?”.</p><p>One payment, not a subscription. Your days do not change monthly, so neither should your bill.</p></div></div></section>
+<section class="paper"><div class="in"><h2>Free to count. Pay once for more.</h2>
   <div class="plans">
-    <div class="plan"><h3 data-i="freeN"></h3><p class="price">$0</p><ul><li data-i="f1"></li><li data-i="f2"></li><li data-i="f3"></li></ul><a class="btn ghost" href="app/" data-i="cta"></a></div>
-    <div class="plan pro"><h3>Pro</h3><p class="price">$12 <small data-i="once"></small></p><ul><li data-i="p1"></li><li data-i="p2"></li><li data-i="p3"></li></ul><a class="btn" id="pro" href="https://example.com/PLACEHOLDER-checkout" rel="noopener" data-i="proCta"></a></div>
+    <div class="plan"><h3>Free</h3><p class="price">$0</p><ul><li>1 counter</li><li>Trip planner and 180-day strip</li><li>Backup and restore</li></ul><a class="btn ghost" href="/app/">Open the counter</a></div>
+    <div class="plan pro"><h3>Pro</h3><p class="price">$12 <small>once</small></p><ul><li>Unlimited counters (partner, second rule)</li><li>CSV export</li><li>Printable summary</li></ul><a class="btn" href="https://example.com/PLACEHOLDER-checkout" rel="noopener">Get Pro</a></div>
   </div></div></section>
-
-<section class="paper alt"><div class="in"><h2 data-i="faqH"></h2>
-  <details><summary data-i="q1"></summary><p data-i="a1"></p></details>
-  <details><summary data-i="q2"></summary><p data-i="a2"></p></details>
-  <details><summary data-i="q3"></summary><p data-i="a3"></p></details>
-  <details><summary data-i="q4"></summary><p data-i="a4"></p></details></div></section>
+<section class="paper alt"><div class="in"><h2>Questions</h2>
+  <details><summary>Is the count legally binding?</summary><p>No. It is an estimate from the dates you enter. Border officers and official government sources decide. Check your passport stamps and keep your tickets.</p></details>
+  <details><summary>How are days counted?</summary><p>The first and last day inside each count as full days. Overlapping trips count each day once.</p></details>
+  <details><summary>Where is my data?</summary><p>In this browser only (local storage). Clear site data and it is gone, so use Backup now and then.</p></details>
+  <details><summary>Does it work offline?</summary><p>Yes, after the first visit. You can add it to your home screen.</p></details></div></section>
 </main>
-<footer><div class="in"><span data-i="foot"></span> · <a href="privacy" data-i="priv"></a></div></footer>
-<noscript><p style="padding:20px">Stayline needs JavaScript. <a href="app/">Open the counter</a>.</p></noscript><script src="landing.js"></script></body></html>
+<footer><div class="in"><span>Stayline. Your dates stay on your device.</span> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:support@example.com">support@example.com</a></div></footer>
+</body></html>
