@@ -94,3 +94,7 @@ refundDays: 14,
 - 데이터가 브라우저에만 있어서 기기 간 동기화가 없습니다. 백업 JSON이 유일한 이동 수단입니다.
 - 라이선스 서버 검증은 모의 응답으로만 시험했습니다. 실제 Lemon Squeezy 응답으로는 3번의 테스트 결제에서 처음 확인됩니다.
 - 웨딩·시설 모듈은 아직 만들지 않았습니다.
+
+## 호스팅 변경: Cloudflare Pages
+
+Vercel Hobby 플랜은 상업 이용이 안 되어 Cloudflare Pages로 옮깁니다. 자세한 설정은 `cloudflare-pages.md`, 단계별 체크리스트는 `cloudflare-checklist.md`를 보세요. 위의 Vercel 관련 항목은 Cloudflare 기준으로 읽으면 됩니다.

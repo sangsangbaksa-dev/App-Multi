@@ -98,7 +98,7 @@ async function main() {
   const pages = [""].concat(LANGS.slice(1).map((l) => l + "/"));
   const xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']
     .concat(pages.map((p) => `<url><loc>${site}/${p}</loc>${LANGS.map((l) => `<xhtml:link rel="alternate" hreflang="${l}" href="${url(l)}"/>`).join("")}<xhtml:link rel="alternate" hreflang="x-default" href="${url("en")}"/></url>`))
-    .concat(["terms.html", "privacy.html"].map((p) => `<url><loc>${site}/${p}</loc></url>`), "</urlset>").join("\n") + "\n";
+    .concat(["terms", "privacy"].map((p) => `<url><loc>${site}/${p}</loc></url>`), "</urlset>").join("\n") + "\n";
   fs.writeFileSync(path.join(root, "sitemap.xml"), xml);
   fs.writeFileSync(path.join(root, "robots.txt"), `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${site}/sitemap.xml\n`);
   console.log("site:", site);

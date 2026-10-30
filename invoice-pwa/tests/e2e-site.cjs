@@ -51,9 +51,9 @@ const axe = fs.existsSync(AXE) ? fs.readFileSync(AXE, "utf8") : "";
   // a localized page keeps its language for a visitor with no saved choice, and links still work from /ko/
   await p.goto(BASE + "/ko/");
   assert.equal(await p.locator("#lang").inputValue(), "ko");
-  assert.ok((await p.locator('a[href="../app.html"]').count()) > 0);
-  await p.click('a[href="../terms.html"]');
-  await p.waitForURL("**/terms.html");
+  assert.ok((await p.locator('a[href="/app"]').count()) > 0);
+  await p.click('a[href="/terms"]');
+  await p.waitForURL("**/terms");
 
   // the root page still follows the browser language
   const ko = await b.newContext({ locale: "ko-KR", serviceWorkers: "block" });
@@ -63,12 +63,12 @@ const axe = fs.existsSync(AXE) ? fs.readFileSync(AXE, "utf8") : "";
   await ko.close();
 
   // legal pages
-  for (const [page, h1en, h1ko] of [["terms.html", "Terms of use", "이용약관"], ["privacy.html", "Privacy", "개인정보 처리방침"]]) {
+  for (const [page, h1en, h1ko] of [["terms", "Terms of use", "이용약관"], ["privacy", "Privacy", "개인정보 처리방침"]]) {
     await p.goto(`${BASE}/${page}`);
     assert.equal(await p.locator('article[data-l="en"] h1').textContent(), h1en);
     assert.ok(await p.locator('article[data-l="ko"]').isHidden());
     assert.ok((await p.locator('article[data-l="en"]').innerText()).includes("[support email]"), "placeholder email shown while unset");
-    if (page === "terms.html") assert.ok((await p.locator('article[data-l="en"]').innerText()).includes("14 days"));
+    if (page === "terms") assert.ok((await p.locator('article[data-l="en"]').innerText()).includes("14 days"));
     await p.click("#swlang");
     assert.equal(await p.locator('article[data-l="ko"] h1').textContent(), h1ko);
     assert.ok(await p.locator('article[data-l="en"]').isHidden());
@@ -78,7 +78,7 @@ const axe = fs.existsSync(AXE) ? fs.readFileSync(AXE, "utf8") : "";
   // accessibility on the new pages
   const wide = await b.newContext({ viewport: { width: 1100, height: 900 }, serviceWorkers: "block" });
   const w = await wide.newPage();
-  for (const path of ["/", "/ko/", "/terms.html", "/privacy.html"]) {
+  for (const path of ["/", "/ko/", "/terms", "/privacy"]) {
     await w.goto(BASE + path);
     if (!axe) continue;
     await w.addScriptTag({ content: axe });
@@ -92,7 +92,7 @@ const axe = fs.existsSync(AXE) ? fs.readFileSync(AXE, "utf8") : "";
   assert.match(robots, /Disallow: \/api\//);
   const sm = await (await fetch(BASE + "/sitemap.xml")).text();
   for (const l of LANGS.slice(1)) assert.ok(sm.includes(`/${l}/</loc>`), l);
-  assert.ok(sm.includes("terms.html") && sm.includes("privacy.html"));
+  assert.ok(sm.includes("/terms<") && sm.includes("/privacy<"));
 
   await b.close();
   assert.deepEqual(errs, []);

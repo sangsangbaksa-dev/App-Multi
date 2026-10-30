@@ -1,4 +1,4 @@
-// Shared by terms.html and privacy.html: fills in the values from config.js and picks English or Korean.
+// Shared by the terms and privacy pages: fills in the values from config.js and picks English or Korean.
 import { CONFIG, emailLive } from "./config.js";
 
 const q = (s) => [...document.querySelectorAll(s)];

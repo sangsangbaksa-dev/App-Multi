@@ -36,6 +36,16 @@ async function api(req, res) {
 http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split("?")[0]);
   if (p === "/api/license") return api(req, res);
+  // Clean URLs like Vercel (cleanUrls) and Cloudflare Pages: /app.html redirects to /app, /ko/index.html to /ko/.
+  if (p.endsWith(".html")) {
+    const to = p.endsWith("/index.html") ? p.slice(0, -"index.html".length) : p.slice(0, -".html".length);
+    res.writeHead(308, { Location: to || "/" });
+    return res.end();
+  }
+  if (p !== "/" && !p.endsWith("/") && !path.extname(p)) {
+    if (fs.existsSync(path.join(root, p + ".html"))) p += ".html";
+    else if (fs.existsSync(path.join(root, p, "index.html"))) { res.writeHead(308, { Location: p + "/" }); return res.end(); }
+  }
   if (p.endsWith("/")) p += "index.html";
   const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end("not found"); }
