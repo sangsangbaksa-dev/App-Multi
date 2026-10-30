@@ -32,8 +32,12 @@ test("csv escapes quotes", () => {
   assert.match(csv, /"A ""B"" Co"/);
 });
 test("overdue", () => {
-  assert.ok(L.overdue({ status: "sent", dueDate: "2020-01-01" }, "2020-02-01"));
-  assert.ok(!L.overdue({ status: "paid", dueDate: "2020-01-01" }, "2020-02-01"));
+  const it = [{ qty: 1, price: 100 }];
+  assert.ok(L.overdue({ status: "sent", items: it, dueDate: "2020-01-01" }, "2020-02-01"));
+  assert.ok(!L.overdue({ status: "paid", items: it, dueDate: "2020-01-01" }, "2020-02-01"));
+  assert.ok(!L.overdue({ status: "sent", items: it, paid: 100, dueDate: "2020-01-01" }, "2020-02-01"));
+  assert.ok(!L.overdue({ status: "sent", type: "quote", items: it, dueDate: "2020-01-01" }, "2020-02-01"));
+  assert.ok(!L.overdue({ status: "draft", items: it, dueDate: "2020-01-01" }, "2020-02-01"));
 });
 
 test("addPeriod clamps month ends", () => {
@@ -62,4 +66,53 @@ test("validInvoice rejects junk", () => {
   assert.ok(!L.validInvoice({ ...ok, currency: "usd" }));
   assert.ok(!L.validInvoice({ ...ok, items: null }));
   assert.ok(!L.validInvoice(null));
+});
+
+const inv = (o) => ({ id: o.number, type: "invoice", client: "A", currency: "USD", status: "sent", paid: 0,
+  issueDate: "2024-01-01", dueDate: "2024-01-15", items: [{ qty: 1, price: 100 }], taxRate: 10, ...o });
+
+test("settle keeps status and paid consistent", () => {
+  assert.equal(L.settle(inv({ status: "paid" })).paid, 110);
+  assert.equal(L.settle(inv({ paid: 110 })).status, "paid");
+  assert.equal(L.settle(inv({ paid: 999 })).paid, 110); // clamped
+  assert.equal(L.settle(inv({ paid: -5 })).paid, 0);
+  assert.equal(L.settle(inv({ paid: 50 })).status, "sent");
+  assert.equal(L.balanceOf(inv({ paid: 50 })), 60);
+  assert.equal(L.settle(inv({ type: "quote", paid: 40 })).paid, 0);
+});
+test("numbering is per document type", () => {
+  const list = [{ number: "INV-0007" }, { number: "QUO-0002" }];
+  assert.equal(L.nextNumber(list, "invoice"), "INV-0008");
+  assert.equal(L.nextNumber(list, "quote"), "QUO-0003");
+  assert.equal(L.nextNumber([], "quote"), "QUO-0001");
+});
+test("convertQuote creates a fresh draft invoice", () => {
+  const q = inv({ number: "QUO-0001", type: "quote", status: "accepted", paid: 0 });
+  const c = L.convertQuote(q, [q], () => "new", "2024-05-01");
+  assert.equal(c.type, "invoice"); assert.equal(c.number, "INV-0001"); assert.equal(c.status, "draft");
+  assert.equal(c.dueDate, "2024-05-15"); assert.equal(c.convertedFrom, "QUO-0001");
+  c.items[0].price = 1; assert.equal(q.items[0].price, 100); // deep copy
+});
+test("summarize and byClient ignore quotes and drafts, split by currency", () => {
+  const list = [
+    inv({ number: "INV-1", paid: 50 }),                       // balance 60, overdue
+    inv({ number: "INV-2", dueDate: "2099-01-01" }),          // balance 110, not overdue
+    inv({ number: "INV-3", status: "paid", paid: 110 }),
+    inv({ number: "INV-4", status: "draft" }),
+    inv({ number: "QUO-1", type: "quote" }),
+    inv({ number: "INV-5", currency: "KRW", items: [{ qty: 1, price: 1000 }], taxRate: 0, client: "B" }),
+  ];
+  const s = L.summarize(list, "2024-06-01");
+  const usd = s.find((x) => x.currency === "USD");
+  assert.deepEqual(usd, { currency: "USD", outstanding: 170, overdue: 60, collected: 160 });
+  assert.equal(s.find((x) => x.currency === "KRW").overdue, 1000);
+  const c = L.byClient(list);
+  assert.equal(c.length, 2);
+  const a = c.find((x) => x.client === "A");
+  assert.deepEqual([a.count, a.billed, a.paid, a.balance], [3, 330, 160, 170]);
+});
+test("csv has type and balance", () => {
+  const csv = L.toCSV([inv({ number: "INV-1", paid: 10 })]);
+  assert.match(csv, /^"?type"?,/);
+  assert.match(csv, /"invoice","INV-1".*"110","10","100"/);
 });

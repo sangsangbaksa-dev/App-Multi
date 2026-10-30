@@ -35,3 +35,9 @@ dialog{border-radius:12px;border:1px solid var(--l);background:var(--bg);color:v
 .pc{border:1px solid var(--l);border-radius:10px;padding:1rem}.pc p{margin:.4rem 0 0;color:var(--m)}
 .pc.hl{border-color:var(--b);border-width:2px}
 footer{text-align:center;padding:2rem 1rem}
+.r{text-align:right}
+#dash{margin-bottom:1rem}
+details{margin:0 0 1rem}summary{cursor:pointer;color:var(--m);margin-bottom:.4rem}
+table.mini{width:100%;border-collapse:collapse;font-size:.9rem}table.mini td{padding:.3rem;border-bottom:1px solid var(--l)}
+button.pro[hidden]{display:none}
+[hidden]{display:none!important}

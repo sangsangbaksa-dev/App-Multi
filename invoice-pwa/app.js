@@ -34,12 +34,26 @@ function renderList() {
   $("#clients").innerHTML = [...new Set(invoices.map((i) => i.client).filter(Boolean))]
     .map((c) => `<option value="${esc(c)}">`).join("");
   $("#list").innerHTML = invoices.map((i) => {
-    const t = L.calcTotals(i.items, i.taxRate, i.discount).total;
+    const q = L.isQuote(i), bal = L.balanceOf(i);
     return `<div class="card" data-id="${esc(i.id)}"><div><b>${esc(i.number)}</b> · ${esc(i.client)}<br>
-      <span class="muted">${I.t("dueWord")} ${esc(I.formatDate(i.dueDate))} · ${I.t(i.status)}${i.recur ? " · ↻" : ""}</span>
+      <span class="muted">${q ? I.t("validUntil") : I.t("dueWord")} ${esc(I.formatDate(i.dueDate))} · ${I.t(i.status)}${i.recur ? " · ↻" : ""}</span>
       ${L.overdue(i) ? `<span class="late"> ${I.t("overdue")}</span>` : ""}</div>
-      <b>${money(t, i.currency)}</b></div>`;
+      <div class="r"><b>${money(L.totalOf(i), i.currency)}</b>${!q && i.paid > 0 && bal > 0 ? `<br><span class="muted">${I.t("balance")} ${money(bal, i.currency)}</span>` : ""}</div></div>`;
   }).join("");
+  renderDash();
+}
+
+function renderDash() {
+  const sums = L.summarize(invoices, today());
+  $("#dash").innerHTML = sums.map((x) => `<div class="pc"><b>${esc(x.currency)}</b>
+    <p>${I.t("dashOutstanding")}: <b>${money(x.outstanding, x.currency)}</b></p>
+    <p class="${x.overdue ? "late" : ""}">${I.t("dashOverdue")}: ${money(x.overdue, x.currency)}</p>
+    <p>${I.t("dashCollected")}: ${money(x.collected, x.currency)}</p></div>`).join("");
+  const rows = L.byClient(invoices);
+  $("#clientsum").innerHTML = !rows.length ? "" : isPro()
+    ? `<details open><summary>${I.t("byClient")}</summary><table class="mini">${rows.map((r) =>
+        `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td></tr>`).join("")}</table></details>`
+    : `<p class="muted">🔒 ${I.t("byClientPro")}</p>`;
 }
 
 function itemRow(it = { desc: "", qty: 1, price: 0 }) {
@@ -60,6 +74,7 @@ function readForm() {
   inv.taxRate = Number(inv.taxRate) || 0;
   inv.discount = Number(inv.discount) || 0;
   inv.recur = inv.recur || "";
+  inv.paid = Number(inv.paid) || 0;
   inv.items = [...document.querySelectorAll("#items .item")].map((r) => ({
     desc: r.querySelector('[data-k="desc"]').value,
     qty: Number(r.querySelector('[data-k="qty"]').value) || 0,
@@ -75,13 +90,13 @@ function renderPreview() {
   const m = (n) => money(n, i.currency);
   const showLogo = logo && isPro();
   $("#btn-logo-rm").hidden = !logo;
-  $("#preview").innerHTML = `${showLogo ? `<img class="logo" alt="" src="${esc(logo)}">` : ""}<h2>${I.t("invoice")} ${esc(i.number)}</h2>
+  $("#preview").innerHTML = `${showLogo ? `<img class="logo" alt="" src="${esc(logo)}">` : ""}<h2>${I.t(L.isQuote(i) ? "quote" : "invoice")} ${esc(i.number)}</h2>
     <p><b>${I.t("fromL")}:</b> ${esc(i.from)}<br><b>${I.t("toL")}:</b> ${esc(i.client)}<br>
-    ${I.t("issuedL")} ${esc(I.formatDate(i.issueDate))} · ${I.t("dueL")} ${esc(I.formatDate(i.dueDate))}</p>
+    ${I.t("issuedL")} ${esc(I.formatDate(i.issueDate))} · ${I.t(L.isQuote(i) ? "validUntil" : "dueL")} ${esc(I.formatDate(i.dueDate))}${i.convertedFrom ? `<br><small>${esc(I.t("quoteOf", { n: i.convertedFrom }))}</small>` : ""}</p>
     <table><tr><th>${I.t("desc")}</th><th class="r">${I.t("qty")}</th><th class="r">${I.t("price")}</th><th class="r">${I.t("total")}</th></tr>
     ${i.items.map((x) => `<tr><td>${esc(x.desc)}</td><td class="r">${x.qty}</td><td class="r">${m(x.price)}</td><td class="r">${m(x.qty * x.price)}</td></tr>`).join("")}</table>
-    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b></p>
-    <p>${esc(i.notes)}</p>
+    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b>${!L.isQuote(i) && i.paid > 0 ? `<br>− ${m(Math.min(i.paid, t.total))}<br><b>${I.t("balance")} ${m(L.balanceOf(i))}</b>` : ""}</p>
+    <p>${esc(i.notes)}</p>${i.payinfo ? `<p><b>${I.t("payinfo").replace(/\s*[（(].*$/, "")}</b><br>${esc(i.payinfo).replace(/\n/g, "<br>")}</p>` : ""}
     ${isPro() ? "" : `<p class="wm">${I.t("watermark")}</p>`}`;
 }
 
@@ -89,7 +104,12 @@ function openEditor(inv) {
   editing = inv;
   for (const el of $("#form").elements) if (el.name) el.value = inv[el.name] ?? "";
   $("#items").replaceChildren(...inv.items.map(itemRow));
-  $("#btn-delete").hidden = !invoices.some((x) => x.id === inv.id);
+  const q = L.isQuote(inv), saved = invoices.some((x) => x.id === inv.id);
+  $("#btn-delete").hidden = !saved;
+  $("#btn-convert").hidden = !(q && saved);
+  $("#paid-wrap").hidden = q;
+  $("#due-lbl").textContent = I.t(q ? "validUntil" : "due");
+  for (const o of $("#form").elements.status.options) o.hidden = o.disabled = q ? o.value === "paid" : o.value === "accepted";
   $("#list-view").hidden = true;
   $("#edit-view").hidden = false;
   renderPreview();
@@ -127,21 +147,35 @@ function fullRender() {
 }
 
 // ---- events ----
-$("#btn-new").onclick = () => {
+function newDoc(type) {
   if (!L.canSave(invoices, isPro(), null)) return openUpgrade(limitMsg());
   const last = invoices[0];
   openEditor({
-    id: crypto.randomUUID(), number: L.nextInvoiceNumber(invoices), from: last?.from ?? "", client: "",
-    currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), 14),
-    taxRate: last?.taxRate ?? 0, discount: 0, status: "draft", notes: "", recur: "", nextRun: "",
+    id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
+    currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
+    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, status: "draft", notes: "", payinfo: last?.payinfo ?? "", recur: "", nextRun: "",
     items: [{ desc: "", qty: 1, price: 0 }],
   });
+}
+$("#btn-new").onclick = () => newDoc("invoice");
+$("#btn-new-quote").onclick = () => newDoc("quote");
+$("#btn-convert").onclick = () => {
+  if (!L.canSave(invoices, isPro(), null)) return openUpgrade(limitMsg());
+  const q = readForm();
+  const inv = L.convertQuote(q, invoices, () => crypto.randomUUID(), today());
+  const i = invoices.findIndex((x) => x.id === q.id);
+  invoices[i >= 0 ? i : invoices.length] = { ...q, status: "accepted" };
+  invoices.unshift(inv);
+  persist();
+  closeEditor();
+  toast(I.t("converted", { n: inv.number }));
+  openEditor(structuredClone(inv));
 };
 $("#btn-add").onclick = () => $("#items").append(itemRow());
 $("#form").addEventListener("input", renderPreview);
 $("#form").onsubmit = (e) => {
   e.preventDefault();
-  const inv = readForm();
+  const inv = L.settle(readForm());
   if (inv.recur && !isPro()) { $("#form").elements.recur.value = ""; renderPreview(); return openUpgrade(I.t("recurPro")); }
   if (!L.canSave(invoices, isPro(), inv.id)) return openUpgrade(limitMsg());
   const prev = invoices.find((x) => x.id === inv.id);

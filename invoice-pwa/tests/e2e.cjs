@@ -85,6 +85,41 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await q.click("button[type=submit]");
   assert.ok(await q.isVisible("#dlg"), "recurring paywall");
 
+  // quote -> invoice, partial payment, dashboard
+  const ctx3 = await b.newContext({ locale: "en-US" });
+  const r = await ctx3.newPage();
+  r.on("pageerror", (e) => errs.push(e.message));
+  r.on("dialog", (d) => d.accept());
+  await r.goto("http://localhost:8123/app.html");
+  await r.click("#btn-new-quote");
+  assert.equal(await r.inputValue("[name=number]"), "QUO-0001");
+  assert.equal(await r.isVisible("#paid-wrap"), false);
+  assert.equal(await r.isVisible("#btn-convert"), false); // not saved yet
+  await r.fill("[name=from]", "Me"); await r.fill("[name=client]", "Acme");
+  await r.fill("#items [data-k=desc]", "Site"); await r.fill("#items [data-k=price]", "1000");
+  assert.match(await r.textContent("#preview"), /Quote QUO-0001/);
+  await r.click("button[type=submit]");
+  assert.equal((await r.$$("#dash .pc")).length, 0, "quotes are not receivables");
+  await r.click(".card");
+  await r.click("#btn-convert");
+  await r.waitForFunction(() => document.querySelector("[name=number]").value === "INV-0001");
+  assert.match(await r.textContent("#preview"), /From quote QUO-0001/);
+  await r.selectOption("[name=status]", "sent");
+  await r.fill("[name=paid]", "400");
+  assert.match(await r.textContent("#preview"), /Balance due\s*\$600\.00/);
+  await r.fill("[name=payinfo]", "IBAN 123");
+  assert.match(await r.textContent("#preview"), /IBAN 123/);
+  await r.click("button[type=submit]");
+  assert.match(await r.textContent("#dash"), /Outstanding:\s*\$600\.00/);
+  assert.match(await r.textContent("#dash"), /Collected:\s*\$400\.00/);
+  assert.match(await r.textContent("#list"), /accepted/);
+  assert.match(await r.textContent("#clientsum"), /Pro feature/);
+  await r.click(".card >> nth=0");
+  await r.fill("[name=paid]", "1000"); // fully paid -> auto status paid
+  await r.click("button[type=submit]");
+  assert.match(await r.textContent("#list"), /paid/);
+  assert.match(await r.textContent("#dash"), /Outstanding:\s*\$0\.00/);
+
   assert.deepEqual(errs, []);
   console.log("e2e OK"); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

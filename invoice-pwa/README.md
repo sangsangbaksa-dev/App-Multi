@@ -20,6 +20,13 @@ Ideas next: recurring invoices, client list, multi-language, Stripe pay-link on 
   usable free plan (3 invoices, PDF print, JSON backup/restore), 30-day refund.
 - Pro features: logo, recurring invoices (weekly/monthly, drafts auto-created), CSV export, no watermark.
 
+## v3 additions
+- Quotes (`QUO-` numbering) that convert to invoices in one click (quote is marked accepted).
+- Partial payments / deposits with balance due; status auto-flips to paid at 100%.
+- Overdue = sent, unpaid balance, past due date. Quotes and drafts are never receivables.
+- Dashboard per currency (outstanding / overdue / collected); per-client history is Pro.
+- Payment instructions printed on the invoice (prefilled from the previous one).
+
 ## Dev
 - `npm test` – unit tests (node:test)
 - `python3 -m http.server 8123` then `node tests/e2e.cjs` – browser e2e (Playwright)

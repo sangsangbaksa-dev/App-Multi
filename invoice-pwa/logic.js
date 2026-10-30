@@ -36,10 +36,10 @@ export function formatMoney(n, currency = "USD", locale = "en-US") {
 
 const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 export function toCSV(invoices) {
-  const head = ["number", "client", "issueDate", "dueDate", "status", "currency", "total"];
+  const head = ["type", "number", "client", "issueDate", "dueDate", "status", "currency", "total", "paid", "balance"];
   const rows = invoices.map((i) =>
-    [i.number, i.client, i.issueDate, i.dueDate, i.status, i.currency,
-     calcTotals(i.items, i.taxRate, i.discount).total].map(esc).join(",")
+    [i.type === "quote" ? "quote" : "invoice", i.number, i.client, i.issueDate, i.dueDate, i.status, i.currency,
+     totalOf(i), Number(i.paid) || 0, balanceOf(i)].map(esc).join(",")
   );
   return [head.join(","), ...rows].join("\n");
 }
@@ -60,8 +60,68 @@ export function validLicense(key) {
   return !!m && checksum(m[1] + m[2]) === m[3];
 }
 
+export const isQuote = (i) => i.type === "quote";
+export const totalOf = (i) => calcTotals(i.items || [], i.taxRate, i.discount).total;
+export const balanceOf = (i) => Math.max(0, round2(totalOf(i) - (Number(i.paid) || 0)));
+
 export function overdue(inv, today = new Date().toISOString().slice(0, 10)) {
-  return inv.status !== "paid" && inv.dueDate && inv.dueDate < today;
+  return !isQuote(inv) && inv.status !== "paid" && inv.status !== "draft" && balanceOf(inv) > 0 &&
+    !!inv.dueDate && inv.dueDate < today;
+}
+
+// Keeps status and paid amount consistent: fully paid <=> status "paid".
+export function settle(inv) {
+  if (isQuote(inv)) return { ...inv, paid: 0 };
+  const total = totalOf(inv);
+  let paid = Math.min(Math.max(Number(inv.paid) || 0, 0), total);
+  let status = inv.status;
+  if (status === "paid") paid = total;
+  else if (total > 0 && paid >= total) status = "paid";
+  else if (status === "accepted") status = "sent";
+  return { ...inv, paid: round2(paid), status };
+}
+
+export function nextNumber(invoices, type) {
+  const prefix = type === "quote" ? "QUO" : "INV";
+  return nextInvoiceNumber(invoices.filter((i) => (i.number || "").startsWith(prefix + "-")), prefix);
+}
+
+export function convertQuote(quote, invoices, newId, today) {
+  return {
+    ...quote, id: newId(), type: "invoice", number: nextNumber(invoices, "invoice"),
+    issueDate: today, dueDate: addDays(today, 14), status: "draft", paid: 0, recur: "", nextRun: "",
+    convertedFrom: quote.number, items: (quote.items || []).map((x) => ({ ...x })),
+  };
+}
+
+// Per-currency money summary over real invoices (quotes and drafts are not receivables).
+export function summarize(invoices, today = new Date().toISOString().slice(0, 10)) {
+  const out = {};
+  for (const i of invoices) {
+    if (isQuote(i)) continue;
+    const o = (out[i.currency] ??= { currency: i.currency, outstanding: 0, overdue: 0, collected: 0 });
+    o.collected = round2(o.collected + (Number(i.paid) || 0));
+    if (i.status === "draft") continue;
+    const b = balanceOf(i);
+    o.outstanding = round2(o.outstanding + b);
+    if (overdue(i, today)) o.overdue = round2(o.overdue + b);
+  }
+  return Object.values(out);
+}
+
+export function byClient(invoices) {
+  const m = new Map();
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft") continue;
+    const k = `${i.client}\u0000${i.currency}`;
+    const r = m.get(k) ?? { client: i.client, currency: i.currency, billed: 0, paid: 0, balance: 0, count: 0 };
+    r.billed = round2(r.billed + totalOf(i));
+    r.paid = round2(r.paid + (Number(i.paid) || 0));
+    r.balance = round2(r.balance + balanceOf(i));
+    r.count++;
+    m.set(k, r);
+  }
+  return [...m.values()].sort((a, b) => b.billed - a.billed);
 }
 
 // ---- recurring invoices ----
@@ -98,7 +158,7 @@ export function runRecurring(invoices, today, newId) {
     while (inv.nextRun <= today && guard++ < 12) {
       list.unshift({
         ...inv, id: newId(), number: nextInvoiceNumber(list), issueDate: inv.nextRun,
-        dueDate: addDays(inv.nextRun, terms), status: "draft", recur: "", nextRun: "",
+        dueDate: addDays(inv.nextRun, terms), status: "draft", paid: 0, recur: "", nextRun: "",
         items: inv.items.map((x) => ({ ...x })),
       });
       inv.nextRun = addPeriod(inv.nextRun, inv.recur);
@@ -112,6 +172,6 @@ export function runRecurring(invoices, today, newId) {
 export function validInvoice(i) {
   return !!i && typeof i === "object" && typeof i.id === "string" && typeof i.number === "string" &&
     Array.isArray(i.items) && i.items.every((x) => x && typeof x === "object") &&
-    ["draft", "sent", "paid"].includes(i.status) && /^[A-Z]{3}$/.test(i.currency || "") &&
+    ["draft", "sent", "paid", "accepted"].includes(i.status) && /^[A-Z]{3}$/.test(i.currency || "") &&
     /^\d{4}-\d{2}-\d{2}$/.test(i.issueDate || "") && /^\d{4}-\d{2}-\d{2}$/.test(i.dueDate || "");
 }
