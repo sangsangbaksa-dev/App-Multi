@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="{{lang}}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{title}}</title><meta name="description" content="{{lede}}">
+<link rel="canonical" href="{{url}}">
+{{alternates}}
+<meta property="og:type" content="website"><meta property="og:site_name" content="Stampbook"><meta property="og:title" content="{{title}}"><meta property="og:description" content="{{lede}}">
+<meta property="og:url" content="{{url}}"><meta property="og:image" content="{{siteUrl}}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="{{locale}}">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{{siteUrl}}/og.png">
+<meta name="theme-color" content="#f3ead6"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png"><link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/landing.css">
+<script type="application/ld+json">{{jsonld}}</script>
+</head>
+<body>
+<div class="wrap">
+<nav><a class="logo" href="{{home}}"><img src="/icon.svg" alt="" width="28" height="28"> <span>{{app}}</span></a>
+<select id="lang" aria-label="Language">{{options}}</select></nav>
+<main>
+<section class="hero">
+<p class="kick">{{kick}}</p>
+<h1>{{h1}}</h1>
+<p class="lede">{{lede}}</p>
+<p><a class="btn" href="/app/">{{cta}}</a> <span class="fine">{{ctaFine}}</span></p>
+<div class="demo" aria-hidden="true"><div class="c on">3/10</div><div class="c on">10/14</div><div class="c on">10/21</div><div class="c on">10/28</div><div class="c n">5</div><div class="c">6</div><div class="c">7</div><div class="c">8</div><div class="c">9</div><div class="c">10</div></div>
+</section>
+
+<section><h2>{{whyH}}</h2>
+<ol class="steps"><li>{{w1}}</li><li>{{w2}}</li><li>{{w3}}</li></ol></section>
+
+<section class="grid3">
+<div><h3>{{f1h}}</h3><p>{{f1}}</p></div>
+<div><h3>{{f2h}}</h3><p>{{f2}}</p></div>
+<div><h3>{{f3h}}</h3><p>{{f3}}</p></div>
+</section>
+<section class="grid3">
+<div><h3>{{g1h}}</h3><p>{{g1}}</p></div>
+<div><h3>{{g2h}}</h3><p>{{g2}}</p></div>
+<div><h3>{{g3h}}</h3><p>{{g3}}</p></div>
+</section>
+
+<section class="price"><h2>{{priceH}}</h2>
+<div class="plans">
+<div class="plan"><h3>{{free}}</h3><p class="amt">0</p><ul><li>{{fr1}}</li><li>{{fr2}}</li><li>{{fr3}}</li></ul><a class="btn ghost" href="/app/">{{cta}}</a></div>
+<div class="plan pro"><h3>Pro</h3><p class="amt">{{proAmt}}</p><ul><li>{{pr1}}</li><li>{{pr2}}</li><li>{{pr3}}</li></ul><a class="btn" href="{{checkoutUrl}}" rel="noopener">{{buy}}</a></div>
+</div>
+<p class="fine">{{priceFine}}</p></section>
+
+<section><h2>{{faqH}}</h2>
+<details><summary>{{q1}}</summary><p>{{a1}}</p></details>
+<details><summary>{{q2}}</summary><p>{{a2}}</p></details>
+<details><summary>{{q3}}</summary><p>{{a3}}</p></details>
+<details><summary>{{q4}}</summary><p>{{a4}}</p></details>
+</section>
+</main>
+<footer><a href="/privacy">{{priv}}</a> · <a href="/terms">{{terms}}</a> · <a href="mailto:{{supportEmail}}">{{supportEmail}}</a> · <span>{{foot}}</span></footer>
+</div>
+<script src="/landing.js"></script>
+</body></html>

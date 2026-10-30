@@ -53,7 +53,8 @@
       storageErr: 'This browser would not save your data. Private mode? Use Backup before closing.',
       lessonOn: 'Lesson on',
       noExpShort: 'no expiry',
-      expiresOn: 'until {date}'
+      expiresOn: 'until {date}',
+      netErr: 'Could not reach the licence server. Check your connection and try again.'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -107,7 +108,8 @@
       storageErr: '이 브라우저가 데이터를 저장하지 못해요. 사생활 보호 모드인가요? 닫기 전에 백업하세요.',
       lessonOn: '수업일',
       noExpShort: '기한 없음',
-      expiresOn: '{date}까지'
+      expiresOn: '{date}까지',
+      netErr: '라이선스 서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도하세요.'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -161,7 +163,8 @@
       storageErr: 'このブラウザはデータを保存できません。プライベートモードでは?閉じる前にバックアップしてください。',
       lessonOn: 'レッスン日',
       noExpShort: '期限なし',
-      expiresOn: '{date}まで'
+      expiresOn: '{date}まで',
+      netErr: 'ライセンスサーバーに接続できませんでした。接続を確認してもう一度お試しください。'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -215,7 +218,8 @@
       storageErr: '这个浏览器无法保存数据,是无痕模式吗?关闭前请先备份。',
       lessonOn: '上课日期',
       noExpShort: '无期限',
-      expiresOn: '至 {date}'
+      expiresOn: '至 {date}',
+      netErr: '无法连接授权服务器,请检查网络后重试。'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -269,7 +273,8 @@
       storageErr: 'Este navegador no guarda tus datos. ¿Modo privado? Haz una copia antes de cerrar.',
       lessonOn: 'Clase del',
       noExpShort: 'sin caducidad',
-      expiresOn: 'hasta el {date}'
+      expiresOn: 'hasta el {date}',
+      netErr: 'No se pudo contactar con el servidor de licencias. Revisa tu conexión e inténtalo de nuevo.'
     }
   };
   function pick(pref) {

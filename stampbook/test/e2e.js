@@ -1,7 +1,9 @@
 const { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..'), types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
+const licenseHandler = require('../api/license.js');
 const srv = http.createServer((q, r) => {
-  let p = decodeURIComponent(q.url.split('?')[0].split('#')[0]); if (p.endsWith('/')) p += 'index.html'; if (p === '/privacy') p = '/privacy.html';
+  if (q.url === '/api/license') { let b = ''; q.on('data', c => b += c); q.on('end', () => { q.body = b; r.setHeader = r.setHeader.bind(r); licenseHandler(q, r); }); return; }
+  let p = decodeURIComponent(q.url.split('?')[0].split('#')[0]); if (p.endsWith('/')) p += 'index.html'; if (p === '/privacy' || p === '/terms') p += '.html';
   const f = path.join(root, p); if (!f.startsWith(root) || !fs.existsSync(f)) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { 'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'", 'content-type': types[path.extname(f)] || 'text/plain' }); fs.createReadStream(f).pipe(r);
 }).listen(0);
@@ -10,7 +12,7 @@ const srv = http.createServer((q, r) => {
   fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch(), errs = globalThis.__errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', permissions: ['clipboard-read', 'clipboard-write'] });
-  const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
+  const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('response', r => r.status() === 404 && console.log('404', r.url())); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
   let promptVal; pg.on('dialog', d => d.accept(promptVal));
   await pg.goto(base + '/app/'); await pg.waitForSelector('.empty');
   // create pack
@@ -75,8 +77,27 @@ const srv = http.createServer((q, r) => {
   // languages screenshots + landing
   for (const l of ['ko', 'ja', 'zh', 'es']) { await pg.selectOption('header select', l); await pg.waitForTimeout(100); await pg.screenshot({ path: `${out}/app-${l}.png`, fullPage: true }); }
   const lp = await ctx.newPage(); lp.on('pageerror', e => errs.push(e.message)); lp.on('console', m => m.type() === 'error' && errs.push(m.text()));
-  await lp.goto(base + '/'); for (const l of ['en', 'ko', 'ja', 'zh', 'es']) { await lp.selectOption('#lang', l); await lp.screenshot({ path: `${out}/landing-${l}.png`, fullPage: true }); }
-  assert.equal(await lp.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal scroll');
+  for (const l of ['en', 'ko', 'ja', 'zh', 'es']) {
+    await lp.goto(base + (l === 'en' ? '/' : `/${l}/`)); assert.equal(await lp.getAttribute('html', 'lang'), l);
+    assert.equal(await lp.locator('link[rel=alternate][hreflang]').count(), 6); assert.ok((await lp.getAttribute('link[rel=canonical]', 'href')).startsWith('https://'));
+    assert.ok((await lp.locator('h1').textContent()).length > 8); assert.equal(await lp.locator('a.btn[href="/app/"]').count(), 2);
+    assert.equal(await lp.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal scroll ' + l);
+    await lp.screenshot({ path: `${out}/landing-${l}.png`, fullPage: true });
+  }
+  await lp.goto(base + '/'); await lp.selectOption('#lang', 'ja'); await lp.waitForURL('**/ja/'); assert.equal(await lp.getAttribute('html', 'lang'), 'ja');
+  assert.equal((await lp.goto(base + '/terms')).status(), 200); assert.ok((await lp.textContent('body')).includes('support@example.com'));
+  assert.equal((await lp.goto(base + '/sitemap.xml')).status(), 200); assert.equal((await lp.goto(base + '/manifest.webmanifest')).status(), 200); assert.equal((await lp.goto(base + '/og.png')).status(), 200);
+  // server-side licence flow with a mocked Lemon Squeezy
+  process.env.LS_STORE_ID = '11'; process.env.LS_PRODUCT_ID = '22';
+  const realFetch = global.fetch; global.fetch = async (u, o) => { const k = new URLSearchParams(o.body.toString()).get('license_key'); const ok = k === 'REAL-KEY-12345';
+    return { status: 200, json: async () => ok ? { activated: true, valid: true, license_key: { status: 'active' }, instance: { id: 'inst-abcdef12' }, meta: { store_id: 11, product_id: 22 } } : { activated: false, valid: false } }; };
+  const c3 = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'en-US' }); const p3 = await c3.newPage(); p3.on('pageerror', e => errs.push(e.message));
+  await p3.goto(base + '/app/'); await p3.waitForSelector('.empty');
+  await p3.fill('#lic', require('../app/core.js').makeKey('TESTKEY1')); await p3.click('.settings .pri'); await p3.waitForSelector('.toast'); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false, 'offline key refused once the server is configured');
+  await p3.waitForTimeout(2400); await p3.fill('#lic', 'WRONG-KEY-00000'); await p3.click('.settings .pri'); await p3.waitForTimeout(500); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false);
+  await p3.waitForTimeout(2400); await p3.fill('#lic', 'REAL-KEY-12345'); await p3.click('.settings .pri'); await p3.waitForFunction(() => JSON.parse(localStorage['stampbook.v1']).pro === true);
+  assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1']).licMode), 'server');
+  global.fetch = realFetch; delete process.env.LS_STORE_ID; delete process.env.LS_PRODUCT_ID;
   const pv = await ctx.newPage(); assert.equal((await pv.goto(base + '/privacy')).status(), 200);
   console.log(errs.length ? 'ERRORS: ' + errs.join('\n') : 'E2E OK'); await b.close(); srv.close(); process.exit(errs.length ? 1 : 0);
 })().catch(e => { console.error('FAIL', e, globalThis.__errs); process.exit(1); });

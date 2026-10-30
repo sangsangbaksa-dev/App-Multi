@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var C = window.SB, I = window.I18N, CFG = window.SB_CONFIG;
+  var C = window.SB, I = window.I18N, CFG = window.SB_SITE;
   var KEY = 'stampbook.v1', root = document.getElementById('root');
   var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true;
 
@@ -248,7 +248,7 @@
         try {
           var o = JSON.parse(r.result); if (!o || !Array.isArray(o.packs)) throw 0;
           o.packs = o.packs.filter(function (p) { return p && typeof p.student === 'string' && p.total > 0 && Array.isArray(p.stamps); });
-          o.pro = state.pro || (o.pro === true && C.validKey(o.key)); state = Object.assign({ teacher: '', lang: '' }, o); save(); render(); toast(T('restored'));
+          var keep = { pro: state.pro, key: state.key, licMode: state.licMode, instanceId: state.instanceId, licChecked: state.licChecked }; state = Object.assign({ teacher: '', lang: '' }, o, keep); save(); render(); toast(T('restored'));
         } catch (x) { toast(T('badFile')); }
       }; r.readAsText(fl);
     } });
@@ -263,13 +263,46 @@
       state.pro ? null : h('div', {}, [
         h('label', { for: 'lic' }, T('lic')),
         h('div', { class: 'row' }, [key,
-          h('button', { class: 'pri', onclick: function () { if (C.validKey(key.value)) { state.pro = true; state.key = key.value.trim().toUpperCase(); save(); render(); toast(T('okKey')); } else toast(T('badKey')); } }, T('activate'))]),
+          h('button', { class: 'pri', onclick: function () { activate(key.value); } }, T('activate'))]),
         h('p', {}, [h('a', { href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))])
       ])
     ]);
   }
 
+  /* Licence: the server function checks the key with the payment provider when it is configured. If it answers
+     {configured:false} (or is not there), the older offline checksum is used. A network failure never falls back. */
+  function callLicense(body) {
+    return fetch('/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }, function () { return { status: r.status, j: null }; }); });
+  }
+  function grant(mode, key, instanceId) { state.pro = true; state.key = key; state.licMode = mode; state.instanceId = instanceId || ''; state.licChecked = Date.now(); save(); render(); toast(T('okKey')); }
+  function activate(raw) {
+    var key = String(raw || '').trim();
+    if (!key) return toast(T('badKey'));
+    callLicense({ action: 'activate', key: key }).then(function (r) {
+      if (r.j && r.j.configured === true) {
+        if (r.status === 502 || (r.j.reason === 'unreachable')) return toast(T('netErr'));
+        return r.j.ok ? grant('server', key, r.j.instanceId) : toast(T('badKey'));
+      }
+      if (C.validKey(key)) grant('offline', key.toUpperCase()); else toast(T('badKey'));
+    }, function () {
+      /* no server function reachable at all: only the offline scheme can be checked, and only when the app is served without one */
+      if (!navigator.onLine) return toast(T('netErr'));
+      if (C.validKey(key)) grant('offline', key.toUpperCase()); else toast(T('badKey'));
+    });
+  }
+  /* once a week, ask the server whether a server-activated key is still good; only an explicit "invalid" removes Pro */
+  function recheck() {
+    if (!state.pro || state.licMode !== 'server' || !state.instanceId || Date.now() - (state.licChecked || 0) < 7 * 86400000) return;
+    callLicense({ action: 'validate', key: state.key, instanceId: state.instanceId }).then(function (r) {
+      if (!r.j || r.j.configured !== true || r.status === 502) return;
+      if (r.j.ok) { state.licChecked = Date.now(); save(); }
+      else if (r.j.reason === 'invalid' || r.j.reason === 'wrong_product') { state.pro = false; save(); render(); toast(T('badKey')); }
+    }, function () {});
+  }
+
   window.addEventListener('hashchange', render);
   render();
+  recheck();
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();

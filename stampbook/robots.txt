@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+
+Sitemap: https://stampbook-lessons.vercel.app/sitemap.xml
