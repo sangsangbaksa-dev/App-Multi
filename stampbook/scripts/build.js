@@ -32,3 +32,14 @@ put('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http:
   `\n<url><loc>${base}/privacy</loc></url>\n<url><loc>${base}/terms</loc></url>\n</urlset>\n`);
 put('robots.txt', `User-agent: *\nAllow: /\nDisallow: /app/\n\nSitemap: ${base}/sitemap.xml\n`);
 console.log('built', langs.length, 'landing pages for', base);
+
+/* --dist: copy only the public files into dist/ (Cloudflare Pages output directory), so scripts, tests and docs are not published. */
+if (process.argv.includes('--dist')) {
+  const out = path.join(root, 'dist'); fs.rmSync(out, { recursive: true, force: true });
+  const files = ['index.html', 'privacy.html', 'terms.html', 'landing.css', 'landing.js', 'config.js', 'icon.svg', 'icon-192.png', 'icon-512.png', 'og.png',
+    'manifest.webmanifest', 'sitemap.xml', 'robots.txt', '_headers', '_redirects'];
+  const dirs = ['app', 'ko', 'ja', 'zh', 'es'];
+  const cp = (rel) => { const from = path.join(root, rel), to = path.join(out, rel); fs.mkdirSync(path.dirname(to), { recursive: true }); fs.cpSync(from, to, { recursive: true }); };
+  files.forEach(cp); dirs.forEach(cp);
+  console.log('dist ready:', files.length + dirs.length, 'entries');
+}

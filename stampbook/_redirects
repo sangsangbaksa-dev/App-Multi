@@ -1,0 +1,4 @@
+# Cloudflare Pages redirects. Clean URLs (/privacy, /terms) and trailing slashes (/ko -> /ko/) are handled by Pages itself,
+# which is what "cleanUrls" did on Vercel. Add redirects here if a custom domain needs www -> apex, e.g.:
+# https://www.example.com/* https://example.com/:splat 301
+/index.html / 301
