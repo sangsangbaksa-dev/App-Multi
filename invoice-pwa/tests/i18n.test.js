@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as I from "../i18n.js";
-import { readFileSync } from "node:fs";
 
 test("detectLang", () => {
   assert.equal(I.detectLang(null, ["ko-KR"]), "ko");
@@ -9,16 +8,16 @@ test("detectLang", () => {
   assert.equal(I.detectLang(null, ["de"]), "en");
   assert.equal(I.detectLang("ja", ["ko"]), "ja");
 });
-test("every language has every key", async () => {
-  const src = readFileSync(new URL("../i18n.js", import.meta.url), "utf8");
-  const keysOf = (l) => {
-    const start = src.indexOf(`\n  ${l}: {`, src.indexOf("const D"));
-    const end = src.indexOf("\n  },", start);
-    return [...src.slice(start, end).matchAll(/\b([a-zA-Z0-9]+): "/g)].map((m) => m[1]).sort();
-  };
-  const en = keysOf("en");
-  assert.ok(en.length > 80);
-  for (const l of ["ko", "ja", "zh", "es"]) assert.deepEqual(keysOf(l), en, l);
+test("every language has every key", () => {
+  const en = Object.keys(I.DICT.en).sort();
+  assert.ok(en.length > 200);
+  for (const l of Object.keys(I.LANGS)) assert.deepEqual(Object.keys(I.DICT[l]).sort(), en, l);
+});
+test("no placeholder is lost in translation", () => {
+  for (const [k, v] of Object.entries(I.DICT.en)) {
+    const slots = (s) => [...s.matchAll(/(?<!\{)\{(\w+)\}(?!\})/g)].map((m) => m[1]).sort().join();
+    for (const l of Object.keys(I.LANGS)) assert.equal(slots(I.DICT[l][k]), slots(v), `${l}.${k}`);
+  }
 });
 test("t interpolates and falls back", () => {
   I.setLang("ko");

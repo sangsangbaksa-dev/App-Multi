@@ -14,9 +14,10 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
   // landing page: localized + links to app
   await p.goto("http://localhost:8123/index.html");
-  assert.match(await p.textContent("h2"), /stay on your own computer/);
+  assert.match(await p.textContent("h1"), /stays on your computer/);
+  assert.ok((await p.$$(".fgrid article")).length === 8 && (await p.$$("details")).length === 6);
   await p.selectOption("#lang", "ja");
-  assert.match(await p.textContent("h2"), /自分のパソコン/);
+  assert.match(await p.textContent("h1"), /パソコン/);
   assert.equal(await p.getAttribute("html", "lang"), "ja");
   await p.selectOption("#lang", "en");
 
@@ -156,6 +157,72 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await r.click("#time summary");
   await r.click("[data-bill=Z]");
   assert.ok(await r.isVisible("#dlg"), "time billing paywall");
+
+  // sheets (free plan): formulas, persistence, limits, paywalled actions
+  await r.goto("http://localhost:8123/app.html");
+  await r.click("[data-tab=sheets]");
+  await r.click("#sh-new");
+  await r.fill("[data-ref=A1]", "2"); await r.fill("[data-ref=A2]", "3"); await r.fill("[data-ref=A3]", "=SUM(A1:A2)*2");
+  await r.click("#sh-name");
+  await r.waitForFunction(() => document.querySelector("[data-ref=A3]").value === "10");
+  assert.ok(await r.$eval("[data-ref=A3]", (e) => e.classList.contains("calc")));
+  await r.fill("[data-ref=A4]", "=1/0"); await r.click("#sh-name");
+  await r.waitForFunction(() => document.querySelector("[data-ref=A4]").value === "#DIV/0!");
+  await r.focus("[data-ref=A3]");
+  assert.equal(await r.inputValue("[data-ref=A3]"), "=SUM(A1:A2)*2"); // raw formula while editing
+  await r.reload();
+  await r.waitForFunction(() => document.querySelector("[data-ref=A3]")?.value === "10");
+  await r.click("#sh-new"); // second sheet is still free
+  await r.click("#sh-new"); // third one is not
+  assert.ok(await r.isVisible("#dlg")); await r.keyboard.press("Escape");
+  await r.click("#sh-export");
+  assert.ok(await r.isVisible("#dlg")); await r.keyboard.press("Escape");
+  await r.click("#sh-fill").catch(() => {});
+  assert.ok(await r.isVisible("#dlg")); await r.keyboard.press("Escape"); // fill also counts as a sheet
+
+  // documents (free plan)
+  await r.click("[data-tab=docs]");
+  await r.click("#doc-new");
+  await r.selectOption("#doc-template", "tplAgreement");
+  assert.equal(await r.inputValue("#doc-title"), "Service agreement");
+  await r.fill("#doc-client", "Acme Ltd");
+  assert.match(await r.textContent("#doc-preview"), /Acme Ltd \(the client\)/);
+  assert.match(await r.textContent("#doc-preview"), /Me \(the provider\)/); // name taken from the invoices
+  assert.equal(await r.textContent("#doc-missing"), "");
+  await r.click("#doc-as-template");
+  assert.ok(await r.isVisible("#dlg")); await r.keyboard.press("Escape");
+  await r.click("#doc-save");
+  await r.click("#doc-new"); await r.fill("#doc-title", "Two"); await r.click("#doc-save");
+  await r.click("#doc-new");
+  assert.ok(await r.isVisible("#dlg")); await r.keyboard.press("Escape");
+  assert.equal((await r.$$("#doc-list .card")).length, 2);
+
+  // Pro: csv round trip, invoice from sheet, own templates
+  await p.click("[data-tab=sheets]");
+  await p.click("#sh-new");
+  await p.fill("[data-ref=A1]", "Logo"); await p.fill("[data-ref=B1]", "2"); await p.fill("[data-ref=C1]", "150");
+  await p.fill("[data-ref=A2]", "Hosting, annual"); await p.fill("[data-ref=B2]", "1"); await p.fill("[data-ref=C2]", "=12*10");
+  await p.click("#sh-name");
+  const [csvDl] = await Promise.all([p.waitForEvent("download"), p.click("#sh-export")]);
+  const csv = fs.readFileSync(await csvDl.path(), "utf8");
+  assert.equal(csv.trim(), 'Logo,2,150\n"Hosting, annual",1,120');
+  await p.setInputFiles("#sh-file", { name: "imp.csv", mimeType: "text/csv", buffer: Buffer.from('Item,Qty,Price\nSetup,3,40\n') });
+  await p.waitForFunction(() => document.querySelector("#sh-name").value === "imp");
+  assert.equal(await p.inputValue("[data-ref=A2]"), "Setup");
+  await p.click("#sh-select"); await p.selectOption("#sh-select", { index: 0 });
+  await p.click("#sh-invoice");
+  await p.waitForFunction(() => /Hosting, annual/.test(document.querySelector("#preview")?.textContent || ""));
+  assert.match(await p.textContent("#preview"), /Logo/);
+  assert.ok(await p.isVisible("#edit-view"));
+  await p.click("#btn-back");
+  await p.click("[data-tab=docs]");
+  await p.click("#doc-new");
+  await p.fill("#doc-title", "My terms"); await p.fill("#doc-body", "# Terms for {{client}}\n\n- Net 7");
+  await p.click("#doc-as-template");
+  await p.click("#doc-save");
+  await p.click("#doc-new");
+  assert.ok((await p.$$eval("#doc-template option", (o) => o.map((x) => x.textContent))).includes("My terms"));
+  await p.click("#doc-back");
 
   assert.deepEqual(errs, []);
   console.log("e2e OK"); await b.close();

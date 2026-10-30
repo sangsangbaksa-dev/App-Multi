@@ -3,7 +3,7 @@
 A small invoicing tool for people who work alone. Static files, no backend: data sits in the
 browser's localStorage, so hosting costs nothing and there is no customer data to protect.
 
-Free: 3 documents, every currency and language, print to PDF, JSON backup/restore.
+Free: 3 invoices/quotes, 2 sheets, 2 documents, every currency and language, print to PDF, JSON backup/restore.
 Full license ($19, once): unlimited documents, no footer, logo, repeat billing, tracked-time
 billing, CSV export, client ledger and overdue ageing.
 
@@ -13,6 +13,8 @@ billing, CSV export, client ledger and overdue ageing.
 - Late fees (per started 30 days) and a copy-paste payment reminder per language.
 - Dashboard per currency, ageing buckets, per-client ledger.
 - Timer that turns tracked hours into invoice lines.
+- Sheets: a formula grid (SUM, AVERAGE, MIN, MAX, COUNT, ROUND, ABS, IF, cell references), CSV import/export, fill from invoices, rows to invoice. `sheet.js` is the engine; formulas are parsed by hand, no eval.
+- Documents: proposal, agreement and scope templates with {{client}}/{{from}}/{{date}} fields, own templates, print or save as PDF.
 - English, Korean, Japanese, Chinese, Spanish with local currency/date formats.
 
 ## Selling it

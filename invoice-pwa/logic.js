@@ -1,5 +1,7 @@
 // Everything here is DOM-free so `npm test` can cover it directly.
 export const FREE_LIMIT = 3;
+export const FREE_SHEETS = 2;
+export const FREE_DOCS = 2;
 
 export function round2(n) {
   return Math.round((n + Number.EPSILON) * 100) / 100;

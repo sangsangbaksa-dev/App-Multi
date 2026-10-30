@@ -11,13 +11,21 @@
 <body>
 <header class="bar noprint">
   <h1><a href="index.html">QuickBill</a></h1>
+  <nav class="tabs" aria-label="Workspace">
+    <button type="button" data-tab="invoices" data-i18n="tabInvoices"></button>
+    <button type="button" data-tab="sheets" data-i18n="tabSheets"></button>
+    <button type="button" data-tab="docs" data-i18n="tabDocs"></button>
+  </nav>
   <select id="lang" class="lang" aria-label="Language"></select>
   <span id="plan" class="badge"></span>
-  <button id="btn-new" data-i18n="newInvoice"></button>
-  <button id="btn-new-quote" class="ghost" data-i18n="newQuote"></button>
-  <button id="btn-upgrade" class="pro" data-i18n="goPro"></button>
+  <button id="btn-upgrade" class="accent" data-i18n="goPro"></button>
 </header>
 <main>
+<div id="tab-invoices">
+  <div class="row noprint" id="new-row">
+    <button id="btn-new" class="primary" data-i18n="newInvoice"></button>
+    <button id="btn-new-quote" data-i18n="newQuote"></button>
+  </div>
   <section id="list-view" class="noprint">
     <p class="muted" data-i18n="privacy"></p>
     <div id="dash" class="cards"></div>
@@ -37,9 +45,9 @@
       <div id="t-list"></div>
     </details>
     <div class="row">
-      <button id="btn-csv" class="ghost" data-i18n="exportCsv"></button>
-      <button id="btn-backup" class="ghost" data-i18n="backup"></button>
-      <button id="btn-restore" class="ghost" data-i18n="restore"></button>
+      <button id="btn-csv" data-pro data-i18n="exportCsv"></button>
+      <button id="btn-backup" data-i18n="backup"></button>
+      <button id="btn-restore" data-i18n="restore"></button>
       <input type="file" id="file-restore" accept="application/json" hidden>
     </div>
   </section>
@@ -60,30 +68,83 @@
         <label><span data-i18n="status"></span>
           <select name="status"><option value="draft" data-i18n="draft"></option><option value="sent" data-i18n="sent"></option><option value="paid" data-i18n="paid"></option><option value="accepted" data-i18n="accepted"></option></select></label>
         <label id="paid-wrap"><span data-i18n="paidAmt"></span><input type="number" step="0.01" min="0" name="paid" value="0"></label>
-        <label><span data-i18n="recurring"></span>
+        <label data-pro><span data-i18n="recurring"></span>
           <select name="recur"><option value="" data-i18n="none"></option><option value="weekly" data-i18n="weekly"></option><option value="monthly" data-i18n="monthly"></option></select></label>
-        <label><span data-i18n="logo"></span><input type="file" id="logo-file" accept="image/*"></label>
+        <label data-pro><span data-i18n="logo"></span><input type="file" id="logo-file" accept="image/*"></label>
       </div>
       <h3 data-i18n="items"></h3>
       <div id="items"></div>
-      <button type="button" id="btn-add" class="ghost" data-i18n="addItem"></button>
+      <button type="button" id="btn-add" data-i18n="addItem"></button>
       <label class="inline"><span data-i18n="lateFeePct"></span><input type="number" step="0.1" min="0" name="lateFeePct" value="0"></label>
       <label><span data-i18n="notes"></span><textarea name="notes" rows="2"></textarea></label>
       <label><span data-i18n="payinfo"></span><textarea name="payinfo" rows="2"></textarea></label>
       <div class="row">
-        <button type="submit" data-i18n="save"></button>
-        <button type="button" id="btn-convert" class="pro" data-i18n="convert"></button>
-        <button type="button" id="btn-latefee" class="ghost" data-i18n="lateFee"></button>
-        <button type="button" id="btn-remind" class="ghost" data-i18n="reminder"></button>
-        <button type="button" id="btn-print" class="ghost" data-i18n="print"></button>
-        <button type="button" id="btn-logo-rm" class="ghost" data-i18n="logoRemove"></button>
-        <button type="button" id="btn-delete" class="ghost danger" data-i18n="del"></button>
-        <button type="button" id="btn-back" class="ghost" data-i18n="back"></button>
+        <button type="submit" class="primary" data-i18n="save"></button>
+        <button type="button" id="btn-convert" class="accent" data-i18n="convert"></button>
+        <button type="button" id="btn-latefee" data-i18n="lateFee"></button>
+        <button type="button" id="btn-remind" data-i18n="reminder"></button>
+        <button type="button" id="btn-print" data-i18n="print"></button>
+        <button type="button" id="btn-logo-rm" data-i18n="logoRemove"></button>
+        <button type="button" id="btn-delete" class="danger" data-i18n="del"></button>
+        <button type="button" id="btn-back" data-i18n="back"></button>
       </div>
     </form>
     <article id="preview"></article>
   </section>
-  <p id="toast" class="toast noprint" hidden></p>
+</div>
+
+<div id="tab-sheets" class="noprint" hidden>
+  <p id="sh-empty" class="muted" data-i18n="sheetsEmpty"></p>
+  <div class="row">
+    <select id="sh-select" class="auto" aria-label="Sheet"></select>
+    <button id="sh-new" class="primary" data-i18n="newSheet"></button>
+    <button id="sh-fill" data-i18n="fillInvoices"></button>
+    <input type="file" id="sh-file" accept=".csv,text/csv" hidden>
+  </div>
+  <div id="sh-body">
+    <div class="row">
+      <input id="sh-name" class="auto" aria-label="Sheet name">
+      <button id="sh-row" data-i18n="rowAdd"></button>
+      <button id="sh-col" data-i18n="colAdd"></button>
+      <button id="sh-import" data-pro data-i18n="importCsv"></button>
+      <button id="sh-export" data-pro data-i18n="exportSheet"></button>
+      <button id="sh-invoice" data-pro data-i18n="sheetToInvoice"></button>
+      <button id="sh-del" class="danger" data-i18n="del"></button>
+    </div>
+    <p class="muted" data-i18n="sheetHint"></p>
+    <div id="sh-grid" class="gridwrap"></div>
+  </div>
+</div>
+
+<div id="tab-docs" hidden>
+  <section id="doc-list-view" class="noprint">
+    <div class="row"><button id="doc-new" class="primary" data-i18n="newDocument"></button></div>
+    <p id="doc-empty" class="muted" data-i18n="docsEmpty"></p>
+    <div id="doc-list"></div>
+  </section>
+  <section id="doc-edit" hidden>
+    <div class="noprint">
+      <div class="grid">
+        <label><span data-i18n="docTitle"></span><input id="doc-title"></label>
+        <label><span data-i18n="docClient"></span><input id="doc-client" list="clients"></label>
+        <label><span data-i18n="fieldFrom"></span><input id="doc-from"></label>
+        <label><span data-i18n="docTemplate"></span><select id="doc-template"></select></label>
+      </div>
+      <label><span data-i18n="docBody"></span><textarea id="doc-body" rows="14" spellcheck="false"></textarea></label>
+      <p class="muted" data-i18n="docHint"></p>
+      <p id="doc-missing" class="late"></p>
+      <div class="row">
+        <button id="doc-save" class="primary" data-i18n="save"></button>
+        <button id="doc-print" data-i18n="print"></button>
+        <button id="doc-as-template" data-pro data-i18n="saveTemplate"></button>
+        <button id="doc-delete" class="danger" data-i18n="del"></button>
+        <button id="doc-back" data-i18n="back"></button>
+      </div>
+    </div>
+    <article id="doc-preview" class="sheet-paper"></article>
+  </section>
+</div>
+<p id="toast" class="toast noprint" hidden></p>
 </main>
 
 <dialog id="dlg">
@@ -92,8 +153,8 @@
   <p><a id="buy" target="_blank" rel="noopener" data-i18n="buy"></a></p>
   <form method="dialog" id="lic-form">
     <input id="lic" placeholder="PRO-XXXX-XXXX-XXXX" autocomplete="off">
-    <button value="ok" data-i18n="activate"></button>
-    <button value="cancel" class="ghost" data-i18n="close"></button>
+    <button value="ok" class="primary" data-i18n="activate"></button>
+    <button value="cancel" data-i18n="close"></button>
   </form>
   <p id="lic-msg" class="muted"></p>
 </dialog>

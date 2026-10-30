@@ -1,6 +1,7 @@
 import * as L from "./logic.js";
 import * as I from "./i18n.js";
 import { CONFIG } from "./config.js";
+import { initWorkspace } from "./workspace.js";
 
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -28,6 +29,7 @@ function toast(msg) {
 }
 
 function renderList() {
+  document.body.classList.toggle("is-pro", isPro());
   $("#plan").textContent = isPro() ? "Pro" : `Free ${invoices.length}/${L.FREE_LIMIT}`;
   $("#btn-upgrade").hidden = isPro();
   $("#empty").hidden = invoices.length > 0;
@@ -75,7 +77,7 @@ function renderTime() {
   $("#t-rate").value = rate;
   const groups = L.unbilledByClient(entries);
   $("#t-list").innerHTML = groups.length ? groups.map((g) =>
-    `<button type="button" class="ghost" data-bill="${esc(g.client)}">${esc(I.t("billTime", { client: g.client, h: L.hoursOf(g.secs) }))}</button>`).join(" ")
+    `<button type="button" data-pro data-bill="${esc(g.client)}">${esc(I.t("billTime", { client: g.client, h: L.hoursOf(g.secs) }))}</button>`).join(" ")
     : `<p class="muted">${I.t("timeEmpty")}</p>`;
   clearInterval(tick);
   const clock = () => ($("#t-clock").textContent = running ? fmtClock(Math.floor((Date.now() - running.at) / 1000)) : "");
@@ -120,7 +122,7 @@ function itemRow(it = { desc: "", qty: 1, price: 0 }) {
   d.innerHTML = `<input placeholder="${esc(I.t("desc"))}" value="${esc(it.desc)}" data-k="desc">
     <input type="number" min="0" step="any" value="${esc(it.qty)}" data-k="qty" aria-label="${esc(I.t("qty"))}">
     <input type="number" min="0" step="any" value="${esc(it.price)}" data-k="price" aria-label="${esc(I.t("price"))}">
-    <button type="button" class="ghost danger" aria-label="Remove item">×</button>`;
+    <button type="button" class="danger" aria-label="Remove item">×</button>`;
   d.querySelector("button").onclick = () => { d.remove(); renderPreview(); };
   return d;
 }
@@ -174,12 +176,14 @@ function openEditor(inv) {
   $("#due-lbl").textContent = I.t(q ? "validUntil" : "due");
   for (const o of $("#form").elements.status.options) o.hidden = o.disabled = q ? o.value === "paid" : o.value === "accepted";
   $("#list-view").hidden = true;
+  $("#new-row").hidden = true;
   $("#edit-view").hidden = false;
   renderPreview();
 }
 function closeEditor() {
   editing = null;
   $("#edit-view").hidden = true;
+  $("#new-row").hidden = false;
   $("#list-view").hidden = false;
   renderList();
 }
@@ -208,6 +212,7 @@ function fullRender() {
   renderList();
   renderPreview();
   renderTime();
+  ws?.render();
 }
 
 // ---- events ----
@@ -346,6 +351,12 @@ let saved = null; try { saved = localStorage.getItem("qb.lang"); } catch {}
 I.setLang(I.detectLang(saved));
 I.langSelect($("#lang"), (l) => { I.setLang(l); try { localStorage.setItem("qb.lang", l); } catch {} fullRender(); });
 runRecurring();
+const ws = initWorkspace({
+  store, toast, isPro, openUpgrade, download,
+  getInvoices: () => invoices,
+  getFrom: () => invoices.find((i) => i.from)?.from ?? "",
+  createInvoice: (items) => newDoc("invoice", { items }),
+});
 fullRender();
 renderTime();
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
