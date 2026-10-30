@@ -11,13 +11,16 @@ The code is ready; these steps need your accounts or decisions. Nothing here has
 - [ ] Create a store, create a product "Stayline Pro" with **licence keys enabled**, set the price.
 - [ ] Copy the checkout link into `config.js` → `checkoutUrl`.
 - [ ] Note the Store ID and Product ID (numeric).
-- [ ] In Vercel project `stayline-days` → Settings → Environment Variables add `LS_STORE_ID` and `LS_PRODUCT_ID`, then redeploy. Until both are set, the app uses the old placeholder offline key check, which **anyone can bypass** (do not sell before this is set).
+- [ ] On the host that serves the live site, add `LS_STORE_ID` and `LS_PRODUCT_ID` as environment variables, then redeploy (Cloudflare Pages: Settings → Variables and Secrets; see `cloudflare-pages.md`. Vercel Hobby is not allowed for commercial use, so use Cloudflare Pages for selling.) Until both are set, the app uses the old placeholder offline key check, which **anyone can bypass** (do not sell before this is set).
 - [ ] Buy your own product once (test mode if available) and activate the key in the app to see it work. This path has only been tested with mocks.
 
 ## 3. Email and domain
 - [ ] Create a real support address, put it in `config.js` → `supportEmail`.
-- [ ] Buy a domain (optional) and connect it in Vercel → Domains. Then set `config.js` → `siteUrl` to it.
+- [ ] Buy a domain (optional) and connect it in Cloudflare Pages → Custom domains (see `cloudflare-pages.md`). Then set `config.js` → `siteUrl` to it.
 - [ ] After any change to `config.js`, run `node scripts/build-site.js` (regenerates pages, sitemap, canonical and hreflang URLs), commit and deploy.
+
+## 3b. Hosting
+- [ ] Move to Cloudflare Pages by following `cloudflare-pages.md` (account, GitHub connection, settings, variables). Do this before taking payments.
 
 ## 4. Before announcing
 - [ ] Merge PR #3 into `main` (or point the Vercel production branch at your release branch). Vercel project settings for the other two apps need a root-directory fix; see the PR thread.
