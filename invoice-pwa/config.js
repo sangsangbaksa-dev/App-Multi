@@ -4,7 +4,7 @@
 export const CONFIG = {
   appName: "QuickBill",
   // Public address of the site, no trailing slash. Also used by `node design/seo.cjs` for canonical links and the sitemap.
-  siteUrl: "https://quickbill-waldo5.vercel.app",
+  siteUrl: "https://quickbill-app.pages.dev",
   // Checkout link of the payment platform (Lemon Squeezy, Stripe Payment Link, Gumroad ...).
   checkoutUrl: "https://example.com/buy-quickbill-pro",
   price: "$19 one-time",

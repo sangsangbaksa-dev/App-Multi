@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://quickbill-waldo5.vercel.app/sitemap.xml
+Sitemap: https://quickbill-app.pages.dev/sitemap.xml
