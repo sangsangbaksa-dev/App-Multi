@@ -63,3 +63,55 @@ export function validLicense(key) {
 export function overdue(inv, today = new Date().toISOString().slice(0, 10)) {
   return inv.status !== "paid" && inv.dueDate && inv.dueDate < today;
 }
+
+// ---- recurring invoices ----
+export function addPeriod(date, freq) {
+  const d = new Date(date + "T00:00:00Z");
+  if (freq === "weekly") d.setUTCDate(d.getUTCDate() + 7);
+  else if (freq === "monthly") {
+    const day = d.getUTCDate();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    const dim = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+    d.setUTCDate(Math.min(day, dim));
+  }
+  return d.toISOString().slice(0, 10);
+}
+export function addDays(date, n) {
+  const d = new Date(date + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+export function dayDiff(a, b) {
+  return Math.round((new Date(b + "T00:00:00Z") - new Date(a + "T00:00:00Z")) / 864e5);
+}
+
+// Creates a draft copy for every elapsed period of each recurring invoice.
+// Returns { invoices, created } and never mutates the input.
+export function runRecurring(invoices, today, newId) {
+  let list = invoices.map((i) => ({ ...i }));
+  let created = 0;
+  for (const inv of [...list]) {
+    if (!inv.recur || !inv.nextRun) continue;
+    const terms = dayDiff(inv.issueDate, inv.dueDate);
+    let guard = 0;
+    while (inv.nextRun <= today && guard++ < 12) {
+      list.unshift({
+        ...inv, id: newId(), number: nextInvoiceNumber(list), issueDate: inv.nextRun,
+        dueDate: addDays(inv.nextRun, terms), status: "draft", recur: "", nextRun: "",
+        items: inv.items.map((x) => ({ ...x })),
+      });
+      inv.nextRun = addPeriod(inv.nextRun, inv.recur);
+      created++;
+    }
+  }
+  return { invoices: list, created };
+}
+
+// Shape check for restored backups (never trust imported JSON).
+export function validInvoice(i) {
+  return !!i && typeof i === "object" && typeof i.id === "string" && typeof i.number === "string" &&
+    Array.isArray(i.items) && i.items.every((x) => x && typeof x === "object") &&
+    ["draft", "sent", "paid"].includes(i.status) && /^[A-Z]{3}$/.test(i.currency || "") &&
+    /^\d{4}-\d{2}-\d{2}$/.test(i.issueDate || "") && /^\d{4}-\d{2}-\d{2}$/.test(i.dueDate || "");
+}

@@ -4,64 +4,46 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>QuickBill – Invoices for freelancers</title>
+<meta name="description" content="Private, offline invoice maker for freelancers. Pay once, no subscription. English, 한국어, 日本語, 中文, Español.">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
 <meta name="theme-color" content="#2563eb">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<header class="bar noprint">
-  <h1>QuickBill</h1>
-  <span id="plan" class="badge"></span>
-  <button id="btn-new">+ New invoice</button>
-  <button id="btn-upgrade" class="pro">Go Pro</button>
-</header>
+<body class="landing">
+<header class="bar"><h1>QuickBill</h1><select id="lang" class="lang" aria-label="Language"></select></header>
 <main>
-  <section id="list-view" class="noprint">
-    <div id="list"></div>
-    <p class="muted" id="empty">No invoices yet. Create your first one.</p>
-    <button id="btn-csv" class="ghost">Export CSV (Pro)</button>
+  <section class="hero">
+    <h2 data-i18n="heroTitle"></h2>
+    <p data-i18n="heroSub"></p>
+    <a class="btn" href="app.html" data-i18n="open"></a>
   </section>
-
-  <section id="edit-view" hidden>
-    <form id="form" class="noprint">
-      <div class="grid">
-        <label>Your name / business<input name="from" required></label>
-        <label>Client<input name="client" required></label>
-        <label>Invoice #<input name="number" required></label>
-        <label>Currency
-          <select name="currency"><option>USD</option><option>EUR</option><option>GBP</option><option>KRW</option><option>JPY</option><option>CAD</option><option>AUD</option></select></label>
-        <label>Issue date<input type="date" name="issueDate" required></label>
-        <label>Due date<input type="date" name="dueDate" required></label>
-        <label>Tax %<input type="number" step="0.01" min="0" name="taxRate" value="0"></label>
-        <label>Discount<input type="number" step="0.01" min="0" name="discount" value="0"></label>
-        <label>Status<select name="status"><option>draft</option><option>sent</option><option>paid</option></select></label>
-      </div>
-      <h3>Items</h3>
-      <div id="items"></div>
-      <button type="button" id="btn-add" class="ghost">+ Add item</button>
-      <label>Notes<textarea name="notes" rows="2"></textarea></label>
-      <div class="row">
-        <button type="submit">Save</button>
-        <button type="button" id="btn-print" class="ghost">Print / PDF</button>
-        <button type="button" id="btn-delete" class="ghost danger">Delete</button>
-        <button type="button" id="btn-back" class="ghost">Back</button>
-      </div>
-    </form>
-    <article id="preview"></article>
-  </section>
+  <section><h3 data-i18n="polTitle"></h3>
+    <div class="cards">
+      <div class="pc"><b data-i18n="p1t"></b><p data-i18n="p1d"></p></div>
+      <div class="pc"><b data-i18n="p2t"></b><p data-i18n="p2d"></p></div>
+      <div class="pc"><b data-i18n="p3t"></b><p data-i18n="p3d"></p></div>
+      <div class="pc"><b data-i18n="p4t"></b><p data-i18n="p4d"></p></div>
+    </div></section>
+  <section><h3 data-i18n="featTitle"></h3>
+    <ul><li data-i18n="f1"></li><li data-i18n="f2"></li><li data-i18n="f3"></li><li data-i18n="f4"></li><li data-i18n="f5"></li></ul></section>
+  <section><h3 data-i18n="priceTitle"></h3>
+    <div class="cards">
+      <div class="pc"><b data-i18n="freeName"></b> <span data-i18n="priceFree"></span><p data-i18n="freeList"></p></div>
+      <div class="pc hl"><b data-i18n="proName"></b> <span data-i18n="priceProV"></span><p data-i18n="proList"></p></div>
+    </div>
+    <p><a class="btn" href="app.html" data-i18n="open"></a></p></section>
 </main>
-
-<dialog id="dlg">
-  <h2>QuickBill Pro</h2>
-  <p>Unlimited invoices, no watermark, CSV export. <b id="price"></b></p>
-  <p><a id="buy" target="_blank" rel="noopener">Buy a license</a></p>
-  <form method="dialog" id="lic-form">
-    <input id="lic" placeholder="PRO-XXXX-XXXX-XXXX" autocomplete="off">
-    <button value="ok">Activate</button>
-    <button value="cancel" class="ghost">Close</button>
-  </form>
-  <p id="lic-msg" class="muted"></p>
-</dialog>
-<script type="module" src="app.js"></script>
+<footer class="muted" data-i18n="footer"></footer>
+<script type="module">
+import * as I from "./i18n.js";
+let saved = null; try { saved = localStorage.getItem("qb.lang"); } catch {}
+I.setLang(I.detectLang(saved));
+const sel = document.getElementById("lang");
+const go = () => { I.applyI18n(); document.title = "QuickBill – " + I.t("heroTitle"); };
+I.langSelect(sel, (l) => { I.setLang(l); try { localStorage.setItem("qb.lang", l); } catch {} go(); });
+go();
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
 </body>
 </html>
