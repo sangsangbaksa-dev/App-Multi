@@ -1,5 +1,5 @@
 // Run: node tests/e2e-license.cjs
-// Starts its own server on :8124 with the license function switched on and Lemon Squeezy mocked, then checks the
+// Starts its own server on :8124 with the license function switched on and Polar mocked, then checks the
 // whole key flow in a browser: server-checked keys unlock Pro, offline-format keys are refused, a refunded key
 // switches Pro off after the weekly re-check while the data stays, and a network failure never removes Pro.
 const { chromium } = require("playwright");
@@ -9,7 +9,7 @@ const path = require("node:path");
 const BASE = "http://localhost:8124";
 
 (async () => {
-  const srv = spawn("node", [path.join(__dirname, "serve.cjs"), "8124"], { env: { ...process.env, QB_MOCK_LS: "1", LS_STORE_ID: "10", LS_PRODUCT_ID: "20" }, stdio: "ignore" });
+  const srv = spawn("node", [path.join(__dirname, "serve.cjs"), "8124"], { env: { ...process.env, QB_MOCK_LS: "1", POLAR_ORGANIZATION_ID: "org-1", POLAR_BENEFIT_ID: "ben-1" }, stdio: "ignore" });
   await new Promise((r) => setTimeout(r, 800));
   const b = await chromium.launch();
   const errs = [];

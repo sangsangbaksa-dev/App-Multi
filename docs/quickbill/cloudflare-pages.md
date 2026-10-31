@@ -19,8 +19,8 @@ QuickBill은 Vercel(Hobby 플랜은 상업 이용 불가)에서 Cloudflare Pages
 
 - `functions/api/license.js` → Pages Function, 주소는 `/api/license` 그대로입니다.
 - 환경변수(Pages 프로젝트 → Settings → Variables and Secrets, Production에 추가):
-  - `LS_STORE_ID`
-  - `LS_PRODUCT_ID`
+  - `POLAR_ORGANIZATION_ID`
+  - `POLAR_BENEFIT_ID`
 - 값이 없으면 `{"configured":false}`를 돌려주고 앱은 기존 오프라인 키로 동작합니다.
 
 ## 로컬 확인

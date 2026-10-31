@@ -52,7 +52,7 @@ Tests: `npm test` (logic and storage), `node tests/e2e.cjs`, `node tests/e2e-vid
 
 - `config.js` is the one place for the checkout link, support email, price and site address. Terms, privacy, the landing page and the upgrade dialog read it.
 - `landing.src.html` is the landing page source. `node design/seo.cjs` renders it into `index.html` and the language pages (`ko/`, `ja/`, `zh/`, `es/`) with canonical and hreflang links, JSON-LD, `sitemap.xml` and `robots.txt`. Edit the source, not `index.html`, and run the script after changing the source, `i18n.js`, `config.js` or the site address.
-- `api/license.js` checks Pro keys with Lemon Squeezy. It needs `LS_STORE_ID` and `LS_PRODUCT_ID` as Vercel environment variables; without them the app keeps accepting offline keys. `license.js` is the browser side: keys the server accepted are re-checked about once a week, and only a clear refusal switches Pro off (data is never touched).
+- `api/license.js` checks Pro keys with Polar. It needs `POLAR_ORGANIZATION_ID` and `POLAR_BENEFIT_ID` as Vercel environment variables; without them the app keeps accepting offline keys. `license.js` is the browser side: keys the server accepted are re-checked about once a week, and only a clear refusal switches Pro off (data is never touched).
 - `vercel.json` sets the security headers, including the content security policy. `node tests/serve.cjs` serves the folder with the same headers (and runs the license function) for the e2e tests.
 - Steps that need the owner (payment account, domain, environment variables, tax questions) are in `../docs/quickbill/launch-checklist.md`; announcement and pilot texts are in `../docs/quickbill/copy.md`.
 

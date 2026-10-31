@@ -4,47 +4,47 @@ import { check, configured } from "../api/license.js";
 import * as LS from "../license.js";
 import { makeLicense as makeKey } from "../logic.js";
 
-const env = { LS_STORE_ID: "10", LS_PRODUCT_ID: "20" };
-const meta = { store_id: 10, product_id: 20 };
-// Fake Lemon Squeezy: returns whatever `reply` says, and records what was sent.
-const fake = (reply) => { const calls = []; const f = async (url, init) => { calls.push({ url, body: new URLSearchParams(init.body) }); return { status: 200, json: async () => reply }; }; f.calls = calls; return f; };
+const env = { POLAR_ORGANIZATION_ID: "org-1", POLAR_BENEFIT_ID: "ben-1" };
+const lk = (status, extra = {}) => ({ status, benefit_id: "ben-1", ...extra });
+// Fake Polar: returns whatever `reply` says (with an HTTP status), and records what was sent.
+const fake = (reply, status = 200) => { const calls = []; const f = async (url, init) => { calls.push({ url, body: JSON.parse(init.body) }); return { status, json: async () => reply }; }; f.calls = calls; return f; };
 
 test("without env vars the function reports not configured and never calls out", async () => {
   const f = fake({});
   assert.deepEqual((await check({ action: "activate", key: "good-key-0001" }, {}, f)).body, { configured: false });
   assert.equal(f.calls.length, 0);
-  assert.equal(configured({ LS_STORE_ID: "1" }), false);
+  assert.equal(configured({ POLAR_ORGANIZATION_ID: "1" }), false);
 });
 
-test("a key for our store and product activates and returns only the instance id", async () => {
-  const f = fake({ activated: true, license_key: { status: "active" }, instance: { id: "inst-123456" }, meta: { ...meta, customer_email: "a@b.c" } });
+test("a key for our organization and product activates and returns only the instance id", async () => {
+  const f = fake({ id: "inst-123456", license_key: { ...lk("granted"), key: "good-key-0001" }, customer: { email: "a@b.c" } });
   const r = await check({ action: "activate", key: "good-key-0001", name: "QuickBill" }, env, f);
   assert.deepEqual(r.body, { configured: true, valid: true, instance: "inst-123456" });
-  assert.equal(f.calls[0].url, "https://api.lemonsqueezy.com/v1/licenses/activate");
-  assert.equal(f.calls[0].body.get("license_key"), "good-key-0001");
+  assert.equal(f.calls[0].url, "https://api.polar.sh/v1/customer-portal/license-keys/activate");
+  assert.deepEqual(f.calls[0].body, { key: "good-key-0001", organization_id: "org-1", label: "QuickBill" });
 });
 
-test("a key bought for another product or store is refused", async () => {
-  const f = fake({ activated: true, license_key: { status: "active" }, instance: { id: "x" }, meta: { store_id: 10, product_id: 99 } });
+test("a key bought for another product is refused", async () => {
+  const f = fake({ id: "x", license_key: { status: "granted", benefit_id: "other" } });
   const r = await check({ action: "activate", key: "good-key-0001" }, env, f);
   assert.equal(r.body.valid, false);
   assert.equal(r.body.reason, "product");
 });
 
 test("disabled, expired and unknown keys are refused with a reason", async () => {
-  for (const [status, reason] of [["disabled", "revoked"], ["expired", "revoked"]]) {
-    const r = await check({ action: "activate", key: "good-key-0001" }, env, fake({ activated: true, license_key: { status }, meta }));
+  for (const [status, reason] of [["disabled", "revoked"], ["revoked", "revoked"]]) {
+    const r = await check({ action: "activate", key: "good-key-0001" }, env, fake({ id: "x", license_key: lk(status) }));
     assert.equal(r.body.valid, false); assert.equal(r.body.reason, reason);
   }
-  const u = await check({ action: "activate", key: "good-key-0001" }, env, fake({ activated: false, error: "not found" }));
+  const u = await check({ action: "activate", key: "good-key-0001" }, env, fake({ detail: "Not found" }, 404));
   assert.equal(u.body.reason, "unknown");
-  const l = await check({ action: "activate", key: "good-key-0001" }, env, fake({ activated: false, error: "limit", license_key: { status: "active" }, meta }));
+  const l = await check({ action: "activate", key: "good-key-0001" }, env, fake({ detail: "Activation limit reached" }, 403));
   assert.equal(l.body.reason, "limit");
 });
 
 test("validate confirms a stored key; a refund turns it off", async () => {
-  assert.equal((await check({ action: "validate", key: "good-key-0001", instance: "inst-123456" }, env, fake({ valid: true, license_key: { status: "active" }, meta }))).body.valid, true);
-  const r = await check({ action: "validate", key: "good-key-0001" }, env, fake({ valid: false, license_key: { status: "disabled" }, meta }));
+  assert.equal((await check({ action: "validate", key: "good-key-0001", instance: "inst-123456" }, env, fake(lk("granted", { activation: { id: "inst-123456" } })))).body.valid, true);
+  const r = await check({ action: "validate", key: "good-key-0001" }, env, fake(lk("revoked")));
   assert.equal(r.body.valid, false); assert.equal(r.body.reason, "revoked");
 });
 

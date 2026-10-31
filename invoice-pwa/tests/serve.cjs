@@ -5,23 +5,22 @@ const root = path.join(__dirname, "..");
 const cfg = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".json": "application/json", ".xml": "application/xml", ".txt": "text/plain" };
 
-// /api/license runs the real function. With QB_MOCK_LS=1 (and LS_STORE_ID / LS_PRODUCT_ID set) the calls to
-// Lemon Squeezy are answered from a small table instead of the network:
-//   good-key-0001 -> valid, REVOKED-key-001 -> disabled, OTHER-product-01 -> belongs to another product
+// /api/license runs the real function. With QB_MOCK_LS=1 (and POLAR_ORGANIZATION_ID / POLAR_BENEFIT_ID set) the calls to
+// Polar are answered from a small table instead of the network:
+//   good-key-0001 -> granted, REVOKED-key-001 -> revoked, OTHER-product-01 -> belongs to another product
 let licenseHandler = null;
 const mockLS = () => {
   const orig = global.fetch;
   global.fetch = async (url, init) => {
-    if (!String(url).startsWith("https://api.lemonsqueezy.com/")) return orig(url, init);
-    const f = new URLSearchParams(init.body), key = f.get("license_key");
-    const meta = { store_id: Number(process.env.LS_STORE_ID), product_id: Number(process.env.LS_PRODUCT_ID) };
-    const mk = (status, m = meta) => ({ license_key: { status, key }, instance: { id: "11111111-2222-3333-4444-555555555555", name: f.get("instance_name") }, meta: m });
-    let body;
-    if (key === "good-key-0001") body = { activated: true, valid: true, ...mk("active") };
-    else if (key === "REVOKED-key-001") body = { activated: true, valid: false, ...mk("disabled") };
-    else if (key === "OTHER-product-01") body = { activated: true, valid: true, ...mk("active", { store_id: 1, product_id: 2 }) };
-    else body = { activated: false, valid: false, error: "license_key not found." };
-    return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
+    if (!String(url).startsWith("https://api.polar.sh/")) return orig(url, init);
+    const { key } = JSON.parse(init.body), benefit = process.env.POLAR_BENEFIT_ID;
+    const mk = (status, b = benefit) => ({ id: "11111111-2222-3333-4444-555555555555", status, benefit_id: b, license_key: { status, benefit_id: b, key }, activation: { id: "11111111-2222-3333-4444-555555555555" } });
+    let body, code = 200;
+    if (key === "good-key-0001") body = mk("granted");
+    else if (key === "REVOKED-key-001") body = mk("revoked");
+    else if (key === "OTHER-product-01") body = mk("granted", "other-benefit");
+    else { body = { detail: "Not found" }; code = 404; }
+    return new Response(JSON.stringify(body), { status: code, headers: { "Content-Type": "application/json" } });
   };
 };
 if (process.env.QB_MOCK_LS) mockLS();

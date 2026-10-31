@@ -8,16 +8,16 @@
 - **Vercel Hobby 플랜 문제 (확인 필요)**: Vercel의 Hobby 플랜은 비상업적 개인 용도로 안내되어 있습니다. 유료 상품을 파는 사이트라면 Pro 플랜이 필요할 수 있으니, 결제를 열기 전에 Vercel 약관(Fair Use Guidelines)을 확인하세요. 정적 파일과 함수 하나뿐이라 다른 호스팅으로 옮기기도 쉽습니다.
 - **검색 노출**: `*.vercel.app` 주소에서는 응답 헤더에 `x-robots-tag: noindex`가 붙어 있는 것을 확인했습니다. 검색에 노출하려면 4번(자체 도메인)이 필요합니다.
 
-## 1. 결제 플랫폼 가입 (Lemon Squeezy 기준)
+## 1. 결제 플랫폼 가입 (Polar 기준)
 
-앱의 서버 검증 코드는 Lemon Squeezy 라이선스 API에 맞춰 작성되어 있습니다. Lemon Squeezy는 판매자 대신 세금 처리를 맡는 방식(Merchant of Record)이라 1인 판매자에게 부담이 적습니다. 다른 플랫폼(Gumroad, Paddle, Stripe)을 쓰려면 `api/license.js`를 바꿔야 합니다.
+앱의 서버 검증 코드는 Polar의 라이선스 키 API에 맞춰 작성되어 있습니다. Polar는 판매자 대신 세금 처리를 맡는 방식(Merchant of Record)이라 1인 판매자에게 부담이 적습니다. 다른 플랫폼(Gumroad, Paddle, Stripe)을 쓰려면 `api/license.js`를 바꿔야 합니다.
 
-1. https://www.lemonsqueezy.com 에서 가입하고 스토어를 만듭니다.
+1. https://polar.sh 에서 가입하고 조직(Organization)을 만듭니다.
 2. **한국에서 가입·정산이 되는지, 수수료와 정산 방식이 어떤지 가입 전에 공식 문서로 확인하세요 (확인 필요).**
 3. 상품을 만듭니다: 이름 `QuickBill Pro`, 가격 `$19` 1회 결제.
-4. 상품 설정에서 **License keys**를 켜고 활성화 가능 기기 수를 정합니다(예: 3대). 이 숫자가 "기기 수" 문구의 기준이 됩니다.
-5. 상품의 **공유(Share) 링크**를 복사합니다. 이것이 결제 링크입니다.
-6. 스토어 ID와 상품 ID를 적어 둡니다(스토어 설정과 상품 주소에서 확인). 2번 환경변수에 씁니다.
+4. 상품에 **License Keys 혜택(Benefit)**을 추가하고 활성화 가능 기기 수(Activation limit)를 정합니다(예: 3대). 이 숫자가 "기기 수" 문구의 기준이 됩니다.
+5. 상품의 **체크아웃 링크(Checkout Link)**를 만들어 복사합니다. 이것이 결제 링크입니다.
+6. Organization ID(Settings)와 License Keys 혜택의 Benefit ID를 적어 둡니다. 둘 다 UUID이며 3번 환경변수에 씁니다.
 7. 정산 계좌와 본인 확인(세금 정보)을 입력합니다.
 
 ## 2. 결제 링크·이메일·가격을 한 곳에 넣기
@@ -40,10 +40,10 @@ refundDays: 14,
 ## 3. 서버 라이선스 검증 켜기 (환경변수)
 
 1. Vercel → quickbill 프로젝트 → Settings → Environment Variables 에 두 개를 Production으로 추가합니다.
-   - `LS_STORE_ID` = 1번의 스토어 ID
-   - `LS_PRODUCT_ID` = 1번의 상품 ID
+   - `POLAR_ORGANIZATION_ID` = 1번의 Organization ID
+   - `POLAR_BENEFIT_ID` = 1번의 Benefit ID
 2. 다시 배포합니다.
-3. Lemon Squeezy **테스트 모드**로 결제해 라이선스 키를 받고, 앱 업그레이드 창에 넣어 Pro가 켜지는지 확인합니다.
+3. Polar **샌드박스(sandbox.polar.sh) 또는 100% 할인 코드**로 결제해 라이선스 키를 받고, 앱 업그레이드 창에 넣어 Pro가 켜지는지 확인합니다.
 4. 확인 후 환불을 한 번 해 보고, 며칠 뒤(앱은 일주일에 한 번 재확인) Pro가 꺼지는지, 데이터는 남는지 확인합니다.
 
 동작 방식: 환경변수가 없으면 기존처럼 오프라인 키(`PRO-XXXX-…`)가 동작합니다. 환경변수를 넣으면 서버가 확인한 키만 Pro가 되고 오프라인 키는 더 이상 받지 않습니다. 오프라인 상태이거나 서버가 응답하지 않아도 이미 켜진 Pro는 꺼지지 않으며, 환불·비활성화가 확인될 때만 꺼집니다. 데이터는 지우지 않습니다.
@@ -92,7 +92,7 @@ refundDays: 14,
 
 - 한국 전자세금계산서와 각국 전자청구서는 지원하지 않습니다(약관과 FAQ에도 적혀 있음).
 - 데이터가 브라우저에만 있어서 기기 간 동기화가 없습니다. 백업 JSON이 유일한 이동 수단입니다.
-- 라이선스 서버 검증은 모의 응답으로만 시험했습니다. 실제 Lemon Squeezy 응답으로는 3번의 테스트 결제에서 처음 확인됩니다.
+- 라이선스 서버 검증은 모의 응답으로만 시험했습니다. 실제 Polar 응답으로는 3번의 테스트 결제에서 처음 확인됩니다.
 - 웨딩·시설 모듈은 아직 만들지 않았습니다.
 
 ## 호스팅 변경: Cloudflare Pages

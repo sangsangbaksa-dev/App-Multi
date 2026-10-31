@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { handle } from "../functions/api/license.js";
 
-const env = { LS_STORE_ID: "10", LS_PRODUCT_ID: "20" };
+const env = { POLAR_ORGANIZATION_ID: "org-1", POLAR_BENEFIT_ID: "ben-1" };
 const ls = (reply) => async () => ({ status: 200, json: async () => reply });
 const post = (body) => new Request("https://example.test/api/license", { method: "POST", body: JSON.stringify(body) });
 
@@ -14,10 +14,9 @@ test("Pages Function: GET reports whether the license check is configured", asyn
 });
 
 test("Pages Function: activate accepts our product and refuses another", async () => {
-  const meta = { store_id: 10, product_id: 20 };
-  const ok = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ activated: true, license_key: { status: "active" }, instance: { id: "inst-123456" }, meta }));
+  const ok = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ id: "inst-123456", license_key: { status: "granted", benefit_id: "ben-1" } }));
   assert.deepEqual(await ok.json(), { configured: true, valid: true, instance: "inst-123456" });
-  const other = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ activated: true, license_key: { status: "active" }, instance: { id: "x" }, meta: { store_id: 10, product_id: 99 } }));
+  const other = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ id: "x", license_key: { status: "granted", benefit_id: "other" } }));
   assert.equal((await other.json()).reason, "product");
 });
 
