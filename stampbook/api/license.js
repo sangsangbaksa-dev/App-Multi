@@ -1,9 +1,9 @@
 /* Vercel/Node adapter for the Stampbook Pro licence check (logic in lib/license-core.js; Cloudflare Pages version: functions/api/license.js).
    Environment variables:
-     LS_STORE_ID    the numeric store id that sells Stampbook
-     LS_PRODUCT_ID  the numeric product id of Stampbook Pro
+     POLAR_ORGANIZATION_ID  the Polar organization id (UUID)
+     POLAR_BENEFIT_ID       the id of the License Keys benefit attached to Stampbook Pro (UUID)
    If either is missing the function answers {configured:false} and the app keeps its built-in offline check.
-   Lemon Squeezy's License API needs no secret key. Store/product ids are checked so a key bought for another product is refused.
+   Polar's customer-portal licence-key API needs no secret key. Organization and benefit ids are checked so a key bought for another product is refused.
    Request:  POST {action:'activate'|'validate', key, instanceId?}   Response: {configured, ok, instanceId?, reason?} */
 const { check } = require('../lib/license-core.js');
 

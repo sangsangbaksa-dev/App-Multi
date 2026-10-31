@@ -8,16 +8,16 @@
 - [ ] Workers & Pages > Create > Pages > Connect to Git. GitHub 연결 허용 후 저장소 `sangsangbaksa-dev/App-Multi` 선택
 - [ ] 설정 입력: Framework preset `None`, Root directory `stampbook`, Build command `node scripts/build.js --dist`, Build output directory `dist`
 - [ ] Production branch: PR #2를 머지한 뒤 `main`. 머지 전에 보고 싶으면 이 브랜치의 Preview 주소로 먼저 확인
-- [ ] Settings > Variables and Secrets에 `LS_STORE_ID`, `LS_PRODUCT_ID` 입력(Production과 Preview 둘 다). 값이 없으면 임시 키 검사로 동작
+- [ ] Settings > Variables and Secrets에 `POLAR_ORGANIZATION_ID`, `POLAR_BENEFIT_ID` 입력(Production과 Preview 둘 다). 값이 없으면 임시 키 검사로 동작
 - [ ] 배포 후 `https://<프로젝트>.pages.dev` 에서 랜딩, 앱, `/terms`, `/privacy`를 열어 보고 `config.js`의 `siteUrl`을 그 주소로 바꿔 커밋(다시 자동 배포)
 - [ ] 도메인: Pages 프로젝트 > Custom domains에서 연결(도메인 구입은 사용자 몫). 연결 후 `siteUrl`을 다시 갱신
 - [ ] 확인이 끝나면 Vercel 프로젝트 `stampbook-lessons`를 정리(삭제 전에 주소가 어디서도 쓰이지 않는지 확인)
 
 ## 1. 결제 플랫폼 가입 (가장 먼저)
-- [ ] Lemon Squeezy(권장: 판매자 역할을 대신해 세금을 처리하는 MoR 방식) 가입. 한국 거주자의 가입 조건, 정산 방식, 수수료는 이 환경에서 확인하지 못했으니 가입 화면에서 직접 확인하세요. 다른 선택지(Paddle, Polar 등)도 있지만 이 코드의 서버 검증은 Lemon Squeezy의 라이선스 API 기준입니다.
-- [ ] 상품 만들기: "Stampbook Pro", 1회 결제, **라이선스 키 발급 켜기**(Generate license keys). 가격은 `config.js`의 `price`와 맞추세요(현재 $19는 임시값).
-- [ ] 결제 링크(checkout URL) 복사
-- [ ] Store ID와 Product ID 확인(대시보드 또는 상품 URL). 숫자입니다.
+- [ ] Polar(판매자 역할을 대신해 세금을 처리하는 MoR 방식) 가입 후 조직(Organization) 생성. 한국 거주자의 가입 조건, 정산 방식, 수수료는 이 환경에서 확인하지 못했으니 가입 화면에서 직접 확인하세요. 이 코드의 서버 검증은 Polar의 라이선스 키 API 기준입니다.
+- [ ] 상품 만들기: "Stampbook Pro", 1회 결제, 상품에 **License Keys 혜택(Benefit) 추가**. 가격은 `config.js`의 `price`와 맞추세요(현재 $19는 임시값).
+- [ ] 체크아웃 링크(Checkout Link) 만들어 복사
+- [ ] Organization ID(Settings)와 License Keys 혜택의 Benefit ID 확인. 둘 다 UUID입니다.
 
 ## 2. config.js 한 곳만 수정
 `stampbook/config.js`
@@ -29,9 +29,9 @@
 수정 후 커밋하면 Vercel이 배포하면서 `node scripts/build.js`로 랜딩, 약관, 개인정보, sitemap, robots를 다시 만듭니다. 별도 작업 없음.
 
 ## 3. 환경변수 입력 (Cloudflare Pages: Settings > Variables and Secrets / Vercel을 쓸 경우 Project > Settings > Environment Variables)
-- [ ] `LS_STORE_ID` = Store ID
-- [ ] `LS_PRODUCT_ID` = Product ID
-- 저장 후 재배포. 두 값이 없으면 앱은 기존 임시 키 검사로 동작하고, 있으면 Lemon Squeezy 서버 검증으로 바뀝니다(그 순간부터 임시 키 SB-XXXX는 작동하지 않습니다).
+- [ ] `POLAR_ORGANIZATION_ID` = Organization ID
+- [ ] `POLAR_BENEFIT_ID` = License Keys 혜택의 Benefit ID
+- 저장 후 재배포. 두 값이 없으면 앱은 기존 임시 키 검사로 동작하고, 있으면 Polar 서버 검증으로 바뀝니다(그 순간부터 임시 키 SB-XXXX는 작동하지 않습니다).
 - [ ] 테스트 모드에서 구매한 키로 앱에서 활성화해 보기. 잘못된 키는 거절되는지도 확인.
 - (Vercel을 계속 쓸 때만) Production Branch / Ignored Build Step: PR #2 머지 후 main 빌드가 되도록 `claude/project-thread-emx3f1`만 허용한 현재 설정을 바꿔야 합니다(Settings > Git).
 

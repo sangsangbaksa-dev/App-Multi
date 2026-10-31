@@ -11,7 +11,7 @@ test.before(async () => {
 const req = (body, method = 'POST') => new Request('https://x.test/api/license', { method, body: method === 'POST' ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined, headers: { 'content-type': 'application/json' } });
 const run = async (r, env) => { const res = await onRequest({ request: r, env }); return { status: res.status, body: await res.json(), headers: res.headers }; };
 const ls = (json) => { global.fetch = async () => ({ status: 200, json: async () => json }); };
-const ENV = { LS_STORE_ID: '11', LS_PRODUCT_ID: '22' };
+const ENV = { POLAR_ORGANIZATION_ID: 'org-1', POLAR_BENEFIT_ID: 'ben-1' };
 
 test('unconfigured: {configured:false} and no outbound call', async () => {
   global.fetch = async () => { throw new Error('no call'); };
@@ -23,15 +23,15 @@ test('malformed JSON and oversized bodies are 400', async () => {
   assert.equal((await run(req('{not json'), ENV)).status, 400); assert.equal((await run(req(JSON.stringify({ key: 'A'.repeat(5000) })), ENV)).status, 400);
 });
 test('activates a key for our product, refuses another product', async () => {
-  ls({ activated: true, license_key: { status: 'active' }, instance: { id: 'inst-123456789' }, meta: { store_id: 11, product_id: 22 } });
+  ls({ id: 'inst-123456789', license_key: { status: 'granted', benefit_id: 'ben-1' } });
   const ok = await run(req({ action: 'activate', key: 'ABCD-1234-EFGH' }), ENV); assert.deepEqual(ok.body, { configured: true, ok: true, instanceId: 'inst-123456789' }); assert.equal(ok.headers.get('cache-control'), 'no-store');
-  ls({ activated: true, instance: { id: 'x' }, meta: { store_id: 11, product_id: 99 } }); assert.equal((await run(req({ key: 'ABCD-1234-EFGH' }), ENV)).body.reason, 'wrong_product');
+  ls({ id: 'x', license_key: { status: 'granted', benefit_id: 'other' } }); assert.equal((await run(req({ key: 'ABCD-1234-EFGH' }), ENV)).body.reason, 'wrong_product');
 });
 test('provider outage is 502 unreachable', async () => { global.fetch = async () => { throw new Error('down'); }; const r = await run(req({ key: 'ABCD-1234-EFGH' }), ENV); assert.equal(r.status, 502); assert.equal(r.body.reason, 'unreachable'); });
 test('validate path forwards the instance id', async () => {
-  let seen; global.fetch = async (u, o) => { seen = { u, b: o.body.toString() }; return { status: 200, json: async () => ({ valid: true, license_key: { status: 'active' }, meta: { store_id: 11, product_id: 22 } }) }; };
+  let seen; global.fetch = async (u, o) => { seen = { u, b: o.body.toString() }; return { status: 200, json: async () => ({ status: 'granted', benefit_id: 'ben-1', activation: { id: 'inst-123456789' } }) }; };
   const r = await run(req({ action: 'validate', key: 'ABCD-1234-EFGH', instanceId: 'inst-123456789' }), ENV);
-  assert.equal(r.body.ok, true); assert.ok(seen.u.endsWith('/validate')); assert.ok(seen.b.includes('instance_id=inst-123456789'));
+  assert.equal(r.body.ok, true); assert.ok(seen.u.endsWith('/validate')); assert.ok(JSON.parse(seen.b).activation_id === 'inst-123456789');
 });
 test('--dist publishes only public files and carries _headers/_redirects', () => {
   execFileSync('node', [path.join(root, 'scripts/build.js'), '--dist']);

@@ -1,5 +1,5 @@
 /* Cloudflare Pages Function: POST /api/license  (same contract as api/license.js on Vercel).
-   Set LS_STORE_ID and LS_PRODUCT_ID as environment variables (Pages > Settings > Variables and Secrets). */
+   Set POLAR_ORGANIZATION_ID and POLAR_BENEFIT_ID as environment variables (Pages > Settings > Variables and Secrets). */
 import licenseCore from '../../lib/license-core.js';
 
 const json = (status, body, extra) => new Response(JSON.stringify(body), { status, headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store' }, extra) });

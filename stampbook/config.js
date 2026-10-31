@@ -2,7 +2,7 @@
    Everything marked PLACEHOLDER must be replaced with real values. */
 window.SB_SITE = {
   siteUrl: 'https://stampbook-5kf.pages.dev', /* change when a custom domain is connected */
-  checkoutUrl: 'https://example.com/PLACEHOLDER-checkout', /* PLACEHOLDER: Lemon Squeezy (or other) checkout link */
+  checkoutUrl: 'https://example.com/PLACEHOLDER-checkout', /* PLACEHOLDER: Polar checkout link */
   supportEmail: 'support@example.com', /* PLACEHOLDER: also the refund contact */
   price: '$19',
   freeLimit: 3

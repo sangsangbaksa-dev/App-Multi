@@ -87,17 +87,17 @@ const srv = http.createServer((q, r) => {
   await lp.goto(base + '/'); await lp.selectOption('#lang', 'ja'); await lp.waitForURL('**/ja/'); assert.equal(await lp.getAttribute('html', 'lang'), 'ja');
   assert.equal((await lp.goto(base + '/terms')).status(), 200); assert.ok((await lp.textContent('body')).includes('support@example.com'));
   assert.equal((await lp.goto(base + '/sitemap.xml')).status(), 200); assert.equal((await lp.goto(base + '/manifest.webmanifest')).status(), 200); assert.equal((await lp.goto(base + '/og.png')).status(), 200);
-  // server-side licence flow with a mocked Lemon Squeezy
-  process.env.LS_STORE_ID = '11'; process.env.LS_PRODUCT_ID = '22';
-  const realFetch = global.fetch; global.fetch = async (u, o) => { const k = new URLSearchParams(o.body.toString()).get('license_key'); const ok = k === 'REAL-KEY-12345';
-    return { status: 200, json: async () => ok ? { activated: true, valid: true, license_key: { status: 'active' }, instance: { id: 'inst-abcdef12' }, meta: { store_id: 11, product_id: 22 } } : { activated: false, valid: false } }; };
+  // server-side licence flow with a mocked Polar
+  process.env.POLAR_ORGANIZATION_ID = 'org-1'; process.env.POLAR_BENEFIT_ID = 'ben-1';
+  const realFetch = global.fetch; global.fetch = async (u, o) => { const k = JSON.parse(o.body.toString()).key; const ok = k === 'REAL-KEY-12345';
+    return { status: 200, json: async () => ok ? { id: 'inst-abcdef12', status: 'granted', benefit_id: 'ben-1', license_key: { status: 'granted', benefit_id: 'ben-1' } } : { detail: 'Not found' } }; };
   const c3 = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'en-US' }); const p3 = await c3.newPage(); p3.on('pageerror', e => errs.push(e.message));
   await p3.goto(base + '/app/'); await p3.waitForSelector('.empty');
   await p3.fill('#lic', require('../app/core.js').makeKey('TESTKEY1')); await p3.click('.settings .pri'); await p3.waitForSelector('.toast'); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false, 'offline key refused once the server is configured');
   await p3.waitForTimeout(2400); await p3.fill('#lic', 'WRONG-KEY-00000'); await p3.click('.settings .pri'); await p3.waitForTimeout(500); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false);
   await p3.waitForTimeout(2400); await p3.fill('#lic', 'REAL-KEY-12345'); await p3.click('.settings .pri'); await p3.waitForFunction(() => (localStorage['stampbook.v1'] && JSON.parse(localStorage['stampbook.v1']).pro === true));
   assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1']).licMode), 'server');
-  global.fetch = realFetch; delete process.env.LS_STORE_ID; delete process.env.LS_PRODUCT_ID;
+  global.fetch = realFetch; delete process.env.POLAR_ORGANIZATION_ID; delete process.env.POLAR_BENEFIT_ID;
   const pv = await ctx.newPage(); assert.equal((await pv.goto(base + '/privacy')).status(), 200);
   console.log(errs.length ? 'ERRORS: ' + errs.join('\n') : 'E2E OK'); await b.close(); srv.close(); process.exit(errs.length ? 1 : 0);
 })().catch(e => { console.error('FAIL', e, globalThis.__errs); process.exit(1); });
