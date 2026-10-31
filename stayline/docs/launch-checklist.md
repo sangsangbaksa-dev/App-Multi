@@ -7,11 +7,11 @@ The code is ready; these steps need your accounts or decisions. Nothing here has
 - [ ] Refund policy. Terms draft says "refund within 14 days on request". Change `scripts/site-i18n.js` (`term[2]`) if you want something else.
 - [ ] Business status. Whether you need a business registration or tax registration to sell depends on your country and income. Not checked here. If unsure, ask a tax adviser. A merchant-of-record platform handles sales tax/VAT collection for you, which is the usual reason to pick one (verify the current terms yourself).
 
-## 2. Payments (Lemon Squeezy was the assumed platform; Paddle or others also work but the serverless function is written for Lemon Squeezy)
-- [ ] Create a store, create a product "Stayline Pro" with **licence keys enabled**, set the price.
-- [ ] Copy the checkout link into `config.js` → `checkoutUrl`.
-- [ ] Note the Store ID and Product ID (numeric).
-- [ ] On the host that serves the live site, add `LS_STORE_ID` and `LS_PRODUCT_ID` as environment variables, then redeploy (Cloudflare Pages: Settings → Variables and Secrets; see `cloudflare-pages.md`. Vercel Hobby is not allowed for commercial use, so use Cloudflare Pages for selling.) Until both are set, the app uses the old placeholder offline key check, which **anyone can bypass** (do not sell before this is set).
+## 2. Payments (Polar, a merchant-of-record platform; the serverless function is written for Polar's licence-key API)
+- [ ] In Polar create an organization, then a one-time product "Stayline Pro" and add the **License Keys** benefit to it. Set the price.
+- [ ] Create a checkout link for the product (Polar: Products → Checkout Links) and copy it into `config.js` → `checkoutUrl`.
+- [ ] Note the Organization ID (Settings) and the License Keys benefit ID (Benefits → open the benefit). Both are UUIDs.
+- [ ] On the host that serves the live site, add `POLAR_ORGANIZATION_ID` and `POLAR_BENEFIT_ID` as environment variables, then redeploy (Cloudflare Pages: Settings → Variables and Secrets; see `cloudflare-pages.md`. Vercel Hobby is not allowed for commercial use, so use Cloudflare Pages for selling.) Until both are set, the app uses the old placeholder offline key check, which **anyone can bypass** (do not sell before this is set).
 - [ ] Buy your own product once (test mode if available) and activate the key in the app to see it work. This path has only been tested with mocks.
 
 ## 3. Email and domain

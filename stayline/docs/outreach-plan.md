@@ -13,7 +13,7 @@ Korean, Japanese, Chinese and Spanish pages exist so each can be reached in its 
 4. **Directories and lists.** Submit to "tools for digital nomads" lists and alternatives pages for the existing Schengen calculator apps.
 
 ## Measure
-No analytics are installed. Cheapest signals: Search Console impressions, Lemon Squeezy sales, support email, and comments on the posts. Decide a bar up front (e.g. N sales in 30 days) for whether to keep investing.
+No analytics are installed. Cheapest signals: Search Console impressions, Polar sales, support email, and comments on the posts. Decide a bar up front (e.g. N sales in 30 days) for whether to keep investing.
 
 ## Risks
 - The category already has many apps (checked app-store listings by title only). Expect to compete on privacy, planning, and one-time price, not on being first.
