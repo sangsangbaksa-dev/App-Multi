@@ -81,3 +81,4 @@ textarea{font:inherit;color:var(--ink);background:#101315;border:1px solid var(-
 @media print{.card:has(.cal){display:none}}
 
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.auto{margin-bottom:10px}.auto summary{cursor:pointer;color:var(--amber);margin-bottom:8px}
+.cloud-panel h3{margin:0 0 6px;font-size:1rem}.cloud-form{display:grid;gap:8px}.cloud-form input{width:100%}.cloud-msg{min-height:1.2em;margin:8px 0 0}.cloud-panel .muted{color:var(--mute,#666)}

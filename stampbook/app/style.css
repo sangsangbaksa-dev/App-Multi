@@ -87,3 +87,4 @@ u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{wid
 .sched .row button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .sched{margin-top:10px;font-size:14px}.sched summary{cursor:pointer;color:var(--mute);min-height:32px;display:flex;align-items:center}
 .presets{margin-top:4px}
+.cloud-panel h3{margin:0 0 6px;font-size:1rem}.cloud-form{display:grid;gap:8px}.cloud-form input{width:100%}.cloud-msg{min-height:1.2em;margin:8px 0 0}.cloud-panel .muted{color:var(--mute,#666)}

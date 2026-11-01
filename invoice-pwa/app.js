@@ -10,14 +10,25 @@ import { safeLink, shareUrl } from "./share.js";
 import * as FX from "./fx.js";
 import * as CL from "./clients.js";
 import * as CAT from "./catalog.js";
+import * as CD from "./cloud-data.js";
 
 // The account layer is wired here only; swap localBackend for a Supabase backend without changing account.js.
 const auth = createAuth(localBackend(localStorage));
 
+// Optional cloud login + backup (Supabase). Off unless config.js has a project URL and key; the app never depends on it.
+const SYNCED = new Set(CD.SYNC_KEYS);
+const cloud = globalThis.CloudSync?.create({
+  url: CONFIG.supabaseUrl, anonKey: CONFIG.supabaseKey, app: "quickbill", storage: localStorage, device: (navigator.platform || "web").slice(0, 60),
+  snapshot: () => CD.snapshot(localStorage),
+  isEmpty: (snap) => CD.isEmpty(snap),
+  apply: (snap) => { if (CD.apply(localStorage, snap)) location.reload(); },
+  onResult: (r) => { if (r.status === "pushed") toast(globalThis.CloudI18n.t(I.getLang(), "pushed")); },
+});
+
 const $ = (s) => document.querySelector(s);
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { $("#store-warn").hidden = false; return false; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); if (SYNCED.has(k)) cloud?.changed(); return true; } catch { $("#store-warn").hidden = false; return false; } },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
 try { ensureSchema(localStorage); } catch {}
@@ -549,6 +560,8 @@ const ws = initWorkspace({
 });
 fullRender();
 renderTime();
-const account = initAccount({ auth });
+const cloudPanel = cloud?.enabled() && globalThis.CloudPanel ? globalThis.CloudPanel.build({ cloud, lang: () => I.getLang() }) : null;
+const account = initAccount({ auth, cloud, cloudPanel });
 auth.init().then(() => account.paint()).catch(() => account.paint());
+if (cloudPanel && cloud.user()) cloud.sync().then((r) => { if (r.status === "pulled") toast(globalThis.CloudI18n.t(I.getLang(), "pulled")); });
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});

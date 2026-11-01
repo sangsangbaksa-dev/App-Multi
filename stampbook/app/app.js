@@ -8,7 +8,23 @@
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.packs)) return s; } catch (e) {}
     return { v: 1, packs: [], teacher: '', pro: false, lang: '' };
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; } catch (e) { storageOk = false; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; } catch (e) { storageOk = false; } if (cloud) cloud.changed(); }
+
+  /* Optional cloud sync (Supabase). Off unless config.js has a project URL and key. Licence fields stay on this device. */
+  var LOCAL_ONLY = ['pro', 'key', 'licMode', 'instanceId', 'licChecked', 'lang'];
+  var cloud = window.CloudSync ? window.CloudSync.create({
+    url: CFG.supabaseUrl, anonKey: CFG.supabaseKey, app: 'stampbook', storage: window.localStorage, device: (navigator.platform || 'web').slice(0, 60),
+    snapshot: function () { var o = JSON.parse(JSON.stringify(state)); LOCAL_ONLY.forEach(function (k) { delete o[k]; }); return o; },
+    isEmpty: function (snap) { return !snap.packs || !snap.packs.length; },
+    apply: function (snap) {
+      if (!snap || !Array.isArray(snap.packs)) return;
+      var keep = {}; LOCAL_ONLY.forEach(function (k) { keep[k] = state[k]; });
+      try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ teacher: '', lang: '' }, snap, keep))); } catch (e) { return; }
+      location.reload();
+    },
+    onResult: function (r) { if (r.status === 'pushed') toast(window.CloudI18n.t(lang, 'pushed')); }
+  }) : null;
+  if (cloud && !cloud.enabled()) cloud = null;
   function T(k, v) { return I.t(lang, k, v); }
   function h(tag, attrs, kids) {
     var e = document.createElement(tag);
@@ -389,6 +405,7 @@
       }; r.readAsText(fl);
     } });
     var key = h('input', { id: 'lic', placeholder: T('licPh'), autocapitalize: 'characters', autocomplete: 'off', spellcheck: 'false' });
+    var cloudPanel = cloud && window.CloudPanel ? window.CloudPanel.build({ cloud: cloud, lang: function () { return lang; } }) : null;
     return h('div', { class: 'settings' }, [
       h('label', { for: 's-t' }, T('teacher')), teacher,
       h('div', { class: 'row', style: 'margin:14px 0' }, [
@@ -398,6 +415,7 @@
         h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv')),
         h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); var ym = C.todayStr().slice(0, 7); download('stampbook-' + ym + '.csv', C.monthReport(state.packs, ym), 'text/csv'); } }, T('monthCsv'))
       ]),
+      cloudPanel ? h('div', { style: 'margin:14px 0' }, [cloudPanel.el]) : null,
       state.pro ? null : h('div', {}, [
         h('label', { for: 'lic' }, T('lic')),
         h('div', { class: 'row' }, [key,
@@ -442,5 +460,6 @@
   window.addEventListener('hashchange', render);
   render();
   recheck();
+  if (cloud && cloud.user()) cloud.sync().then(function (r) { if (r.status === 'pulled') toast(window.CloudI18n.t(lang, 'pulled')); });
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
