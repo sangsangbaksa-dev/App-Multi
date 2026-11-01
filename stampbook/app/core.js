@@ -268,6 +268,20 @@
     return { lessons: lessons, value: Math.round(value * 100) / 100 };
   }
 
+  /* ---- merge a backup into current data (second device, or restoring without losing newer stamps) ----
+     Same pack id: local fields win, stamps are unioned by stamp id. New ids are added. Returns {packs, added, merged}. */
+  function mergePacks(local, incoming) {
+    var byId = {}, out = local.map(function (p) { byId[p.id] = p; return p; }), added = 0, merged = 0;
+    incoming.forEach(function (q) {
+      var p = byId[q.id];
+      if (!p) { var c = JSON.parse(JSON.stringify(q)); byId[c.id] = c; out.push(c); added++; return; }
+      var have = {}; p.stamps.forEach(function (s) { have[s.id] = 1; }); var n = 0;
+      q.stamps.forEach(function (s) { if (!have[s.id]) { p.stamps.push(JSON.parse(JSON.stringify(s))); have[s.id] = 1; n++; } });
+      if (n) { p.stamps.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }); merged++; }
+    });
+    return { packs: out, added: added, merged: merged };
+  }
+
   /* ---- presets and monthly report ---- */
   /* most reused pack terms (lessons, price, currency, months), so a new pack is one tap. packs[] is newest first, so ties go to the newer one. */
   function presets(packs, n) {
@@ -361,7 +375,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
-    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, presets: presets, report: report,
+    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, mergePacks: mergePacks, presets: presets, report: report,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;

@@ -112,7 +112,9 @@
       reportCopied: 'Report copied. Send it to the student.',
       skip: 'Skip',
       unskip: 'Restore',
-      skipped: 'Skipped'
+      skipped: 'Skipped',
+      mergeAsk: 'Merge this backup into your current data? OK merges (nothing is lost). Cancel replaces everything with the backup.',
+      merged: 'Merged: {a} new pack(s), {m} updated.'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -225,7 +227,9 @@
       reportCopied: '리포트를 복사했습니다. 수강생에게 보내세요.',
       skip: '건너뛰기',
       unskip: '되돌리기',
-      skipped: '건너뜀'
+      skipped: '건너뜀',
+      mergeAsk: '이 백업을 현재 데이터에 합칠까요? 확인은 합치기(지워지는 것 없음), 취소는 백업으로 전체 교체입니다.',
+      merged: '합쳤습니다: 새 수강권 {a}개, 갱신 {m}개.'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -338,7 +342,9 @@
       reportCopied: 'レポートをコピーしました。生徒に送ってください。',
       skip: 'スキップ',
       unskip: '元に戻す',
-      skipped: 'スキップ済み'
+      skipped: 'スキップ済み',
+      mergeAsk: 'このバックアップを現在のデータに統合しますか?OKで統合(何も失われません)、キャンセルでバックアップに完全に置き換えます。',
+      merged: '統合しました:新規 {a} 件、更新 {m} 件。'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -451,7 +457,9 @@
       reportCopied: '报告已复制,发给学员吧。',
       skip: '跳过',
       unskip: '恢复',
-      skipped: '已跳过'
+      skipped: '已跳过',
+      mergeAsk: '要把此备份合并到当前数据吗?确定为合并(不会丢失任何内容),取消则用备份完全替换。',
+      merged: '已合并:新增 {a} 个,更新 {m} 个。'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -564,7 +572,9 @@
       reportCopied: 'Informe copiado. Envíaselo al alumno.',
       skip: 'Omitir',
       unskip: 'Restaurar',
-      skipped: 'Omitida'
+      skipped: 'Omitida',
+      mergeAsk: '¿Combinar esta copia con tus datos actuales? Aceptar combina (no se pierde nada). Cancelar lo reemplaza todo por la copia.',
+      merged: 'Combinado: {a} bono(s) nuevo(s), {m} actualizado(s).'
     }
   };
   function pick(pref) {

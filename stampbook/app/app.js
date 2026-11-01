@@ -383,6 +383,7 @@
         try {
           var o = JSON.parse(r.result); if (!o || !Array.isArray(o.packs)) throw 0;
           o.packs = o.packs.filter(function (p) { return p && typeof p.student === 'string' && p.total > 0 && Array.isArray(p.stamps); });
+          if (state.packs.length && confirm(T('mergeAsk'))) { var mg = C.mergePacks(state.packs, o.packs); state.packs = mg.packs; save(); render(); return toast(T('merged', { a: mg.added, m: mg.merged })); }
           var keep = { pro: state.pro, key: state.key, licMode: state.licMode, instanceId: state.instanceId, licChecked: state.licChecked }; state = Object.assign({ teacher: '', lang: '' }, o, keep); save(); render(); toast(T('restored'));
         } catch (x) { toast(T('badFile')); }
       }; r.readAsText(fl);

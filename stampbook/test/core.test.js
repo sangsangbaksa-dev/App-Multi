@@ -253,3 +253,17 @@ test('editing the weekly pattern keeps skipped dates', () => {
   assert.deepEqual(p.schedule, { days: [1], time: '10:00', skip: ['2026-11-09'] });
   assert.deepEqual(C.upcoming(p, '2026-11-01', 20).map(e => e.date), ['2026-11-02', '2026-11-16']);
 });
+
+/* ---- merge ---- */
+test('mergePacks unions stamps by id and adds new packs', () => {
+  const a = mk({ id: 'a' }), a2 = JSON.parse(JSON.stringify(a)); C.addStamp(a, '2026-10-05'); a2.stamps = JSON.parse(JSON.stringify(a.stamps));
+  C.addStamp(a2, '2026-10-12'); a2.price = 999; const b = mk({ id: 'b', student: 'Joon' });
+  const r = C.mergePacks([a], [a2, b]);
+  assert.deepEqual([r.added, r.merged, r.packs.length], [1, 1, 2]);
+  assert.deepEqual(r.packs[0].stamps.map(s => s.date), ['2026-10-05', '2026-10-12']); assert.equal(r.packs[0].price, 500, 'local fields win');
+  const again = C.mergePacks(r.packs, [a2, b]); assert.deepEqual([again.added, again.merged, again.packs.length], [0, 0, 2], 'merging twice changes nothing');
+  assert.equal(C.mergePacks([], []).packs.length, 0);
+});
+test('mergePacks copies incoming data rather than sharing it', () => {
+  const b = mk({ id: 'b' }), r = C.mergePacks([], [b]); r.packs[0].student = 'X'; assert.equal(b.student, 'Mina');
+});

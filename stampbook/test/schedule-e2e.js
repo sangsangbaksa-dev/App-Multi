@@ -54,5 +54,15 @@ const srv = http.createServer((q, r) => {
   // backup clears the nudge
   await pg.locator('.warnbar button').click(); await pg.waitForFunction(() => !document.querySelector('.warnbar'));
   assert.ok(await pg.evaluate(() => JSON.parse(localStorage['stampbook.v1']).lastBackup > 0));
+  // restore: merge keeps newer local stamps, replace drops them
+  const [bk] = await Promise.all([pg.waitForEvent('download'), pg.locator('.settings button', { hasText: 'Back up' }).click()]);
+  const bkPath = await bk.path(), stamps = () => pg.evaluate(() => JSON.parse(localStorage['stampbook.v1']).packs[0].stamps.length);
+  const n0 = await stamps(); await pg.fill('.row input[type=date]', C.addDays(today, -3)); await pg.locator('button', { hasText: 'Another date' }).click(); assert.equal(await stamps(), n0 + 1);
+  let ask = ''; pg.removeAllListeners('dialog'); pg.on('dialog', d => { ask = d.message(); d.accept(); });
+  await pg.setInputFiles('input[type=file]', bkPath); await pg.waitForFunction(() => /Merged/.test((document.querySelector('.toast') || {}).textContent || ''));
+  assert.ok(ask.includes('Merge')); assert.equal(await stamps(), n0 + 1, 'merge keeps the newer local stamp');
+  pg.removeAllListeners('dialog'); pg.on('dialog', d => d.dismiss());
+  await pg.setInputFiles('input[type=file]', bkPath); await pg.waitForFunction(() => /Restored/.test((document.querySelector('.toast') || {}).textContent || ''));
+  assert.equal(await stamps(), n0, 'replace restores the backup exactly');
   console.log(errs.length ? 'ERRORS: ' + errs.join('\n') : 'SCHEDULE E2E OK'); await b.close(); srv.close(); process.exit(errs.length ? 1 : 0);
 })().catch(e => { console.error('FAIL', e); process.exit(1); });
