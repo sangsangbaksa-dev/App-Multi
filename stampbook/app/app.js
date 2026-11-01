@@ -237,7 +237,7 @@
 
   /* ---------- settings: teacher name, backup, csv, licence ---------- */
   function download(name, text, type) {
-    var a = h('a', { href: URL.createObjectURL(new Blob([text], { type: type })), download: name });
+    var a = h('a', { href: URL.createObjectURL(new Blob([type === 'text/csv' ? '\uFEFF' + text : text], { type: type })), download: name });
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function settings() {

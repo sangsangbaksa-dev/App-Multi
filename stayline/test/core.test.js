@@ -142,3 +142,14 @@ test('EC manual example B: visa holder with three stays in 2015', () => {
   assert.equal(C.maxStay(t, '2015-08-08', '2015-08-08'), 50);
   assert.equal(C.maxStay(t, '2015-09-08', '2015-09-08'), 90);
 });
+
+test('toIcs: one all-day event per trip, end is exclusive, ongoing ends today, text escaped', () => {
+  const t = tr([['2026-06-01', '2026-06-10'], ['2026-07-01', '']]);
+  t.trips[0].place = 'Paris, FR';
+  const ics = C.toIcs([t], '2026-07-05');
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n/); assert.match(ics, /END:VCALENDAR\r\n$/);
+  assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 2);
+  assert.match(ics, /DTSTART;VALUE=DATE:20260601\r\nDTEND;VALUE=DATE:20260611/);
+  assert.match(ics, /DTSTART;VALUE=DATE:20260701\r\nDTEND;VALUE=DATE:20260706/);
+  assert.match(ics, /SUMMARY:Me: Paris\\, FR/);
+});

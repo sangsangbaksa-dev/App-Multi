@@ -321,7 +321,7 @@ $("#btn-upgrade").onclick = () => openUpgrade();
 
 function download(name, type, text) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.href = URL.createObjectURL(new Blob([type === "text/csv" ? "\uFEFF" + text : text], { type }));
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);

@@ -32,7 +32,7 @@
     return state.trackers.filter(function (t) { return t.id === state.active; })[0] || state.trackers[0] || null;
   }
   function download(name, text, type) {
-    var a = h('a', { href: URL.createObjectURL(new Blob([text], { type: type })), download: name });
+    var a = h('a', { href: URL.createObjectURL(new Blob([type === 'text/csv' ? '\uFEFF' + text : text], { type: type })), download: name });
     document.body.appendChild(a); a.click(); a.remove();
   }
   /* Pro key check. If the server function is configured it decides; if it is absent (404) or not configured,
@@ -257,6 +257,7 @@
         h('button', { class: 'ghost', onclick: function () { download('stayline-backup.json', JSON.stringify({ v: 1, trackers: state.trackers, active: state.active }), 'application/json'); toast(T('backupDone')); } }, T('exp')),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; download('stayline.csv', C.toCsv(state.trackers, C.todayStr()), 'text/csv'); } }, T('csv')),
+        h('button', { class: 'ghost', onclick: function () { download('stayline.ics', C.toIcs(state.trackers, C.todayStr()), 'text/calendar'); } }, T('ics')),
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; window.print(); } }, T('print'))
       ]),
       h('div', { class: 'settings' }, state.pro ? h('span', { class: 'chip' }, T('pro') + ' ✓') : [
