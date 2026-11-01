@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>QuickBill</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="vw">
+<header class="bar noprint">
+  <h1><a class="brand" href="./">QuickBill</a></h1>
+  <select id="lang" class="lang" aria-label="Language"></select>
+</header>
+<main class="vw-main">
+  <p id="vw-err" class="warn" role="alert" hidden></p>
+  <section id="vw-doc" hidden>
+    <div id="vw-status" class="vw-status" role="status"></div>
+    <p id="vw-note" class="muted noprint"></p>
+    <div class="row noprint">
+      <a id="vw-pay" class="btn accent big" target="_blank" rel="noopener noreferrer" hidden></a>
+      <button id="vw-print" type="button" data-i18n="vwPrint"></button>
+    </div>
+    <article id="vw-paper" class="sheet-paper"></article>
+    <p class="muted noprint vw-foot" data-i18n="vwFoot"></p>
+  </section>
+</main>
+<script type="module" src="view.js"></script>
+</body>
+</html>

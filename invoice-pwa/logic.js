@@ -73,7 +73,7 @@ export function overdue(inv, today = new Date().toISOString().slice(0, 10)) {
 
 // Makes status and paid amount agree: fully paid means status "paid" and vice versa.
 export function settle(inv) {
-  if (isQuote(inv)) return { ...inv, paid: 0 };
+  if (isQuote(inv)) return { ...inv, paid: 0, payments: [] };
   const total = totalOf(inv);
   let paid = Math.min(Math.max(Number(inv.paid) || 0, 0), total);
   let status = inv.status;
@@ -91,7 +91,7 @@ export function nextNumber(invoices, type) {
 export function convertQuote(quote, invoices, newId, today) {
   return {
     ...quote, id: newId(), type: "invoice", number: nextNumber(invoices, "invoice"),
-    issueDate: today, dueDate: addDays(today, 14), status: "draft", paid: 0, recur: "", nextRun: "",
+    issueDate: today, dueDate: addDays(today, 14), status: "draft", paid: 0, payments: [], recur: "", nextRun: "",
     convertedFrom: quote.number, items: (quote.items || []).map((x) => ({ ...x })),
   };
 }
@@ -160,7 +160,7 @@ export function runRecurring(invoices, today, newId) {
     while (inv.nextRun <= today && guard++ < 12) {
       list.unshift({
         ...inv, id: newId(), number: nextInvoiceNumber(list), issueDate: inv.nextRun,
-        dueDate: addDays(inv.nextRun, terms), status: "draft", paid: 0, recur: "", nextRun: "",
+        dueDate: addDays(inv.nextRun, terms), status: "draft", paid: 0, payments: [], recur: "", nextRun: "",
         items: inv.items.map((x) => ({ ...x })),
       });
       inv.nextRun = addPeriod(inv.nextRun, inv.recur);
@@ -338,4 +338,97 @@ export function taxEstimate(profit, pct) {
   const p = Number(pct);
   if (!(p >= 0) || p >= 100) return null;
   return round2(Math.max(0, Number(profit) || 0) * (p / 100));
+}
+
+// ---- dated payments ----
+// `paid` stays the number everything else reads. The log only adds dates, so older invoices (no log) keep working
+// and a hand-typed "amount paid" is never overwritten.
+const validDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "");
+export function recordPayment(inv, date, amount) {
+  if (isQuote(inv) || !validDate(date)) return inv;
+  const amt = Math.min(round2(Number(amount) || 0), balanceOf(inv));
+  if (!(amt > 0)) return inv;
+  const next = { ...inv, paid: round2((Number(inv.paid) || 0) + amt), payments: [...(inv.payments || []), { date, amount: amt }] };
+  if (next.status === "draft") next.status = "sent";
+  return settle(next);
+}
+export function removePayment(inv, index) {
+  const list = inv.payments || [];
+  if (!list[index]) return inv;
+  const gone = list[index];
+  const wasPaid = inv.status === "paid";
+  return { ...inv, paid: Math.max(0, round2((Number(inv.paid) || 0) - gone.amount)), payments: list.filter((_, k) => k !== index), status: wasPaid ? "sent" : inv.status };
+}
+
+// How fast people pay: only invoices that are fully paid and have at least one dated payment.
+export function paymentStats(invoices) {
+  const rows = [];
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || !(totalOf(i) > 0) || balanceOf(i) > 0) continue;
+    const dates = (i.payments || []).map((p) => p.date).filter(validDate);
+    if (!dates.length) continue;
+    const last = dates.sort().at(-1);
+    rows.push({ client: i.client, days: Math.max(0, dayDiff(i.issueDate, last)), onTime: last <= i.dueDate });
+  }
+  const avg = (a) => (a.length ? Math.round((a.reduce((s, x) => s + x, 0) / a.length) * 10) / 10 : 0);
+  const by = new Map();
+  for (const r of rows) by.set(r.client, [...(by.get(r.client) || []), r.days]);
+  return {
+    count: rows.length, avgDays: avg(rows.map((r) => r.days)),
+    onTimePct: rows.length ? Math.round((100 * rows.filter((r) => r.onTime).length) / rows.length) : 0,
+    byClient: [...by].map(([client, d]) => ({ client, count: d.length, avgDays: avg(d) })).sort((a, b) => b.avgDays - a.avgDays),
+  };
+}
+
+// Cash that arrived per payment month (by the payment's own date), one currency.
+export function receivedByMonth(invoices, today, months = 6, currency = "USD") {
+  const keys = monthsBack(today, months);
+  const sums = Object.fromEntries(keys.map((k) => [k, 0]));
+  for (const i of invoices) {
+    if (isQuote(i) || (i.currency || "USD") !== currency) continue;
+    for (const p of i.payments || []) {
+      const k = String(p.date || "").slice(0, 7);
+      if (k in sums) sums[k] = round2(sums[k] + (Number(p.amount) || 0));
+    }
+  }
+  return keys.map((month) => ({ month, received: sums[month] }));
+}
+
+// ---- upcoming recurring invoices ----
+// Projects each recurring invoice forward from its nextRun, so the owner can see what will be billed.
+// Capped per invoice; the amount is the template's current total.
+export function upcomingRecurring(invoices, today, months = 3, cap = 24) {
+  const end = addMonthsIso(today, months);
+  const rows = [];
+  for (const inv of invoices) {
+    if (isQuote(inv) || !inv.recur || !inv.nextRun) continue;
+    let run = inv.nextRun, n = 0;
+    while (run <= end && n++ < cap) {
+      if (run >= today) rows.push({ date: run, client: inv.client, number: inv.number, currency: inv.currency, amount: totalOf(inv), freq: inv.recur });
+      run = addPeriod(run, inv.recur);
+    }
+  }
+  return rows.sort((a, b) => a.date.localeCompare(b.date) || a.client.localeCompare(b.client));
+}
+function addMonthsIso(date, n) {
+  let d = date;
+  for (let k = 0; k < n; k++) d = addPeriod(d, "monthly");
+  return d;
+}
+export function upcomingTotals(rows) {
+  const out = {};
+  for (const r of rows) out[r.currency] = round2((out[r.currency] || 0) + r.amount);
+  return out;
+}
+
+// One row per dated payment, for an accountant. Cells that start with = + - @ are prefixed so spreadsheets don't run them.
+export function paymentsCSV(invoices) {
+  const cell = (v) => { const s = String(v ?? ""); return esc(/^[=+\-@\t\r]/.test(s) ? "'" + s : s); };
+  const rows = [];
+  for (const i of invoices) {
+    if (isQuote(i)) continue;
+    for (const p of i.payments || []) rows.push([p.date, i.number, i.client, i.currency, p.amount, i.dueDate, totalOf(i), balanceOf(i)]);
+  }
+  rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || String(a[1]).localeCompare(String(b[1])));
+  return [["paymentDate", "invoice", "client", "currency", "amount", "dueDate", "invoiceTotal", "invoiceBalance"].join(","), ...rows.map((r) => r.map(cell).join(","))].join("\n");
 }
