@@ -1,19 +1,21 @@
-// Vercel serverless function: checks QuickBill Pro license keys with Gumroad's license API.
-// One environment variable is needed: GUMROAD_PRODUCT_ID (the Gumroad product ID of QuickBill Pro, with license keys enabled).
-// Without it the function answers { configured: false } and the app keeps its offline keys.
-// Gumroad's verify endpoint takes the key and product ID as the credential, so no access token is stored here.
-// Only the key is forwarded; the buyer's name and email from Gumroad never reach the browser.
+// Vercel serverless function: checks QuickBill Pro license keys with the Lemon Squeezy License API.
+// POST https://api.lemonsqueezy.com/v1/licenses/validate takes only the key, so no API key or secret is stored.
+// Optional environment variable LEMONSQUEEZY_PRODUCT_ID pins keys to the QuickBill product; set
+// LEMONSQUEEZY_DISABLED=1 to answer { configured: false } so the app falls back to its offline keys.
+// Only the key is forwarded; the buyer's name and email from Lemon Squeezy never reach the browser.
 
-const API = "https://api.gumroad.com/v2/licenses/verify";
+const API = "https://api.lemonsqueezy.com/v1/licenses/validate";
 const KEY_RE = /^[A-Za-z0-9-]{8,64}$/;
 
-export const configured = (env) => !!env.GUMROAD_PRODUCT_ID;
+export const configured = (env) => !(env && env.LEMONSQUEEZY_DISABLED);
 
-// Gumroad answers { success, uses, purchase } for a valid key and { success: false, message } for an unknown one.
-// A refunded or charged-back purchase is not usable any more.
-const usable = (j) => j?.success === true && !j.purchase?.refunded && !j.purchase?.chargebacked;
+// Lemon Squeezy answers { valid, license_key: { status }, meta: { product_id } }. Refunds disable the key,
+// so only an "active" or "inactive" (not yet activated) key for our product counts.
+const known = (j) => j?.valid === true;
+const usable = (j, env) => known(j) && ["active", "inactive"].includes(j.license_key?.status) &&
+  (!env.LEMONSQUEEZY_PRODUCT_ID || String(j.meta?.product_id) === String(env.LEMONSQUEEZY_PRODUCT_ID));
 
-// Gumroad rate-limits by IP, and serverless/Pages functions share egress IPs, so a 429 is expected now and then.
+// Lemon Squeezy rate-limits (60/min), and serverless/Pages functions share egress IPs, so a 429 is expected now and then.
 // Retry once after Retry-After (capped at 2s), and cache a verdict for a few minutes so repeat checks cost nothing.
 const CACHE_MS = 5 * 60e3;
 const cache = new Map(); // key -> { at, result }
@@ -33,7 +35,7 @@ async function verifyOnce(fetchImpl, env, key) {
   const r = await fetchImpl(API, {
     method: "POST",
     headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ product_id: env.GUMROAD_PRODUCT_ID, license_key: key, increment_uses_count: "false" }),
+    body: new URLSearchParams({ license_key: key }),
   });
   let json = null;
   try { json = await r.json(); } catch {}
@@ -41,7 +43,7 @@ async function verifyOnce(fetchImpl, env, key) {
 }
 
 // body: { action: "activate" | "validate", key, instance?, name? }. Returns { code, body }.
-// Gumroad has no activation step, so "activate" and "validate" both check the key; "instance" stays empty.
+// No activation slot is used, so "activate" and "validate" both validate the key; "instance" stays empty.
 export async function check(body, env, fetchImpl = fetch) {
   if (!configured(env)) return { code: 200, body: { configured: false } };
   const key = String(body?.key || "").trim();
@@ -53,9 +55,9 @@ export async function check(body, env, fetchImpl = fetch) {
     const { status, json, retryAfter } = await verify(fetchImpl, env, key);
     // Rate limited: say so (not "invalid key"), so the browser keeps Pro and tries again later.
     if (status === 429) return { code: 429, body: { configured: true, error: "rate_limited", retryAfter } };
-    if (!json || status >= 500) return { code: 502, body: { configured: true, error: "upstream" } };
-    if (!json.success) return { code: 200, body: { configured: true, valid: false, reason: "unknown" } };
-    if (!usable(json)) return { code: 200, body: { configured: true, valid: false, reason: "revoked" } };
+    if (!json || status >= 500 || (status >= 400 && status !== 404 && status !== 400 && status !== 422)) return { code: 502, body: { configured: true, error: "upstream" } };
+    if (!known(json)) return { code: 200, body: { configured: true, valid: false, reason: "unknown" } };
+    if (!usable(json, env)) return { code: 200, body: { configured: true, valid: false, reason: "revoked" } };
     const result = { code: 200, body: { configured: true, valid: true, instance: "" } };
     cache.set(key, { at: Date.now(), result });
     return result;

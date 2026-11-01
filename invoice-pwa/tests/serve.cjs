@@ -5,19 +5,19 @@ const root = path.join(__dirname, "..");
 const cfg = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".json": "application/json", ".xml": "application/xml", ".txt": "text/plain" };
 
-// /api/license runs the real function. With QB_MOCK_LS=1 (and GUMROAD_PRODUCT_ID set) the calls to
-// Gumroad are answered from a small table instead of the network:
+// /api/license runs the real function. With QB_MOCK_LS=1 the calls to
+// Lemon Squeezy are answered from a small table instead of the network:
 //   good-key-0001 -> valid, REVOKED-key-001 -> refunded, anything else -> unknown
 let licenseHandler = null;
 const mockLS = () => {
   const orig = global.fetch;
   global.fetch = async (url, init) => {
-    if (!String(url).startsWith("https://api.gumroad.com/")) return orig(url, init);
+    if (!String(url).startsWith("https://api.lemonsqueezy.com/")) return orig(url, init);
     const key = new URLSearchParams(init.body).get("license_key");
     let body, code = 200;
-    if (key === "good-key-0001") body = { success: true, uses: 1, purchase: { refunded: false, chargebacked: false } };
-    else if (key === "REVOKED-key-001") body = { success: true, uses: 1, purchase: { refunded: true, chargebacked: false } };
-    else { body = { success: false, message: "That license does not exist for the provided product." }; code = 404; }
+    if (key === "good-key-0001") body = { valid: true, license_key: { status: "active" }, meta: {} };
+    else if (key === "REVOKED-key-001") body = { valid: true, license_key: { status: "disabled" }, meta: {} };
+    else { body = { valid: false, error: "license_key not found" }; code = 404; }
     return new Response(JSON.stringify(body), { status: code, headers: { "Content-Type": "application/json" } });
   };
 };

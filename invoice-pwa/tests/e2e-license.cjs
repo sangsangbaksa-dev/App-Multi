@@ -1,5 +1,5 @@
 // Run: node tests/e2e-license.cjs
-// Starts its own server on :8124 with the license function switched on and Gumroad mocked, then checks the
+// Starts its own server on :8124 with the license function switched on and Lemon Squeezy mocked, then checks the
 // whole key flow in a browser: server-checked keys unlock Pro, offline-format keys are refused, a refunded key
 // switches Pro off after the weekly re-check while the data stays, and a network failure never removes Pro.
 const { chromium } = require("playwright");
@@ -9,7 +9,7 @@ const path = require("node:path");
 const BASE = "http://localhost:8124";
 
 (async () => {
-  const srv = spawn("node", [path.join(__dirname, "serve.cjs"), "8124"], { env: { ...process.env, QB_MOCK_LS: "1", GUMROAD_PRODUCT_ID: "prod-1" }, stdio: "ignore" });
+  const srv = spawn("node", [path.join(__dirname, "serve.cjs"), "8124"], { env: { ...process.env, QB_MOCK_LS: "1" }, stdio: "ignore" });
   await new Promise((r) => setTimeout(r, 800));
   const b = await chromium.launch();
   const errs = [];
@@ -34,7 +34,7 @@ const BASE = "http://localhost:8124";
     await tryKey("REVOKED-key-001");
     await p.waitForFunction(() => /refunded|disabled/.test(document.querySelector("#lic-msg").textContent));
     await p.click("#dlg button[value=cancel]");
-    // Gumroad answers "does not exist" for another product's key, so it reads as an invalid key here
+    // Lemon Squeezy answers "not found" for an unknown key, so it reads as an invalid key here
     await tryKey("OTHER-product-01");
     await p.waitForFunction(() => /Invalid/.test(document.querySelector("#lic-msg").textContent));
     await p.click("#dlg button[value=cancel]");
@@ -42,7 +42,7 @@ const BASE = "http://localhost:8124";
     await tryKey("good-key-0001");
     await p.waitForFunction(() => document.querySelector("#plan").textContent === "Pro");
     const rec = await p.evaluate(() => JSON.parse(localStorage.getItem("qb.licsrv")));
-    assert.equal(rec.key, "good-key-0001"); assert.equal(rec.instance, ""); // Gumroad has no activation step
+    assert.equal(rec.key, "good-key-0001"); assert.equal(rec.instance, ""); // no activation slot is used
 
     // survives a reload without asking again
     await p.reload();

@@ -2,8 +2,8 @@
    Everything marked PLACEHOLDER must be replaced with real values. */
 window.SB_SITE = {
   siteUrl: 'https://stampbook-5kf.pages.dev', /* change when a custom domain is connected */
-  checkoutUrl: 'https://example.com/PLACEHOLDER-checkout', /* PLACEHOLDER: Gumroad product link (https://<you>.gumroad.com/l/<permalink>) */
-  supportEmail: 'support@example.com', /* PLACEHOLDER: also the refund contact */
+  checkoutUrl: 'https://quickbillapp.lemonsqueezy.com/checkout/buy/bb6de2a5-9e61-41f6-b5f6-00296a9302b6', /* Lemon Squeezy checkout link */
+  supportEmail: 'sangsangbaksa@gmail.com', /* also the refund contact */
   price: '$19',
   freeLimit: 3
 };

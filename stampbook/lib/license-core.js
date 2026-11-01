@@ -1,32 +1,35 @@
 /* Platform-neutral licence check shared by api/license.js (Vercel/Node) and functions/api/license.js (Cloudflare Pages).
-   check({ method, body, env, fetchFn }) -> { status, body }. The only I/O is the call to Gumroad's licence API
-   (POST https://api.gumroad.com/v2/licenses/verify). Gumroad takes the product id and the key, so no secret is stored.
+   check({ method, body, env, fetchFn }) -> { status, body }. The only I/O is the call to the Lemon Squeezy License API
+   (POST https://api.lemonsqueezy.com/v1/licenses/validate). It takes only the key, so no secret is stored.
+   Optional env LEMONSQUEEZY_PRODUCT_ID pins keys to Stampbook Pro; LEMONSQUEEZY_DISABLED=1 answers { configured: false }.
    See api/license.js for the request/response contract. The key is never logged or stored. */
-const GUMROAD = 'https://api.gumroad.com/v2/licenses/verify';
+const LS_VALIDATE = 'https://api.lemonsqueezy.com/v1/licenses/validate';
 const KEY_RE = /^[A-Za-z0-9-]{8,80}$/;
 
 async function check({ method, body, env, fetchFn }) {
-  const product = env && env.GUMROAD_PRODUCT_ID;
+  const disabled = !!(env && env.LEMONSQUEEZY_DISABLED);
+  const product = env && env.LEMONSQUEEZY_PRODUCT_ID;
   if (method !== 'POST') return { status: 405, body: { ok: false, reason: 'method' } };
-  if (!product) return { status: 200, body: { configured: false } };
+  if (disabled) return { status: 200, body: { configured: false } };
   if (!body || typeof body.key !== 'string' || !KEY_RE.test(body.key.trim())) return { status: 400, body: { configured: true, ok: false, reason: 'bad_request' } };
   const key = body.key.trim();
   let j, status;
   try {
-    const r = await fetchFn(GUMROAD, {
+    const r = await fetchFn(LS_VALIDATE, {
       method: 'POST',
       headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ product_id: product, license_key: key, increment_uses_count: 'false' }).toString()
+      body: new URLSearchParams({ license_key: key }).toString()
     });
     status = r.status;
     j = await r.json();
   } catch (e) { return { status: 502, body: { configured: true, ok: false, reason: 'unreachable' } }; }
-  if (status >= 500) return { status: 502, body: { configured: true, ok: false, reason: 'unreachable' } };
-  if (!j || j.success !== true) return { status: 200, body: { configured: true, ok: false, reason: 'invalid' } };
-  // A refunded or charged-back purchase keeps the key on record but must not unlock Pro.
-  const p = j.purchase || {};
-  if (p.refunded || p.chargebacked) return { status: 200, body: { configured: true, ok: false, reason: 'refunded' } };
-  // Gumroad has no activation step, so there is no instance id; the browser keeps the key alone.
+  if (status >= 500 || status === 429) return { status: 502, body: { configured: true, ok: false, reason: 'unreachable' } };
+  if (!j || j.valid !== true) return { status: 200, body: { configured: true, ok: false, reason: 'invalid' } };
+  if (product && String(j.meta && j.meta.product_id) !== String(product)) return { status: 200, body: { configured: true, ok: false, reason: 'invalid' } };
+  // Refunds disable the key; only an active (or not yet activated) key unlocks Pro.
+  const st = j.license_key && j.license_key.status;
+  if (st !== 'active' && st !== 'inactive') return { status: 200, body: { configured: true, ok: false, reason: 'refunded' } };
+  // No activation slot is used, so there is no instance id; the browser keeps the key alone.
   return { status: 200, body: { configured: true, ok: true, instanceId: '' } };
 }
 module.exports = { check, KEY_RE };
