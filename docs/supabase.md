@@ -27,5 +27,8 @@ node shared/e2e-cloud.cjs                 # 브라우저: 3개 앱 가입→동�
 cd invoice-pwa && npm test
 ```
 
-## 개인정보 문구 주의
-Stayline 랜딩/프라이버시 페이지에는 "서버 없음, 계정 없음" 문구가 있습니다. 클라우드 백업을 켜서 배포하기 전에 문구를 "선택 기능으로 로그인하면 Supabase에 저장" 취지로 고쳐야 합니다 (PR #9와 같은 파일을 건드려 충돌을 피하려고 이 PR에서는 수정하지 않았습니다).
+## 개인정보 문구
+Stayline 랜딩/개인정보/앱 안내 문구(5개 언어)를 "로그인하면 선택적으로 Supabase에 사본 저장" 취지로 고쳤습니다 (`stayline/scripts/*`, `app/i18n.js`, 재생성된 페이지). QuickBill/Stampbook 법적 문구도 배포 전에 같은 취지인지 확인해 주세요.
+
+## 적용 현황
+마이그레이션은 프로젝트 `fiiljdmbnmvtayffsydb`에 적용 완료. Auth의 "Confirm email"과 Site URL은 대시보드에서만 바꿀 수 있습니다.

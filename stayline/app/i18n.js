@@ -20,7 +20,7 @@
       exp: 'Back up', imp: 'Restore', csv: 'CSV (Pro)', print: 'Print summary (Pro)',
       lic: 'Licence key', licPh: 'SL-XXXX-XXXX-XXX', activate: 'Activate', badKey: 'That key is not valid.', okKey: 'Pro unlocked on this device.', pro: 'Pro', proOnly: 'This is a Pro feature.',
       disclaimer: 'An estimate from the dates you enter. First and last day count as full days. Border officers and official sources decide, not this page.',
-      privacy: 'Everything stays in this browser. No account, no location access, no server.', backupDone: 'Backup downloaded.', badFile: 'That file could not be read.', restored: 'Restored.',
+      privacy: 'Your data stays in this browser unless you turn on the optional cloud backup (log in). No location access.', backupDone: 'Backup downloaded.', badFile: 'That file could not be read.', restored: 'Restored.',
       badTrip: 'Check the dates: the last day cannot be before the first.', lang: 'Language', today: 'today', printTitle: 'Days inside'
     },
     ko: {
@@ -42,7 +42,7 @@
       exp: '백업', imp: '복원', csv: 'CSV (Pro)', print: '요약 인쇄 (Pro)',
       lic: '라이선스 키', licPh: 'SL-XXXX-XXXX-XXX', activate: '활성화', badKey: '유효하지 않은 키입니다.', okKey: '이 기기에서 Pro가 열렸습니다.', pro: 'Pro', proOnly: 'Pro 기능입니다.',
       disclaimer: '입력한 날짜로 계산한 추정치입니다. 입국일과 출국일은 모두 하루로 셉니다. 최종 판단은 이 페이지가 아니라 출입국 심사관과 공식 자료가 합니다.',
-      privacy: '모든 데이터는 이 브라우저에만 저장됩니다. 계정도, 위치 권한도, 서버도 없습니다.', backupDone: '백업을 내려받았습니다.', badFile: '파일을 읽을 수 없습니다.', restored: '복원했습니다.',
+      privacy: '데이터는 이 브라우저에 저장되며, 선택 기능인 클라우드 백업(로그인)을 켜지 않으면 밖으로 나가지 않습니다. 위치 권한은 쓰지 않습니다.', backupDone: '백업을 내려받았습니다.', badFile: '파일을 읽을 수 없습니다.', restored: '복원했습니다.',
       badTrip: '날짜를 확인하세요. 마지막 날이 첫날보다 빠를 수 없습니다.', lang: '언어', today: '오늘', printTitle: '체류 일수'
     },
     ja: {
@@ -64,7 +64,7 @@
       exp: 'バックアップ', imp: '復元', csv: 'CSV（Pro）', print: '概要を印刷（Pro）',
       lic: 'ライセンスキー', licPh: 'SL-XXXX-XXXX-XXX', activate: '有効化', badKey: 'このキーは無効です。', okKey: 'この端末でProが有効になりました。', pro: 'Pro', proOnly: 'Pro機能です。',
       disclaimer: '入力した日付からの目安です。入国日と出国日はどちらも1日として数えます。最終的な判断は、このページではなく入国審査官と公的情報によります。',
-      privacy: 'データはこのブラウザの中だけに保存されます。アカウントも位置情報もサーバーもありません。', backupDone: 'バックアップを保存しました。', badFile: 'ファイルを読み込めません。', restored: '復元しました。',
+      privacy: 'データはこのブラウザに保存され、任意のクラウドバックアップ（ログイン）を使わない限り外に出ません。位置情報は使いません。', backupDone: 'バックアップを保存しました。', badFile: 'ファイルを読み込めません。', restored: '復元しました。',
       badTrip: '日付を確認してください。最終日は初日より前にできません。', lang: '言語', today: '今日', printTitle: '滞在日数'
     },
     zh: {
@@ -86,7 +86,7 @@
       exp: '备份', imp: '恢复', csv: 'CSV（Pro）', print: '打印摘要（Pro）',
       lic: '授权密钥', licPh: 'SL-XXXX-XXXX-XXX', activate: '激活', badKey: '密钥无效。', okKey: '此设备已解锁 Pro。', pro: 'Pro', proOnly: '这是 Pro 功能。',
       disclaimer: '根据你填写的日期估算。入境当天和离境当天都按整天计算。最终以边检人员和官方信息为准，而非本页面。',
-      privacy: '所有数据只保存在此浏览器中。没有账号，不读取位置，没有服务器。', backupDone: '备份已下载。', badFile: '无法读取该文件。', restored: '已恢复。',
+      privacy: '数据保存在此浏览器中；除非你启用可选的云备份（登录），否则不会离开浏览器。不读取位置。', backupDone: '备份已下载。', badFile: '无法读取该文件。', restored: '已恢复。',
       badTrip: '请检查日期：最后一天不能早于第一天。', lang: '语言', today: '今天', printTitle: '停留天数'
     },
     es: {
@@ -108,7 +108,7 @@
       exp: 'Copia', imp: 'Restaurar', csv: 'CSV (Pro)', print: 'Imprimir resumen (Pro)',
       lic: 'Clave de licencia', licPh: 'SL-XXXX-XXXX-XXX', activate: 'Activar', badKey: 'Esa clave no es válida.', okKey: 'Pro desbloqueado en este dispositivo.', pro: 'Pro', proOnly: 'Función Pro.',
       disclaimer: 'Estimación a partir de las fechas que introduces. El primer y el último día cuentan completos. Deciden los agentes de frontera y las fuentes oficiales, no esta página.',
-      privacy: 'Todo se queda en este navegador. Sin cuenta, sin ubicación, sin servidor.', backupDone: 'Copia descargada.', badFile: 'No se pudo leer el archivo.', restored: 'Restaurado.',
+      privacy: 'Tus datos se quedan en este navegador salvo que actives la copia opcional en la nube (iniciar sesión). Sin ubicación.', backupDone: 'Copia descargada.', badFile: 'No se pudo leer el archivo.', restored: 'Restaurado.',
       badTrip: 'Revisa las fechas: el último día no puede ser anterior al primero.', lang: 'Idioma', today: 'hoy', printTitle: 'Días dentro'
     }
   };
