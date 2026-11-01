@@ -90,3 +90,68 @@ test('attention and search', () => {
   const t = '2026-10-30'; assert.deepEqual(C.attention([a, b, c], t).map(x => x.id), ['p1']);
   assert.equal(C.matches(b, ' jo '), true); assert.equal(C.matches(b, 'zz'), false); assert.equal(C.matches(b, ''), true);
 });
+
+/* ---- insights ---- */
+const stamp = (p, d, kind) => C.addStamp(p, d, '', kind);
+const sample = () => {
+  const a = mk({ id: 'a', student: 'Mina', total: 10 }), b = mk({ id: 'b', student: 'Joon', total: 4, price: 200 });
+  stamp(a, '2026-09-30'); stamp(a, '2026-10-05'); stamp(a, '2026-10-12', 'noshow'); stamp(a, '2026-10-19', 'excused'); stamp(a, '2026-10-26');
+  stamp(b, '2026-10-05'); stamp(b, '2026-11-02');
+  return [a, b];
+};
+test('ymAdd crosses year boundaries', () => {
+  assert.equal(C.ymAdd('2026-11', 1), '2026-12'); assert.equal(C.ymAdd('2026-12', 1), '2027-01'); assert.equal(C.ymAdd('2026-01', -2), '2025-11');
+});
+test('monthGrid is rectangular and starts on the right weekday', () => {
+  const g = C.monthGrid('2026-11', 0); // 1 Nov 2026 is a Sunday
+  assert.equal(g.length % 7, 0); assert.equal(g[0], '2026-11-01'); assert.equal(g.filter(Boolean).length, 30); assert.equal(g.length, 35);
+  const m = C.monthGrid('2026-11', 1); assert.equal(m.indexOf('2026-11-01'), 6); assert.equal(m.length, 42);
+  assert.equal(C.monthGrid('2026-02', 1).filter(Boolean).length, 28);
+});
+test('events and dayMap include every kind, sorted', () => {
+  const ev = C.events(sample()); assert.equal(ev.length, 7); assert.equal(ev[0].date, '2026-09-30');
+  const dm = C.dayMap(sample(), '2026-10'); assert.deepEqual(Object.keys(dm).sort(), ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26']);
+  assert.equal(dm['2026-10-05'].length, 2); assert.equal(dm['2026-10-19'][0].kind, 'excused');
+});
+test('monthlyTrend counts lessons and no-shows, excused excluded', () => {
+  const t = C.monthlyTrend(sample(), '2026-11', 3);
+  assert.deepEqual(t.map(x => x.ym), ['2026-09', '2026-10', '2026-11']);
+  assert.deepEqual(t.map(x => x.lessons), [1, 4, 1]); assert.deepEqual(t.map(x => x.noshow), [0, 1, 0]);
+  assert.equal(C.monthlyTrend([], '2026-01', 2)[0].lessons, 0);
+});
+test('weekdayCounts', () => {
+  const c = C.weekdayCounts(sample()); // 05 Oct 2026 is Monday, 12 Oct Monday(noshow counts), 26 Oct Monday
+  assert.equal(c.reduce((x, y) => x + y, 0), 6); assert.equal(c[1], 5);
+});
+test('studentStats merges packs by name and computes attendance', () => {
+  const ps = sample(); ps.push(mk({ id: 'c', student: ' mina ', total: 2 })); stamp(ps[2], '2026-11-01');
+  const rows = C.studentStats(ps, '2026-11-05'), m = rows.find(r => r.student === 'Mina');
+  assert.equal(rows.length, 2); assert.equal(m.packs, 2); assert.equal(m.lessons, 5); assert.equal(m.noshow, 1); assert.equal(m.excused, 1);
+  assert.equal(m.attendance, 80); assert.equal(m.last, '2026-11-01'); assert.equal(m.sinceLast, 4); assert.equal(m.spent, 1000);
+  assert.equal(rows[0].student, 'Mina', 'busiest first');
+  assert.equal(m.avgGap, Math.round(32 / 4 * 10) / 10);
+});
+test('studentStats handles students with no lessons', () => {
+  const r = C.studentStats([mk()], '2026-11-01')[0];
+  assert.equal(r.lessons, 0); assert.equal(r.attendance, null); assert.equal(r.last, ''); assert.equal(r.sinceLast, null); assert.equal(r.avgGap, null);
+});
+test('quiet lists students with lessons left and no recent lesson', () => {
+  const ps = sample(), today = '2026-11-20';
+  assert.deepEqual(C.quiet(ps, today, 14).map(r => r.student), ['Mina', 'Joon']);
+  assert.deepEqual(C.quiet(ps, today, 20).map(r => r.student), ['Mina']);
+  assert.deepEqual(C.quiet(ps, today, 30).length, 0);
+  const done = mk({ total: 1 }); stamp(done, '2026-01-01');
+  assert.equal(C.quiet([done], today, 14).length, 0, 'no lessons left means nothing to chase');
+  assert.equal(C.quiet([mk({ expires: '2026-01-01' })], today, 14).length, 0, 'expired lessons are not chased');
+  assert.equal(C.quiet([mk()], today, 14).length, 1, 'never started counts');
+});
+test('overview totals', () => {
+  const o = C.overview(sample(), '2026-11-05');
+  assert.deepEqual(o, { students: 2, lessons: 6, noshow: 1, excused: 1, noshowRate: 17 });
+  assert.equal(C.overview([], '2026-11-05').noshowRate, 0);
+});
+
+test('app i18n: every language has every key', () => {
+  const I = require('../app/i18n.js'), keys = Object.keys(I.L.en);
+  for (const l of I.langs) for (const k of keys) assert.ok(typeof I.L[l][k] === 'string' && I.L[l][k].trim(), `${l}.${k}`);
+});

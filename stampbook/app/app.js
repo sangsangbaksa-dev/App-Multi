@@ -2,7 +2,7 @@
   'use strict';
   var C = window.SB, I = window.I18N, CFG = window.SB_SITE;
   var KEY = 'stampbook.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true;
+  var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true, view = 'packs', calYm = C.todayStr().slice(0, 7), calDay = '';
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.packs)) return s; } catch (e) {}
@@ -86,6 +86,17 @@
       h('div', {}, [h('b', {}, perCur(function (ps) { return C.totalUnearned(ps, today); })), h('span', {}, T('owed'))])
     ]));
     if (!storageOk) root.appendChild(h('div', { class: 'warnbar', role: 'alert' }, T('storageErr')));
+    root.appendChild(tabs());
+    if (view === 'cal') root.appendChild(calendarView(today));
+    else if (view === 'ins') root.appendChild(insightsView(today));
+    else packsView(today);
+
+    root.appendChild(settings());
+    root.appendChild(h('p', { class: 'note' }, T('privacy')));
+    root.appendChild(newDialog());
+    root.appendChild(upgradeDialog());
+  }
+  function packsView(today) {
     var att = C.attention(state.packs, today);
     root.appendChild(h('div', { class: 'row', style: 'margin-bottom:16px' }, [h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack')),
       att.length ? h('span', { class: 'chip c-low' }, T('attn', { n: att.length })) : null]));
@@ -104,12 +115,82 @@
     var lap = C.lapsed(state.packs, today);
     if (lap.length) root.appendChild(h('div', { class: 'lapsed' }, [h('h3', {}, T('lapsedH')), h('div', { class: 'note' }, T('lapsedB'))]));
 
-    root.appendChild(settings());
-    root.appendChild(h('p', { class: 'note' }, T('privacy')));
-    root.appendChild(newDialog());
-    root.appendChild(upgradeDialog());
   }
   var listBox;
+
+  /* ---------- calendar + insights ---------- */
+  function tabs() {
+    return h('div', { class: 'tabs', role: 'tablist' }, [['packs', 'tabPacks'], ['cal', 'tabCal'], ['ins', 'tabInsights']].map(function (t) {
+      return h('button', { class: 'ghost' + (view === t[0] ? ' on' : ''), role: 'tab', 'aria-selected': String(view === t[0]), onclick: function () { view = t[0]; render(); } }, T(t[1]));
+    }));
+  }
+  function fmt(opts, ds) { try { return new Intl.DateTimeFormat(lang, opts).format(C.parse(ds)); } catch (e) { return ds; } }
+  function weekStart() { return lang === 'es' || lang === 'zh' ? 1 : 0; }
+  function calendarView(today) {
+    var ws = weekStart(), map = C.dayMap(state.packs, calYm), box = h('div', { class: 'cal' });
+    var head = h('div', { class: 'calhead' }, [
+      h('button', { class: 'ghost', 'aria-label': T('calPrev'), onclick: function () { calYm = C.ymAdd(calYm, -1); calDay = ''; render(); } }, '‹'),
+      h('b', { 'aria-live': 'polite' }, fmt({ year: 'numeric', month: 'long' }, calYm + '-01')),
+      h('button', { class: 'ghost', 'aria-label': T('calNext'), onclick: function () { calYm = C.ymAdd(calYm, 1); calDay = ''; render(); } }, '›'),
+      h('button', { class: 'ghost', onclick: function () { calYm = today.slice(0, 7); calDay = today; render(); } }, T('calThisMonth'))]);
+    var grid = h('div', { class: 'calgrid', role: 'grid' });
+    for (var i = 0; i < 7; i++) grid.appendChild(h('div', { class: 'dow', role: 'columnheader' }, fmt({ weekday: 'short' }, C.addDays('2026-11-01', (i + ws) % 7))));
+    C.monthGrid(calYm, ws).forEach(function (d) {
+      if (!d) return grid.appendChild(h('div', { class: 'day blank' }));
+      var ev = map[d] || [], n = ev.filter(function (e) { return e.kind !== 'excused'; }).length;
+      grid.appendChild(h('button', { type: 'button', class: 'day' + (d === today ? ' today' : '') + (d === calDay ? ' sel' : '') + (ev.length ? ' has' : ''),
+        'aria-pressed': String(d === calDay), 'aria-label': d + (ev.length ? ' · ' + ev.length : ''),
+        onclick: function () { calDay = calDay === d ? '' : d; render(); } },
+        [h('span', {}, String(+d.slice(8))), ev.length ? h('i', { class: 'dots' }, ev.slice(0, 4).map(function (e) { return h('u', { class: 'k-' + (e.kind || 'lesson') }); })) : null,
+         n > 4 ? h('em', {}, '+' + (n - 4)) : null]));
+    });
+    box.appendChild(head); box.appendChild(grid);
+    box.appendChild(h('div', { class: 'legend note' }, [['lesson', 'legendLesson'], ['noshow', 'legendNoshow'], ['excused', 'legendExcused']].map(function (k) {
+      return h('span', {}, [h('u', { class: 'k-' + k[0] }), ' ' + T(k[1])]); })));
+    if (calDay && calDay.slice(0, 7) === calYm) {
+      var list = map[calDay] || [];
+      box.appendChild(h('div', { class: 'card calday' }, [h('h3', {}, T('calDay', { date: fmt({ dateStyle: 'full' }, calDay) })),
+        list.length ? h('ul', { class: 'evs' }, list.map(function (e) {
+          return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, h('span', { class: 'ln' }, e.note)]); }))
+          : h('p', { class: 'note' }, T('calNone'))]));
+    }
+    return box;
+  }
+  function bars(items, max, cls) {
+    return h('div', { class: 'bars ' + (cls || '') }, items.map(function (it) {
+      return h('div', { class: 'bar' + (it.hot ? ' hot' : '') }, [h('span', { class: 'bv' }, String(it.v)),
+        h('i', { style: 'height:' + (max ? Math.max(it.v ? 4 : 0, Math.round(it.v / max * 100)) : 0) + '%', title: it.l + ': ' + it.v }), h('span', { class: 'bl' }, it.l)]);
+    }));
+  }
+  function insightsView(today) {
+    var ov = C.overview(state.packs, today), box = h('div', { class: 'ins' });
+    if (!ov.lessons) { box.appendChild(h('div', { class: 'empty' }, [h('p', {}, T('insNoData'))])); return box; }
+    box.appendChild(h('div', { class: 'sum' }, [
+      h('div', {}, [h('b', {}, String(ov.students)), h('span', {}, T('ovStudents'))]),
+      h('div', {}, [h('b', {}, String(ov.lessons)), h('span', {}, T('ovLessons'))]),
+      h('div', {}, [h('b', {}, ov.noshowRate + '%'), h('span', {}, T('ovNoshow'))])]));
+    var tr = C.monthlyTrend(state.packs, today.slice(0, 7), 6), tmax = Math.max.apply(null, tr.map(function (x) { return x.lessons; }));
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insTrend')),
+      bars(tr.map(function (x, i) { return { v: x.lessons, l: fmt({ month: 'short' }, x.ym + '-01'), hot: i === tr.length - 1 }; }), tmax)]));
+    var wc = C.weekdayCounts(state.packs), wmax = Math.max.apply(null, wc), ws = weekStart();
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insWeekday')),
+      bars([0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = (i + ws) % 7; return { v: wc[d], l: fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)), hot: wmax > 0 && wc[d] === wmax }; }), wmax, 'wk')]));
+    var qs = C.quiet(state.packs, today, 14);
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insQuiet')), h('p', { class: 'note' }, T('insQuietB', { d: 14 })),
+      qs.length ? h('ul', { class: 'evs' }, qs.map(function (r) {
+        return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('left', { n: r.left }) + ' · ' + (r.sinceLast === null ? T('stNever') : T('stAgo', { d: r.sinceLast })))]); }))
+        : h('p', { class: 'note' }, T('insQuietNone'))]));
+    var rows = C.studentStats(state.packs, today);
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insStudents')), h('ul', { class: 'evs' }, rows.map(function (r) {
+      var bits = [T('stLessons', { n: r.lessons })];
+      if (r.attendance !== null) bits.push(r.attendance + '% ' + T('stAttend'));
+      if (r.last) bits.push(T('stLast') + ' ' + r.last);
+      if (r.avgGap !== null) bits.push(T('stGap', { d: r.avgGap }));
+      bits.push(money(r.spent, r.currency) + ' ' + T('stSpent'));
+      return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, bits.join(' · '))]);
+    }))]));
+    return box;
+  }
   function renderList() {
     if (!listBox) return;
     var today = C.todayStr(), order = { low: 0, active: 1, expired: 2, done: 3 };

@@ -98,6 +98,82 @@
     return packs.filter(function (p) { return status(p, today) === 'expired'; });
   }
 
+  /* ---- insights: calendar + per-student and monthly stats. All pure, derived from stamps only. ---- */
+  function ymAdd(ym, n) { return addMonths(ym + '-01', n).slice(0, 7); }
+  /* cells for a month calendar: leading/trailing blanks are null so rows are always 7 wide. weekStart 0 = Sunday, 1 = Monday */
+  function monthGrid(ym, weekStart) {
+    weekStart = weekStart === 1 ? 1 : 0;
+    var first = parse(ym + '-01'), days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    var lead = (first.getDay() - weekStart + 7) % 7, cells = [], i;
+    for (i = 0; i < lead; i++) cells.push(null);
+    for (i = 1; i <= days; i++) cells.push(ym + '-' + (i < 10 ? '0' : '') + i);
+    while (cells.length % 7) cells.push(null);
+    return cells;
+  }
+  /* every stamp on every pack, newest context attached: [{date,kind,stampId,packId,student,note}] sorted by date */
+  function events(packs) {
+    var out = [];
+    packs.forEach(function (p) {
+      p.stamps.forEach(function (s) { out.push({ date: s.date, kind: s.kind || '', stampId: s.id, packId: p.id, student: p.student, note: s.note || '' }); });
+    });
+    return out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.student < b.student ? -1 : a.student > b.student ? 1 : 0; });
+  }
+  /* {date: [events]} for one month */
+  function dayMap(packs, ym) {
+    var m = {};
+    events(packs).forEach(function (e) { if (e.date.slice(0, ym.length) === ym) (m[e.date] = m[e.date] || []).push(e); });
+    return m;
+  }
+  /* last n months ending at endYm, oldest first */
+  function monthlyTrend(packs, endYm, n) {
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var ym = ymAdd(endYm, -i), ms = monthStats(packs, ym), ns = 0;
+      packs.forEach(function (p) { p.stamps.forEach(function (s) { if (s.kind === 'noshow' && s.date.slice(0, 7) === ym) ns++; }); });
+      out.push({ ym: ym, lessons: ms.lessons, earned: ms.earned, noshow: ns });
+    }
+    return out;
+  }
+  /* lessons counted per weekday, index 0 = Sunday */
+  function weekdayCounts(packs) {
+    var c = [0, 0, 0, 0, 0, 0, 0];
+    packs.forEach(function (p) { counted(p).forEach(function (s) { c[parse(s.date).getDay()]++; }); });
+    return c;
+  }
+  /* one row per student (packs merged by name, case-insensitive), busiest first */
+  function studentStats(packs, today) {
+    var map = {}, order = [];
+    packs.forEach(function (p) {
+      var k = p.student.trim().toLowerCase();
+      if (!map[k]) { map[k] = { student: p.student.trim(), packs: 0, lessons: 0, noshow: 0, excused: 0, left: 0, spent: 0, dates: [], currency: p.currency || '' }; order.push(k); }
+      var r = map[k], st = status(p, today);
+      r.packs++; r.spent += p.paid === false ? 0 : p.price;
+      if (st !== 'expired') r.left += remaining(p);
+      p.stamps.forEach(function (s) {
+        if (s.kind === 'excused') r.excused++; else { r.lessons++; r.dates.push(s.date); if (s.kind === 'noshow') r.noshow++; }
+      });
+    });
+    return order.map(function (k) {
+      var r = map[k], d = r.dates.sort(), gap = null;
+      if (d.length > 1) gap = Math.round(daysBetween(d[0], d[d.length - 1]) / (d.length - 1) * 10) / 10;
+      return { student: r.student, packs: r.packs, lessons: r.lessons, noshow: r.noshow, excused: r.excused, left: r.left, spent: r.spent, currency: r.currency,
+        attended: r.lessons - r.noshow, attendance: r.lessons ? Math.round((r.lessons - r.noshow) / r.lessons * 100) : null,
+        last: d.length ? d[d.length - 1] : '', avgGap: gap, sinceLast: d.length && today ? daysBetween(d[d.length - 1], today) : null };
+    }).sort(function (a, b) { return b.lessons - a.lessons || (a.student < b.student ? -1 : 1); });
+  }
+  /* students holding unused, unexpired lessons who have not had a lesson for `days` days (or never started) */
+  function quiet(packs, today, days) {
+    return studentStats(packs, today).filter(function (r) {
+      return r.left > 0 && (r.sinceLast === null || r.sinceLast >= days);
+    });
+  }
+  /* headline numbers for the whole history */
+  function overview(packs, today) {
+    var rows = studentStats(packs, today), lessons = 0, noshow = 0, excused = 0;
+    rows.forEach(function (r) { lessons += r.lessons; noshow += r.noshow; excused += r.excused; });
+    return { students: rows.length, lessons: lessons, noshow: noshow, excused: excused, noshowRate: lessons ? Math.round(noshow / lessons * 100) : 0 };
+  }
+
   /* ---- balance card: a read-only snapshot packed into a URL hash, no server ---- */
   function b64e(str) {
     var bytes = new TextEncoder().encode(str), bin = '';
@@ -167,6 +243,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
+    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;
