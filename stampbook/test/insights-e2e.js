@@ -38,6 +38,7 @@ const srv = http.createServer((q, r) => {
   await pg.click('.tabs button >> nth=0'); await pg.waitForSelector('.card');
   await pg.locator('.foot button', { hasText: 'Mark unpaid' }).first().click(); assert.equal(await pg.locator('.chip', { hasText: 'Unpaid' }).count(), 1);
   await pg.click('.tabs button >> nth=2'); await pg.waitForSelector('.ins .bars'); assert.ok((await pg.locator('.ins').textContent()).includes('Awaiting payment'));
+  await pg.locator('.ins button', { hasText: 'Stats CSV' }).click(); await pg.waitForSelector('#up[open]'); await pg.locator('#up button', { hasText: 'Cancel' }).click(); // Pro gate
   await pg.selectOption('select', 'ko'); await pg.waitForSelector('.ins .bars');
   assert.ok((await pg.locator('.tabs').textContent()).includes('통계'));
   await pg.screenshot({ path: out + '/insights-ko.png', fullPage: true });

@@ -355,6 +355,15 @@
     return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
   }
 
+  /* per-student stats as CSV (same formula-neutralising cell rules as toCsv) */
+  function statsCsv(packs, today) {
+    var rows = [['student', 'packs', 'lessons', 'no_shows', 'excused', 'attendance_pct', 'lessons_left', 'last_lesson', 'avg_gap_days', 'paid_total', 'currency']];
+    studentStats(packs, today).forEach(function (r) {
+      rows.push([r.student, r.packs, r.lessons, r.noshow, r.excused, r.attendance === null ? '' : r.attendance, r.left, r.last, r.avgGap === null ? '' : r.avgGap, r.spent, r.currency]);
+    });
+    return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
+  }
+
   /* ---- offline licence check. Placeholder scheme: anyone reading this file can mint a key.
      Replace with a vendor-issued key + server check before charging real money. ---- */
   function keySum(body) {
@@ -376,7 +385,7 @@
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
     ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, mergePacks: mergePacks, presets: presets, report: report,
-    encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
+    encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, statsCsv: statsCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -267,3 +267,11 @@ test('mergePacks unions stamps by id and adds new packs', () => {
 test('mergePacks copies incoming data rather than sharing it', () => {
   const b = mk({ id: 'b' }), r = C.mergePacks([], [b]); r.packs[0].student = 'X'; assert.equal(b.student, 'Mina');
 });
+
+test('statsCsv has one row per student and neutralises formulas', () => {
+  const ps = sample(); ps[1].student = '=HYPERLINK("x")';
+  const lines = C.statsCsv(ps, '2026-11-05').split('\n');
+  assert.equal(lines.length, 3); assert.ok(lines[0].startsWith('student,packs,lessons'));
+  assert.ok(lines[1].startsWith('Mina,1,4,1,1,75,'), lines[1]); assert.ok(lines.join('\n').includes('"\'=HYPERLINK(""x"")"'));
+  assert.equal(C.statsCsv([], '2026-11-05').split('\n').length, 1);
+});

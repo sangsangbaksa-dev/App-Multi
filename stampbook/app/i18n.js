@@ -114,7 +114,8 @@
       unskip: 'Restore',
       skipped: 'Skipped',
       mergeAsk: 'Merge this backup into your current data? OK merges (nothing is lost). Cancel replaces everything with the backup.',
-      merged: 'Merged: {a} new pack(s), {m} updated.'
+      merged: 'Merged: {a} new pack(s), {m} updated.',
+      statsCsvBtn: 'Stats CSV (Pro)'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -229,7 +230,8 @@
       unskip: '되돌리기',
       skipped: '건너뜀',
       mergeAsk: '이 백업을 현재 데이터에 합칠까요? 확인은 합치기(지워지는 것 없음), 취소는 백업으로 전체 교체입니다.',
-      merged: '합쳤습니다: 새 수강권 {a}개, 갱신 {m}개.'
+      merged: '합쳤습니다: 새 수강권 {a}개, 갱신 {m}개.',
+      statsCsvBtn: '통계 CSV (Pro)'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -344,7 +346,8 @@
       unskip: '元に戻す',
       skipped: 'スキップ済み',
       mergeAsk: 'このバックアップを現在のデータに統合しますか?OKで統合(何も失われません)、キャンセルでバックアップに完全に置き換えます。',
-      merged: '統合しました:新規 {a} 件、更新 {m} 件。'
+      merged: '統合しました:新規 {a} 件、更新 {m} 件。',
+      statsCsvBtn: '集計CSV (Pro)'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -459,7 +462,8 @@
       unskip: '恢复',
       skipped: '已跳过',
       mergeAsk: '要把此备份合并到当前数据吗?确定为合并(不会丢失任何内容),取消则用备份完全替换。',
-      merged: '已合并:新增 {a} 个,更新 {m} 个。'
+      merged: '已合并:新增 {a} 个,更新 {m} 个。',
+      statsCsvBtn: '统计 CSV (Pro)'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -574,7 +578,8 @@
       unskip: 'Restaurar',
       skipped: 'Omitida',
       mergeAsk: '¿Combinar esta copia con tus datos actuales? Aceptar combina (no se pierde nada). Cancelar lo reemplaza todo por la copia.',
-      merged: 'Combinado: {a} bono(s) nuevo(s), {m} actualizado(s).'
+      merged: 'Combinado: {a} bono(s) nuevo(s), {m} actualizado(s).',
+      statsCsvBtn: 'CSV de estadísticas (Pro)'
     }
   };
   function pick(pref) {

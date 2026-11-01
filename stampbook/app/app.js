@@ -207,7 +207,7 @@
     } });
     box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('noteSearch')), qin, res]));
     var rows = C.studentStats(state.packs, today);
-    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insStudents')), h('ul', { class: 'evs' }, rows.map(function (r) {
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insStudents')), h('button', { class: 'ghost sm', style: 'margin-bottom:8px', onclick: function () { if (!state.pro) return needPro(); download('stampbook-stats.csv', C.statsCsv(state.packs, today), 'text/csv'); } }, T('statsCsvBtn')), h('ul', { class: 'evs' }, rows.map(function (r) {
       var bits = [T('stLessons', { n: r.lessons })];
       if (r.attendance !== null) bits.push(r.attendance + '% ' + T('stAttend'));
       if (r.last) bits.push(T('stLast') + ' ' + r.last);
