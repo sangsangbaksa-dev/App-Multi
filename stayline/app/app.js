@@ -2,7 +2,7 @@
   'use strict';
   var C = window.SL, I = window.I18N, CFG = window.SL_CONFIG;
   var KEY = 'stayline.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, upsell = false, pasting = false;
+  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, upsell = false, pasting = false, calMonth = '';
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.trackers)) { s.trackers = C.sanitize(s.trackers); return s; } } catch (e) {}
@@ -227,6 +227,23 @@
     setTimeout(calc, 0);
     return card;
   }
+  function calendarCard(tr) {
+    var ym = calMonth || C.todayStr().slice(0, 7), weeks = C.calendarMonth(tr, ym, C.todayStr());
+    var label;
+    try { label = new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(C.dn(ym + '-01') * 86400000)); } catch (e) { label = ym; }
+    var heads = weeks[0].map(function (c) {
+      var w; try { w = new Intl.DateTimeFormat(lang, { weekday: 'narrow', timeZone: 'UTC' }).format(new Date(C.dn(c.date) * 86400000)); } catch (e) { w = ''; }
+      return h('span', { class: 'wd' }, w);
+    });
+    var cells = [].concat.apply([], weeks).map(function (c) {
+      return h('span', { class: 'day' + (c.inMonth ? '' : ' off') + (c.in ? (c.planned ? ' plan' : ' in') : '') + (c.over ? ' over' : '') + (c.today ? ' now' : ''), title: fmt(c.date) }, String(+c.date.slice(8)));
+    });
+    return h('section', { class: 'card' }, [
+      h('div', { class: 'rowhead' }, [h('h2', null, T('calH') + ' · ' + label), h('span', { class: 'rowbtns' }, [
+        h('button', { class: 'ghost small', 'aria-label': T('calPrev'), onclick: function () { calMonth = C.addMonth(ym, -1); render(); } }, '‹'),
+        h('button', { class: 'ghost small', 'aria-label': T('calNext'), onclick: function () { calMonth = C.addMonth(ym, 1); render(); } }, '›')])]),
+      h('div', { class: 'cal' }, heads.concat(cells)), h('p', { class: 'muted small' }, T('calLegend'))]);
+  }
   function auditCard(tr) {
     var eps = C.audit(tr, C.todayStr(), 3);
     return h('section', { class: 'card' }, [h('h2', null, T('auditH')),
@@ -418,7 +435,7 @@
       if (state.trackers.length > 1) kids.push(overview());
       kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr));
       if (state.trackers.length > 1) kids.push(groupCard());
-      kids.push(forecastCard(tr), monthCard(tr), auditCard(tr), tripList(tr));
+      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), auditCard(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }

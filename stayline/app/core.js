@@ -255,6 +255,30 @@
     return out.map(function (e) { return { from: str(e.fromN), to: str(e.toN), over: e.over }; });
   }
 
+  /* month grid (weeks start on Monday) for 'YYYY-MM'. Each cell: date, inMonth, in (a stay day), planned (stay day after today),
+     over (count above the limit that day), today. */
+  function calendarMonth(tr, ym, today) {
+    today = today || todayStr();
+    var m = /^(\d{4})-(\d{2})$/.exec(ym);
+    if (!m) return [];
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today);
+    var first = Date.UTC(+m[1], +m[2] - 1, 1) / 86400000, next = Date.UTC(+m[1], +m[2], 1) / 86400000;
+    var start = first - ((new Date(first * 86400000).getUTCDay() + 6) % 7), weeks = [];
+    for (var d = start; d < next; d += 7) {
+      var row = [];
+      for (var i = 0; i < 7; i++) {
+        var x = d + i, inside = !!set[x];
+        row.push({ date: str(x), inMonth: x >= first && x < next, in: inside, planned: inside && x > t, over: inside && usedOn(set, rule, x) > rule.limit, today: x === t });
+      }
+      weeks.push(row);
+    }
+    return weeks;
+  }
+  function addMonth(ym, n) {
+    var m = /^(\d{4})-(\d{2})$/.exec(ym), d = new Date(Date.UTC(+m[1], +m[2] - 1 + n, 1));
+    return str(d.getTime() / 86400000).slice(0, 7);
+  }
+
   /* days spent inside per calendar month, oldest first, ending with the month of `today` */
   function monthlyUsage(tr, today, months) {
     today = today || todayStr();
@@ -430,7 +454,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
-    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

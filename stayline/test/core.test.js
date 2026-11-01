@@ -321,3 +321,19 @@ test('audit: finds overstay episodes with the worst excess; clean history is emp
   assert.equal(two.length, 2);
   assert.deepEqual(C.audit(tr([['2026-01-01', '']], C.PRESETS.tax183), '2026-06-01', 1), []);
 });
+
+test('calendarMonth: Monday-first grid, stay / planned / over / today marks', () => {
+  const t = tr([['2026-06-29', '2026-07-03']]);
+  const w = C.calendarMonth(t, '2026-07', '2026-07-01'); // July 1 2026 is a Wednesday
+  assert.equal(w[0][0].date, '2026-06-29'); assert.equal(w[0][0].inMonth, false); assert.equal(w[0][0].in, true);
+  assert.equal(w[0][2].date, '2026-07-01'); assert.equal(w[0][2].today, true); assert.equal(w[0][2].planned, false);
+  assert.equal(w[0][4].planned, true); assert.equal(w[0][5].in, false);
+  assert.ok(w.every(r => r.length === 7)); assert.equal(w.length, 5);
+  assert.deepEqual(C.calendarMonth(t, 'nope'), []);
+  const over = C.calendarMonth(tr([['2026-01-01', '2026-04-10']]), '2026-04', '2026-04-10');
+  assert.equal(over.flat().find(c => c.date === '2026-04-10').over, true);
+  assert.equal(over.flat().find(c => c.date === '2026-03-31').over, false);
+});
+test('addMonth rolls the year', () => {
+  assert.equal(C.addMonth('2026-12', 1), '2027-01'); assert.equal(C.addMonth('2026-01', -1), '2025-12'); assert.equal(C.addMonth('2026-05', 0), '2026-05');
+});
