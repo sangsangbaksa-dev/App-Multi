@@ -196,3 +196,4 @@ dialog form input{flex:1 1 100%}
 .paylog{margin-top:1rem}
 .paylog-add{align-items:center;gap:.5rem}
 .paylog-add input{width:auto;flex:1 1 9rem}
+@media(max-width:480px){#vw-paper{padding:1rem}#vw-paper td,#vw-paper th{padding:.35rem .25rem;font-size:.9rem}}
