@@ -168,3 +168,56 @@ test("filterInvoices searches and filters", () => {
   assert.equal(ids({ q: "zzz" }), "");
   assert.equal(ids({ f: "nonsense" }), "1,2,3,4");
 });
+
+const base = () => ({ id: "p", type: "invoice", number: "INV-0001", client: "A", currency: "USD", issueDate: "2026-10-01", dueDate: "2026-10-15", status: "sent", paid: 0, taxRate: 0, discount: 0, items: [{ desc: "x", qty: 1, price: 100 }] });
+test("recordPayment logs a dated part-payment and settles", () => {
+  let inv = L.recordPayment(base(), "2026-10-05", 30);
+  assert.equal(inv.paid, 30);
+  assert.deepEqual(inv.payments, [{ date: "2026-10-05", amount: 30 }]);
+  assert.equal(inv.status, "sent");
+  inv = L.recordPayment(inv, "2026-10-09", 500); // clamped to the balance
+  assert.equal(inv.paid, 100);
+  assert.equal(inv.status, "paid");
+  assert.equal(inv.payments[1].amount, 70);
+});
+test("recordPayment ignores bad input, quotes and keeps a typed paid amount", () => {
+  const b = base();
+  assert.equal(L.recordPayment(b, "nope", 10), b);
+  assert.equal(L.recordPayment(b, "2026-10-05", 0), b);
+  assert.equal(L.recordPayment({ ...b, type: "quote" }, "2026-10-05", 10).paid, 0);
+  const typed = L.recordPayment({ ...b, paid: 40 }, "2026-10-05", 10);
+  assert.equal(typed.paid, 50);
+  assert.equal(L.recordPayment({ ...b, status: "draft" }, "2026-10-05", 10).status, "sent");
+});
+test("removePayment lowers paid and reopens a paid invoice", () => {
+  const paid = L.recordPayment(L.recordPayment(base(), "2026-10-05", 30), "2026-10-09", 70);
+  const back = L.removePayment(paid, 1);
+  assert.equal(back.paid, 30);
+  assert.equal(back.status, "sent");
+  assert.equal(L.removePayment(back, 9), back);
+});
+test("paymentStats: average days, on-time share, slowest client first", () => {
+  const a = L.recordPayment(base(), "2026-10-11", 100); // 10 days, on time
+  const b = L.recordPayment({ ...base(), id: "q", client: "B", dueDate: "2026-10-05" }, "2026-10-21", 100); // 20 days, late
+  const open = L.recordPayment(base(), "2026-10-02", 10); // not fully paid: ignored
+  const legacy = { ...base(), status: "paid", paid: 100 }; // no dated payments: ignored
+  const s = L.paymentStats([a, b, open, legacy, { ...base(), type: "quote" }]);
+  assert.equal(s.count, 2);
+  assert.equal(s.avgDays, 15);
+  assert.equal(s.onTimePct, 50);
+  assert.deepEqual(s.byClient.map((c) => c.client), ["B", "A"]);
+  assert.deepEqual(L.paymentStats([]), { count: 0, avgDays: 0, onTimePct: 0, byClient: [] });
+});
+test("receivedByMonth uses the payment date, one currency", () => {
+  const a = L.recordPayment(base(), "2026-10-05", 40);
+  const b = L.recordPayment({ ...base(), id: "z", currency: "EUR" }, "2026-10-06", 99);
+  const c = L.recordPayment({ ...base(), id: "y" }, "2026-09-30", 10);
+  const r = L.receivedByMonth([a, b, c], "2026-10-20", 3, "USD");
+  assert.deepEqual(r, [{ month: "2026-08", received: 0 }, { month: "2026-09", received: 10 }, { month: "2026-10", received: 40 }]);
+});
+test("recurring and quote conversion start with an empty payment log", () => {
+  const rec = { ...base(), recur: "weekly", nextRun: "2026-10-08", payments: [{ date: "2026-10-02", amount: 5 }], paid: 5 };
+  const r = L.runRecurring([rec], "2026-10-09", () => "n1");
+  assert.deepEqual(r.invoices[0].payments, []);
+  assert.deepEqual(L.settle({ ...base(), type: "quote", payments: [{ date: "2026-10-02", amount: 5 }] }).payments, []);
+});

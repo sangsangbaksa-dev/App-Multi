@@ -217,6 +217,37 @@ function renderPreview() {
     ${isPro() ? "" : `<p class="wm">${I.t("watermark")}</p>`}`;
 }
 
+function renderPayLog() {
+  const q = L.isQuote(editing);
+  $("#pay-log").hidden = q;
+  if (q) return;
+  const list = editing.payments || [];
+  $("#pay-list").innerHTML = list.length
+    ? `<table class="mini">${list.map((p, k) => `<tr><td>${esc(I.formatDate(p.date))}</td><td class="r">${money(p.amount, editing.currency)}</td>
+        <td class="r"><button type="button" class="danger" data-rm="${k}" aria-label="${esc(I.t("payRemove"))}">×</button></td></tr>`).join("")}</table><p class="muted">${I.t("payNote")}</p>`
+    : `<p class="muted">${I.t("payNone")}</p>`;
+}
+function applyPaid(next) {
+  editing = next;
+  $("#form").elements.paid.value = next.paid;
+  $("#form").elements.status.value = next.status;
+  renderPayLog();
+  renderPreview();
+}
+$("#pay-add").onclick = () => {
+  const cur = L.settle(readForm());
+  const date = $("#pay-date").value || today(), amt = Number($("#pay-amt").value);
+  const next = L.recordPayment(cur, date, amt);
+  $("#pay-err").textContent = next === cur ? I.t("payBadAmt") : "";
+  if (next === cur) return;
+  $("#pay-amt").value = "";
+  applyPaid(next);
+};
+$("#pay-list").onclick = (e) => {
+  const b = e.target.closest("[data-rm]");
+  if (b) applyPaid(L.removePayment(L.settle(readForm()), Number(b.dataset.rm)));
+};
+
 function openEditor(inv) {
   editing = inv;
   for (const el of $("#form").elements) if (el.name) el.value = inv[el.name] ?? "";
@@ -225,6 +256,10 @@ function openEditor(inv) {
   $("#btn-delete").hidden = !saved;
   $("#btn-convert").hidden = !(q && saved);
   $("#paid-wrap").hidden = q;
+  $("#pay-date").value = today();
+  $("#pay-amt").value = "";
+  $("#pay-err").textContent = "";
+  renderPayLog();
   $("#due-lbl").textContent = I.t(q ? "validUntil" : "due");
   for (const o of $("#form").elements.status.options) o.hidden = o.disabled = q ? o.value === "paid" : o.value === "accepted";
   $("#list-view").hidden = true;
@@ -280,7 +315,7 @@ function newDoc(type, extra = {}) {
   const doc = {
     id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
     currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
-    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", recur: "", nextRun: "",
+    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", recur: "", nextRun: "",
     items: [{ desc: "", qty: 1, price: 0 }], lateFeePct: last?.lateFeePct ?? 0, ...extra,
   };
   openEditor(doc);

@@ -16,6 +16,8 @@ billing, CSV export, client ledger and overdue ageing.
 - Sheets: a formula grid (SUM, AVERAGE, MIN, MAX, COUNT, ROUND, ABS, IF, cell references), CSV import/export, fill from invoices, rows to invoice. `sheet.js` is the engine; formulas are parsed by hand, no eval.
 - Documents: proposal, agreement and scope templates with {{client}}/{{from}}/{{date}} fields, own templates, print or save as PDF.
 - Client links (Pro): "Copy client link" puts a snapshot of the invoice in the URL fragment (`view.html#d=...`). The client opens a read-only page with status (due in N days / overdue with late fee / paid), balance, an optional https "Pay online" button (the invoice's payment link field), print/PDF and a language switch. Nothing is uploaded: the fragment never reaches a server. The link is a snapshot, so send a new one after changing the invoice. Overdue reminders append the link. `share.js` encodes/decodes/validates (only https pay links, size and field limits) and is covered by `tests/share.test.js`.
+- Combined totals (Pro): with invoices in more than one currency, the list shows a total in a base currency you pick, using exchange rates you type (`fx.js`). A currency with no rate is listed as left out, never guessed. Nothing is fetched.
+- Dated payments: record each payment with its date in the invoice editor (`recordPayment` in `logic.js`; `paid` stays the number the rest of the app reads). Insights then shows average days to be paid, share paid on time, cash received this month and the slowest-paying clients.
 - English, Korean, Japanese, Chinese, Spanish with local currency/date formats.
 
 ## Selling it

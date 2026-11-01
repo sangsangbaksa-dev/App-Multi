@@ -91,6 +91,16 @@
         <label data-pro><span data-i18n="payLinkL"></span><input type="url" name="payLink" placeholder="https://" maxlength="500" autocomplete="off"></label>
         <label data-pro><span data-i18n="logo"></span><input type="file" id="logo-file" accept="image/*"></label>
       </div>
+      <section id="pay-log" class="paylog">
+        <h2 class="h" data-i18n="payLogHead"></h2>
+        <div id="pay-list"></div>
+        <div class="row paylog-add">
+          <input type="date" id="pay-date" data-i18n-aria="payDate">
+          <input type="number" id="pay-amt" min="0" step="any" inputmode="decimal" data-i18n-aria="payAmt" data-i18n-ph="payAmt">
+          <button type="button" id="pay-add" data-i18n="payAdd"></button>
+        </div>
+        <p id="pay-err" class="late" role="alert"></p>
+      </section>
       <h2 class="h" data-i18n="items"></h2>
       <div id="items"></div>
       <button type="button" id="btn-add" data-i18n="addItem"></button>
@@ -177,6 +187,13 @@
     <table class="mini" id="ins-table" hidden></table>
     <p id="ins-other" class="muted" hidden></p>
     <div id="ins-cards" class="cards" hidden></div>
+  </section>
+  <section aria-labelledby="pay-h">
+    <h2 class="h" id="pay-h" data-i18n="insPayHead"></h2>
+    <p id="pay-empty" class="muted" data-i18n="insPayNone" hidden></p>
+    <div id="pay-cards" class="cards" hidden></div>
+    <p id="pay-based" class="muted" hidden></p>
+    <div id="pay-clients"></div>
   </section>
   <section aria-labelledby="calc-h">
     <h2 class="h" id="calc-h" data-i18n="calcHead"></h2>

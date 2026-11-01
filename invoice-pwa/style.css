@@ -192,3 +192,7 @@ dialog form input{flex:1 1 100%}
 .fxrates{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;margin:.5rem 0}
 .fxrates input,#fx-base{width:7rem}
 #fx{margin-bottom:1rem}
+
+.paylog{margin-top:1rem}
+.paylog-add{align-items:center;gap:.5rem}
+.paylog-add input{width:auto;flex:1 1 9rem}

@@ -59,6 +59,24 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
     ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
   }
 
+  // Needs dated payments (recorded in the invoice editor); older invoices without a log are left out.
+  function renderPaySpeed() {
+    const invoices = getInvoices();
+    const st = L.paymentStats(invoices);
+    const { currency } = L.currencyOf(invoices);
+    const got = L.receivedByMonth(invoices, today(), 1, currency)[0]?.received ?? 0;
+    $("#pay-empty").hidden = st.count > 0 || got > 0;
+    $("#pay-cards").hidden = !(st.count || got);
+    $("#pay-based").hidden = !st.count;
+    $("#pay-cards").innerHTML = [
+      ...(st.count ? [[I.t("insPayAvg"), String(st.avgDays)], [I.t("insPayOnTime"), st.onTimePct + "%"]] : []),
+      [I.t("insReceived"), money(got, currency)],
+    ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(v)}</b></div>`).join("");
+    $("#pay-based").textContent = I.t("insPayBased", { n: st.count });
+    $("#pay-clients").innerHTML = st.byClient.length < 2 ? "" : `<h3 class="h">${esc(I.t("insPayClients"))}</h3><table class="mini">${st.byClient.slice(0, 5)
+      .map((c) => `<tr><td>${esc(c.client)}</td><td class="r">${esc(I.t("insPayDays", { d: c.avgDays, n: c.count }))}</td></tr>`).join("")}</table>`;
+  }
+
   // Calculators show amounts in the same currency as the charts: the one used most on the invoices.
   const cur = () => L.currencyOf(getInvoices()).currency;
   function calcRate() {
@@ -157,6 +175,7 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
   return {
     render() {
       renderInsights();
+      renderPaySpeed();
       renderExpenses();
       renderReminders();
       calcRate();
