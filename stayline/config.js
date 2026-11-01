@@ -6,8 +6,8 @@
     siteUrl: 'https://stayline-family.pages.dev',
     checkoutUrl: 'https://example.com/PLACEHOLDER-checkout',
     supportEmail: 'support@example.com',
-    price: '$12',
-    priceAmount: '12',
+    price: '$19',
+    priceAmount: '19',
     priceCurrency: 'USD',
     freeLimit: 1,
     licenseApi: '/api/license'

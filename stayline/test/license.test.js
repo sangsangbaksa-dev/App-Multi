@@ -1,27 +1,24 @@
 const test = require('node:test'), assert = require('node:assert'), api = require('../api/license.js');
-const ENV = { POLAR_ORGANIZATION_ID: 'org-1', POLAR_BENEFIT_ID: 'ben-1' };
+const ENV = { GUMROAD_PRODUCT_ID: 'prod-1' };
 const fake = (body, calls) => async (url, opts) => { if (calls) calls.push({ url, opts }); return { json: async () => body }; };
+const GOOD = { success: true, uses: 1, purchase: { product_id: 'prod-1', refunded: false, chargebacked: false } };
 
-test('not configured without env vars: no upstream call', async () => {
+test('not configured without the product id: no upstream call', async () => {
   const calls = []; const r = await api.verify('ABCD-EFGH-1234', {}, fake({}, calls));
   assert.deepEqual(r, { configured: false }); assert.equal(calls.length, 0);
-  assert.deepEqual(await api.verify('ABCD-EFGH-1234', { POLAR_ORGANIZATION_ID: 'org-1' }, fake({})), { configured: false });
 });
-test('granted key for our benefit', async () => {
-  const calls = []; const r = await api.verify('ABCD-EFGH-1234', ENV, fake({ status: 'granted', benefit_id: 'ben-1' }, calls));
+test('paid key for our product is valid', async () => {
+  const calls = []; const r = await api.verify('ABCD-EFGH-1234', ENV, fake(GOOD, calls));
   assert.deepEqual(r, { configured: true, valid: true });
-  assert.equal(calls[0].url, 'https://api.polar.sh/v1/customer-portal/license-keys/validate');
-  assert.deepEqual(JSON.parse(calls[0].opts.body), { key: 'ABCD-EFGH-1234', organization_id: 'org-1', benefit_id: 'ben-1' });
+  assert.equal(calls[0].url, 'https://api.gumroad.com/v2/licenses/verify');
+  assert.deepEqual(Object.fromEntries(new URLSearchParams(calls[0].opts.body)), { product_id: 'prod-1', license_key: 'ABCD-EFGH-1234', increment_uses_count: 'false' });
 });
-test('key of another benefit, revoked, disabled or expired is rejected', async () => {
-  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ status: 'granted', benefit_id: 'other' }))).valid, false);
-  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ status: 'granted' }))).valid, false);
-  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ status: 'revoked', benefit_id: 'ben-1' }))).valid, false);
-  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ status: 'disabled', benefit_id: 'ben-1' }))).valid, false);
-  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ status: 'granted', benefit_id: 'ben-1', expires_at: '2000-01-01T00:00:00Z' }))).valid, false);
+test('refunded, charged-back or unknown keys are not valid', async () => {
+  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ success: true, purchase: { refunded: true } }))).valid, false);
+  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ success: true, purchase: { chargebacked: true } }))).valid, false);
+  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ success: false, message: 'That license does not exist.' }))).valid, false);
 });
-test('invalid, malformed or error responses are not valid', async () => {
-  assert.equal((await api.verify('ABCD-EFGH-1234', ENV, fake({ detail: 'Not found' }))).valid, false);
+test('malformed or error responses are not valid', async () => {
   assert.equal((await api.verify('ABCD-EFGH-1234', ENV, async () => ({ json: async () => { throw new Error('x'); } }))).valid, false);
 });
 function run(req, env) {
@@ -30,7 +27,7 @@ function run(req, env) {
   return api(req, res).then(() => { process.env = old; return Object.assign(out, { status: res.statusCode }); });
 }
 test('handler: method, missing env, bad key', async () => {
-  delete process.env.POLAR_ORGANIZATION_ID; delete process.env.POLAR_BENEFIT_ID;
+  delete process.env.GUMROAD_PRODUCT_ID;
   assert.equal((await run({ method: 'GET' }, {})).status, 405);
   const a = await run({ method: 'POST', body: { key: 'ABCD-EFGH-1234' } }, {}); assert.deepEqual(a.body, { configured: false }); assert.equal(a.headers['Cache-Control'], 'no-store');
   assert.equal((await run({ method: 'POST', body: { key: 'bad key!' } }, ENV)).status, 400);

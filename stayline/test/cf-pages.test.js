@@ -1,5 +1,5 @@
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), os = require('os'), path = require('path'), cp = require('child_process');
-const ENV = { POLAR_ORGANIZATION_ID: 'org-1', POLAR_BENEFIT_ID: 'ben-1' };
+const ENV = { GUMROAD_PRODUCT_ID: 'prod-1' };
 const post = (body, raw) => new Request('https://x.test/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: raw || JSON.stringify(body) });
 
 test('Pages Function mirrors the Vercel one', async () => {
@@ -12,9 +12,9 @@ test('Pages Function mirrors the Vercel one', async () => {
   r = await onRequest({ request: post(null, '{nope'), env: ENV }); assert.equal(r.status, 400);
   const real = globalThis.fetch;
   try {
-    globalThis.fetch = async (url, o) => { assert.equal(url, 'https://api.polar.sh/v1/customer-portal/license-keys/validate'); assert.equal(JSON.parse(o.body).key, 'ABCD-EFGH-1234'); return { json: async () => ({ status: 'granted', benefit_id: 'ben-1' }) }; };
+    globalThis.fetch = async (url, o) => { assert.equal(url, 'https://api.gumroad.com/v2/licenses/verify'); assert.ok(o.body.includes('license_key=ABCD-EFGH-1234')); return { json: async () => ({ success: true, purchase: { refunded: false, chargebacked: false } }) }; };
     r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: ENV }); assert.deepEqual(await r.json(), { configured: true, valid: true });
-    globalThis.fetch = async () => ({ json: async () => ({ status: 'granted', benefit_id: 'other' }) });
+    globalThis.fetch = async () => ({ json: async () => ({ success: true, purchase: { refunded: true } }) });
     r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: ENV }); assert.equal((await r.json()).valid, false);
     globalThis.fetch = async () => { throw new Error('down'); };
     r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: ENV }); assert.equal(r.status, 502);

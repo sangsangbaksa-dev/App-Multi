@@ -23,4 +23,4 @@ the EC calculator page (partly cut off when fetched), and the Czech MFA page "Ne
 - Which states are in the Schengen area changes over time (the manual's list is from 2013–2015). Stayline does not know countries; the user decides what counts as "inside".
 - Stays under residence permits or long-stay (D) visas are not counted by the rule. Stayline does not ask which type of stay a trip is. Say so in support answers.
 - EES (Entry/Exit System) border records are what officers see. Stayline cannot match them and says so on every page.
-- The licence call to Polar (`api/license.js`) is tested only with a mocked response. Its request and response shape follow my knowledge of Polar's public licence-key API (`POST /v1/customer-portal/license-keys/validate`) and are **not tested against a real Polar organization**.
+- The licence call to Gumroad (`api/license.js`) is tested only with a mocked response. Its request and response shape follow Gumroad's licence API (`POST /v2/licenses/verify`) as I know it, and are **not tested against a real Gumroad product**.

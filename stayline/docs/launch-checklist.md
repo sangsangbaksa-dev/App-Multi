@@ -3,16 +3,17 @@
 The code is ready; these steps need your accounts or decisions. Nothing here has been done for you.
 
 ## 1. Decide
-- [ ] Price. `$12 once` is a guess, not market-tested. Also decide whether a launch price is wanted.
+- [ ] Price: `$19` once (set by the owner). Not market-tested. Decide whether a launch price is wanted.
 - [ ] Refund policy. Terms draft says "refund within 14 days on request". Change `scripts/site-i18n.js` (`term[2]`) if you want something else.
 - [ ] Business status. Whether you need a business registration or tax registration to sell depends on your country and income. Not checked here. If unsure, ask a tax adviser. A merchant-of-record platform handles sales tax/VAT collection for you, which is the usual reason to pick one (verify the current terms yourself).
 
-## 2. Payments (Polar, a merchant-of-record platform; the serverless function is written for Polar's licence-key API)
-- [ ] In Polar create an organization, then a one-time product "Stayline Pro" and add the **License Keys** benefit to it. Set the price.
-- [ ] Create a checkout link for the product (Polar: Products → Checkout Links) and copy it into `config.js` → `checkoutUrl`.
-- [ ] Note the Organization ID (Settings) and the License Keys benefit ID (Benefits → open the benefit). Both are UUIDs.
-- [ ] On the host that serves the live site, add `POLAR_ORGANIZATION_ID` and `POLAR_BENEFIT_ID` as environment variables, then redeploy (Cloudflare Pages: Settings → Variables and Secrets; see `cloudflare-pages.md`. Vercel Hobby is not allowed for commercial use, so use Cloudflare Pages for selling.) Until both are set, the app uses the old placeholder offline key check, which **anyone can bypass** (do not sell before this is set).
-- [ ] Buy your own product once (test mode if available) and activate the key in the app to see it work. This path has only been tested with mocks.
+## 2. Payments (Gumroad; the serverless function is written for Gumroad's license API)
+- [ ] Sign up at https://gumroad.com and connect a payout method (PayPal etc.). Korean residents' sign-up conditions and payouts were not checked from here: confirm on the sign-up screen (확인 필요).
+- [ ] Create a digital product "Stayline Pro", price `$19` one-time, and turn on the **License key** option in the product settings (menu name to confirm on screen).
+- [ ] Copy the product link (`https://<you>.gumroad.com/l/<permalink>`) into `config.js` → `checkoutUrl`.
+- [ ] Note the product ID (Product ID) for the environment variable below.
+- [ ] On the host that serves the live site, add `GUMROAD_PRODUCT_ID` (the product ID) as an environment variable, then redeploy (Cloudflare Pages: Settings → Variables and Secrets; see `cloudflare-pages.md`. Vercel Hobby is not allowed for commercial use, so use Cloudflare Pages for selling.) Until it is set, the app uses the old placeholder offline key check, which **anyone can bypass** (do not sell before this is set).
+- [ ] Buy your own product once (Gumroad test purchase or a 100% discount code) and activate the key in the app to see it work. This path has only been tested with mocks.
 
 ## 3. Email and domain
 - [ ] Create a real support address, put it in `config.js` → `supportEmail`.
