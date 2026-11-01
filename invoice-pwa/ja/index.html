@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ja" data-lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!--seo:start-->
+<title>QuickBill – 端末に残る請求書・見積書・シート</title>
+<meta name="description" content="ひとりで働く人のための請求書、見積書、タイマー、シート、書類、計算ツール、収入グラフとフリーランスの実践ガイド。アカウント不要、オフライン対応、買い切り。">
+<link rel="canonical" href="https://quickbill-app.pages.dev/ja/">
+<link rel="alternate" hreflang="en" href="https://quickbill-app.pages.dev/">
+<link rel="alternate" hreflang="ko" href="https://quickbill-app.pages.dev/ko/">
+<link rel="alternate" hreflang="ja" href="https://quickbill-app.pages.dev/ja/">
+<link rel="alternate" hreflang="zh" href="https://quickbill-app.pages.dev/zh/">
+<link rel="alternate" hreflang="es" href="https://quickbill-app.pages.dev/es/">
+<link rel="alternate" hreflang="x-default" href="https://quickbill-app.pages.dev/">
+<meta property="og:type" content="website">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:title" content="QuickBill – 端末に残る請求書・見積書・シート">
+<meta property="og:description" content="ひとりで働く人のための請求書、見積書、タイマー、シート、書類、計算ツール、収入グラフとフリーランスの実践ガイド。アカウント不要、オフライン対応、買い切り。">
+<meta property="og:url" content="https://quickbill-app.pages.dev/ja/">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://quickbill-app.pages.dev/og.png">
+<meta name="twitter:title" content="QuickBill – 端末に残る請求書・見積書・シート">
+<meta name="twitter:description" content="ひとりで働く人のための請求書、見積書、タイマー、シート、書類、計算ツール、収入グラフとフリーランスの実践ガイド。アカウント不要、オフライン対応、買い切り。">
+<meta name="twitter:image" content="https://quickbill-app.pages.dev/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"QuickBill","url":"https://quickbill-app.pages.dev/ja/","inLanguage":"ja","applicationCategory":"BusinessApplication","operatingSystem":"Any (web browser)","description":"ひとりで働く人のための請求書、見積書、タイマー、シート、書類、計算ツール、収入グラフとフリーランスの実践ガイド。アカウント不要、オフライン対応、買い切り。","image":"https://quickbill-app.pages.dev/og.png","offers":[{"@type":"Offer","name":"Free","price":"0","priceCurrency":"USD"},{"@type":"Offer","name":"Pro","price":"19","priceCurrency":"USD"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"データはどこに保存されますか？","acceptedAnswer":{"@type":"Answer","text":"お使いの端末のブラウザ保存領域です。こちらにはデータが届かないため、復旧もできません。バックアップファイルを定期的に保存してください。"}},{"@type":"Question","name":"パソコンを替えたら？","acceptedAnswer":{"@type":"Answer","text":"アプリでバックアップをダウンロードし、別のパソコンで復元してください。ライセンスキーは、購入ページに記載の台数までお持ちの端末で使えます。"}},{"@type":"Question","name":"ライセンスはサブスクですか？","acceptedAnswer":{"@type":"Answer","text":"いいえ。一度の支払いで更新はなく、アップデートも含まれます。"}},{"@type":"Question","name":"契約書テンプレートは法的助言ですか？","acceptedAnswer":{"@type":"Answer","text":"いいえ。出発点となるひな形です。重要なものは専門家に確認してください。"}},{"@type":"Question","name":"ブラウザのデータを消すと？","acceptedAnswer":{"@type":"Answer","text":"バックアップがなければ、保存した請求書も消えます。消す前にバックアップしてください。"}},{"@type":"Question","name":"返金はできますか？","acceptedAnswer":{"@type":"Answer","text":"はい。購入から14日以内にご連絡いただければ返金します。"}}]}</script>
+<!--seo:end-->
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f3eee4">
+<link rel="preload" href="../fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin="">
+<link rel="preload" href="../fonts/newsreader-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin="">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../landing.css">
+</head>
+<body class="landing">
+<header class="nav">
+  <div class="wrap navin">
+    <a class="brand" href="#top">QuickBill</a>
+    <nav class="links" aria-label="Sections">
+      <a href="#features" data-i18n="navFeatures">機能</a>
+      <a href="#pricing" data-i18n="navPricing">料金</a>
+      <a href="#faq" data-i18n="navFaq">よくある質問</a>
+    </nav>
+    <select id="lang" class="lang" aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option><option value="es">Español</option></select>
+    <a class="btn primary" href="/app" data-i18n="openApp">アプリを開く</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="heroEyebrow">ひとり事業者のための請求ツール</p>
+      <h1 data-i18n="heroTitle">自分のパソコンの中にある請求デスク。</h1>
+      <p class="lead" data-i18n="heroSub">見積書、請求書、タイマー、シート、書類をひとつの静かな作業場に。ブラウザでオフラインでも動き、取引先も金額もすべて端末に残ります。</p>
+      <div class="ctas">
+        <a class="btn primary big" href="/app" data-i18n="ctaStart">無料で始める</a>
+        <a class="btn big" href="#pricing" data-i18n="ctaPricing">料金を見る</a>
+      </div>
+      <p class="note" data-i18n="heroNote">登録なし。カード不要。インストール不要。</p>
+    </div>
+
+    <div class="wrap">
+      <div class="window" aria-hidden="true">
+        <div class="wbar"><i></i><i></i><i></i><span>quickbill / app</span></div>
+        <div class="wtabs"><b data-i18n="tabInvoices">請求書</b><span data-i18n="tabSheets">シート</span><span data-i18n="tabDocs">書類</span></div>
+        <div class="wbody">
+          <div class="wleft">
+            <div class="stats">
+              <div><small data-i18n="mockStat1">未回収</small><b>$4,820.00</b></div>
+              <div><small data-i18n="mockStat2">期限超過</small><b class="red">$950.00</b></div>
+              <div><small data-i18n="mockStat3">回収済み</small><b>$12,300.00</b></div>
+            </div>
+            <div class="rows">
+              <div class="r1"><span><b>INV-0042</b> · Northwind Studio</span><span>$4,620.00</span></div>
+              <div class="r1"><span><b>INV-0041</b> · Marlowe &amp; Finch</span><span>$950.00</span></div>
+              <div class="r1"><span><b>QUO-0007</b> · Kestrel Labs</span><span>$3,200.00</span></div>
+              <div class="r1"><span><b>INV-0040</b> · Hana Kitchen</span><span>$1,150.00</span></div>
+            </div>
+          </div>
+          <div class="wright">
+            <div class="paper">
+              <h4><span data-i18n="invoice">請求書</span> INV-0042</h4>
+              <p data-i18n="mockClient">Northwind Studio</p>
+              <table>
+                <tbody><tr><td data-i18n="mockItem">ブランド刷新</td><td>1</td><td>$1,800.00</td></tr>
+                <tr><td data-i18n="mockItem2">ランディングページ</td><td>1</td><td>$2,400.00</td></tr>
+              </tbody></table>
+              <p class="tot"><span data-i18n="total">合計</span> <b>$4,620.00</b></p>
+              <p class="tot red"><span data-i18n="balance">未払い残高</span> <b>$1,620.00</b></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="strip">
+    <div class="wrap stats4">
+      <div><b data-i18n="s1v">$19</b><span data-i18n="s1l">一度きり、更新なし</span></div>
+      <div><b data-i18n="s2v">0</b><span data-i18n="s2l">データを預かるサーバー</span></div>
+      <div><b data-i18n="s3v">5</b><span data-i18n="s3l">対応言語</span></div>
+      <div><b data-i18n="s4v">14日</b><span data-i18n="s4l">返金期間</span></div>
+    </div>
+  </section>
+
+  <section id="features" class="sec">
+    <div class="wrap">
+      <h2 data-i18n="featTitle">ひとり事業者が送る書類をまとめて</h2>
+      <p class="sub" data-i18n="featLead">見積もり、作業、請求、入金、催促まで、実際の流れに沿って作りました。</p>
+      <div class="fgrid">
+        <article><h3 data-i18n="ft1t">請求書と見積書</h3><p data-i18n="ft1d">税、値引き、前払金に対応。見積書は別番号で管理され、ワンクリックで請求書になります。</p></article>
+        <article><h3 data-i18n="ft2t">一部入金と遅延損害金</h3><p data-i18n="ft2d">入金を記録すれば残高が出ます。遅延損害金を加え、取引先の言語で丁寧な督促文をコピーできます。</p></article>
+        <article><h3 data-i18n="ft3t">繰り返し請求</h3><p data-i18n="ft3d">毎週・毎月の請求は、日付が来ると下書きが自動で作られます。</p></article>
+        <article><h3 data-i18n="ft4t">時間記録</h3><p data-i18n="ft4d">取引先ごとにタイマーを動かして止めると、記録した時間があなたの単価で請求明細になります。</p></article>
+        <article><h3 data-i18n="ft5t">シート</h3><p data-i18n="ft5d">SUMやAVERAGEなどの数式が使える本物の表です。CSVの取り込み・出力や、行から請求書の作成もできます。</p></article>
+        <article><h3 data-i18n="ft6t">書類</h3><p data-i18n="ft6d">提案書、契約書、作業範囲書をテンプレートから。取引先情報は自動で入り、印刷やPDF保存ができます。</p></article>
+        <article><h3 data-i18n="ft7t">ダッシュボードと延滞状況</h3><p data-i18n="ft7d">通貨別の未回収・期限超過・回収済み、延滞期間別の合計、取引先ごとの台帳を確認できます。</p></article>
+        <article><h3 data-i18n="ft8t">プライバシーとオフライン</h3><p data-i18n="ft8d">データはブラウザの中にあります。ファイルでバックアップし、別のパソコンで復元。飛行機の中でも使えます。</p></article>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="sec tint">
+    <div class="wrap">
+      <h2 data-i18n="howTitle">使い方</h2>
+      <ol class="steps">
+        <li><h3 data-i18n="st1t">開く</h3><p data-i18n="st1d">登録は不要です。空の状態からすぐ始められます。</p></li>
+        <li><h3 data-i18n="st2t">仕事をする</h3><p data-i18n="st2d">見積書を書き、時間を記録し、請求書を送り、入金を記録します。</p></li>
+        <li><h3 data-i18n="st3t">控えを残す</h3><p data-i18n="st3d">ときどきバックアップファイルを保存してください。そのファイルが事業記録のすべてです。</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap narrow">
+      <h2 data-i18n="cmpTitle">サブスクではだめですか？</h2>
+      <table class="cmp">
+        <thead><tr><th class="sr" data-i18n="cmpFeature">項目</th><th>QuickBill</th><th data-i18n="cmpH2">一般的なサブスク型アプリ</th></tr></thead>
+        <tbody>
+          <tr><th data-i18n="cmpR1">3年間の費用</th><td data-i18n="cmpV1a">$19</td><td data-i18n="cmpV1b">月$9なら$324</td></tr>
+          <tr><th data-i18n="cmpR2">取引先データの保管場所</th><td data-i18n="cmpV2a">あなたの端末</td><td data-i18n="cmpV2b">サービス側のサーバー</td></tr>
+          <tr><th data-i18n="cmpR3">ネット接続なしで使える</th><td data-i18n="cmpV3a">はい</td><td data-i18n="cmpV3b">まれ</td></tr>
+          <tr><th data-i18n="cmpR4">取引先数の上限</th><td data-i18n="cmpV4a">なし</td><td data-i18n="cmpV4b">安いプランでは制限が多い</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="pricing" class="sec tint">
+    <div class="wrap">
+      <h2 data-i18n="priceTitle">料金</h2>
+      <p class="sub" data-i18n="priceLead">無料で始めて、足りなくなったら一度だけ支払います。</p>
+      <div class="plans">
+        <div class="plan">
+          <h3 data-i18n="freeName">無料</h3>
+          <p class="price"><b data-i18n="priceFree">$0</b></p>
+          <p class="psub" data-i18n="priceFreeSub">好きなだけ</p>
+          <ul>
+            <li data-i18n="fr1">請求書・見積書3件、全通貨・全言語</li><li data-i18n="fr2">印刷またはPDF保存</li><li data-i18n="fr3">シートと書類は各2件</li><li data-i18n="fr4">バックアップと復元</li>
+          </ul>
+          <a class="btn big" href="/app" data-i18n="ctaStart">無料で始める</a>
+        </div>
+        <div class="plan dark">
+          <h3 data-i18n="proName">正規ライセンス</h3>
+          <p class="price"><b data-i18n="priceProV">$19</b></p>
+          <p class="psub" data-i18n="priceProSub">一度の支払いでずっと</p>
+          <ul>
+            <li class="lead-in" data-i18n="pr0">無料の内容に加えて</li>
+            <li data-i18n="pr1">請求書・見積書・シート・書類・動画案件が無制限</li><li data-i18n="pr2">フッターなし、自分のロゴ</li><li data-i18n="pr3">繰り返し請求とタイマー請求</li><li data-i18n="pr4">CSV取り込み・出力、シートから請求書</li><li data-i18n="pr5">取引先台帳と延滞状況</li><li data-i18n="pr6">独自の書類テンプレート、今後のアップデートすべて</li>
+          </ul>
+          <a class="btn accent big" href="/app" data-i18n="ctaStart">無料で始める</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="sec">
+    <div class="wrap narrow">
+      <h2 data-i18n="faqTitle">よくある質問</h2>
+      <details><summary data-i18n="q1">データはどこに保存されますか？</summary><p data-i18n="a1">お使いの端末のブラウザ保存領域です。こちらにはデータが届かないため、復旧もできません。バックアップファイルを定期的に保存してください。</p></details>
+      <details><summary data-i18n="q2">パソコンを替えたら？</summary><p data-i18n="a2">アプリでバックアップをダウンロードし、別のパソコンで復元してください。ライセンスキーは、購入ページに記載の台数までお持ちの端末で使えます。</p></details>
+      <details><summary data-i18n="q3">ライセンスはサブスクですか？</summary><p data-i18n="a3">いいえ。一度の支払いで更新はなく、アップデートも含まれます。</p></details>
+      <details><summary data-i18n="q4">契約書テンプレートは法的助言ですか？</summary><p data-i18n="a4">いいえ。出発点となるひな形です。重要なものは専門家に確認してください。</p></details>
+      <details><summary data-i18n="q5">ブラウザのデータを消すと？</summary><p data-i18n="a5">バックアップがなければ、保存した請求書も消えます。消す前にバックアップしてください。</p></details>
+      <details><summary data-i18n="q6">返金はできますか？</summary><p data-i18n="a6">はい。購入から14日以内にご連絡いただければ返金します。</p></details>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <h2 data-i18n="ctaTitle">次の請求書はここから送りましょう。</h2>
+      <p data-i18n="ctaSub">設定は1分ほど。もっと使いたくなるまで支払いはありません。</p>
+      <a class="btn accent big" href="/app" data-i18n="ctaStart">無料で始める</a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap footin">
+    <div><b class="brand">QuickBill</b><p data-i18n="footerTag">ひとりで働く人のための小さな道具。</p></div>
+    <div>
+      <h3 data-i18n="footerProduct">製品</h3>
+      <a href="#features" data-i18n="navFeatures">機能</a>
+      <a href="#pricing" data-i18n="navPricing">料金</a>
+      <a href="#faq" data-i18n="navFaq">よくある質問</a>
+      <a href="/app" data-i18n="openApp">アプリを開く</a>
+    </div>
+    <div>
+      <h3 data-i18n="footContact">お問い合わせ</h3>
+      <a href="/terms" data-i18n="footTerms">利用規約</a>
+      <a href="/privacy" data-i18n="footPrivacy">プライバシー</a>
+      <a id="foot-mail" href="#" hidden=""></a>
+    </div>
+    <p class="fnote" data-i18n="footerNote">データは端末の外に出ません。</p>
+  </div>
+</footer>
+
+<script type="module">
+import * as I from "../i18n.js";
+import { CONFIG, emailLive } from "../config.js";
+let saved = null; try { saved = localStorage.getItem("qb.lang"); } catch {}
+// Pre-rendered language pages (/ko/ and so on) name their language on <html>; a saved choice still wins.
+I.setLang(I.detectLang(saved || document.documentElement.dataset.lang));
+const meta = (sel, v) => { const m = document.querySelector(sel); if (m) m.setAttribute("content", v); };
+const go = () => {
+  I.applyI18n();
+  document.documentElement.lang = I.getLang();
+  document.title = I.t("seoTitle");
+  meta('meta[name="description"]', I.t("seoDesc"));
+  const mail = document.getElementById("foot-mail");
+  if (emailLive()) { mail.href = "mailto:" + CONFIG.supportEmail; mail.textContent = CONFIG.supportEmail; mail.hidden = false; }
+};
+I.langSelect(document.getElementById("lang"), (l) => { I.setLang(l); try { localStorage.setItem("qb.lang", l); } catch {} go(); });
+go();
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("../sw.js").catch(() => {});
+</script>
+
+
+</body></html>

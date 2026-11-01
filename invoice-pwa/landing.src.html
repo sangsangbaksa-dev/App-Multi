@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!--seo:start-->
+<title>QuickBill</title>
+<meta name="description" content="">
+<!--seo:end-->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f3eee4">
+<link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/newsreader-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="landing.css">
+</head>
+<body class="landing">
+<header class="nav">
+  <div class="wrap navin">
+    <a class="brand" href="#top">QuickBill</a>
+    <nav class="links" aria-label="Sections">
+      <a href="#features" data-i18n="navFeatures"></a>
+      <a href="#pricing" data-i18n="navPricing"></a>
+      <a href="#faq" data-i18n="navFaq"></a>
+    </nav>
+    <select id="lang" class="lang" aria-label="Language"></select>
+    <a class="btn primary" href="/app" data-i18n="openApp"></a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="heroEyebrow"></p>
+      <h1 data-i18n="heroTitle"></h1>
+      <p class="lead" data-i18n="heroSub"></p>
+      <div class="ctas">
+        <a class="btn primary big" href="/app" data-i18n="ctaStart"></a>
+        <a class="btn big" href="#pricing" data-i18n="ctaPricing"></a>
+      </div>
+      <p class="note" data-i18n="heroNote"></p>
+    </div>
+
+    <div class="wrap">
+      <div class="window" aria-hidden="true">
+        <div class="wbar"><i></i><i></i><i></i><span>quickbill / app</span></div>
+        <div class="wtabs"><b data-i18n="tabInvoices"></b><span data-i18n="tabSheets"></span><span data-i18n="tabDocs"></span></div>
+        <div class="wbody">
+          <div class="wleft">
+            <div class="stats">
+              <div><small data-i18n="mockStat1"></small><b>$4,820.00</b></div>
+              <div><small data-i18n="mockStat2"></small><b class="red">$950.00</b></div>
+              <div><small data-i18n="mockStat3"></small><b>$12,300.00</b></div>
+            </div>
+            <div class="rows">
+              <div class="r1"><span><b>INV-0042</b> · Northwind Studio</span><span>$4,620.00</span></div>
+              <div class="r1"><span><b>INV-0041</b> · Marlowe &amp; Finch</span><span>$950.00</span></div>
+              <div class="r1"><span><b>QUO-0007</b> · Kestrel Labs</span><span>$3,200.00</span></div>
+              <div class="r1"><span><b>INV-0040</b> · Hana Kitchen</span><span>$1,150.00</span></div>
+            </div>
+          </div>
+          <div class="wright">
+            <div class="paper">
+              <h4><span data-i18n="invoice"></span> INV-0042</h4>
+              <p data-i18n="mockClient"></p>
+              <table>
+                <tr><td data-i18n="mockItem"></td><td>1</td><td>$1,800.00</td></tr>
+                <tr><td data-i18n="mockItem2"></td><td>1</td><td>$2,400.00</td></tr>
+              </table>
+              <p class="tot"><span data-i18n="total"></span> <b>$4,620.00</b></p>
+              <p class="tot red"><span data-i18n="balance"></span> <b>$1,620.00</b></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="strip">
+    <div class="wrap stats4">
+      <div><b data-i18n="s1v"></b><span data-i18n="s1l"></span></div>
+      <div><b data-i18n="s2v"></b><span data-i18n="s2l"></span></div>
+      <div><b data-i18n="s3v"></b><span data-i18n="s3l"></span></div>
+      <div><b data-i18n="s4v"></b><span data-i18n="s4l"></span></div>
+    </div>
+  </section>
+
+  <section id="features" class="sec">
+    <div class="wrap">
+      <h2 data-i18n="featTitle"></h2>
+      <p class="sub" data-i18n="featLead"></p>
+      <div class="fgrid">
+        <article><h3 data-i18n="ft1t"></h3><p data-i18n="ft1d"></p></article>
+        <article><h3 data-i18n="ft2t"></h3><p data-i18n="ft2d"></p></article>
+        <article><h3 data-i18n="ft3t"></h3><p data-i18n="ft3d"></p></article>
+        <article><h3 data-i18n="ft4t"></h3><p data-i18n="ft4d"></p></article>
+        <article><h3 data-i18n="ft5t"></h3><p data-i18n="ft5d"></p></article>
+        <article><h3 data-i18n="ft6t"></h3><p data-i18n="ft6d"></p></article>
+        <article><h3 data-i18n="ft7t"></h3><p data-i18n="ft7d"></p></article>
+        <article><h3 data-i18n="ft8t"></h3><p data-i18n="ft8d"></p></article>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="sec tint">
+    <div class="wrap">
+      <h2 data-i18n="howTitle"></h2>
+      <ol class="steps">
+        <li><h3 data-i18n="st1t"></h3><p data-i18n="st1d"></p></li>
+        <li><h3 data-i18n="st2t"></h3><p data-i18n="st2d"></p></li>
+        <li><h3 data-i18n="st3t"></h3><p data-i18n="st3d"></p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap narrow">
+      <h2 data-i18n="cmpTitle"></h2>
+      <table class="cmp">
+        <thead><tr><th class="sr" data-i18n="cmpFeature"></th><th>QuickBill</th><th data-i18n="cmpH2"></th></tr></thead>
+        <tbody>
+          <tr><th data-i18n="cmpR1"></th><td data-i18n="cmpV1a"></td><td data-i18n="cmpV1b"></td></tr>
+          <tr><th data-i18n="cmpR2"></th><td data-i18n="cmpV2a"></td><td data-i18n="cmpV2b"></td></tr>
+          <tr><th data-i18n="cmpR3"></th><td data-i18n="cmpV3a"></td><td data-i18n="cmpV3b"></td></tr>
+          <tr><th data-i18n="cmpR4"></th><td data-i18n="cmpV4a"></td><td data-i18n="cmpV4b"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="pricing" class="sec tint">
+    <div class="wrap">
+      <h2 data-i18n="priceTitle"></h2>
+      <p class="sub" data-i18n="priceLead"></p>
+      <div class="plans">
+        <div class="plan">
+          <h3 data-i18n="freeName"></h3>
+          <p class="price"><b data-i18n="priceFree"></b></p>
+          <p class="psub" data-i18n="priceFreeSub"></p>
+          <ul>
+            <li data-i18n="fr1"></li><li data-i18n="fr2"></li><li data-i18n="fr3"></li><li data-i18n="fr4"></li>
+          </ul>
+          <a class="btn big" href="/app" data-i18n="ctaStart"></a>
+        </div>
+        <div class="plan dark">
+          <h3 data-i18n="proName"></h3>
+          <p class="price"><b data-i18n="priceProV"></b></p>
+          <p class="psub" data-i18n="priceProSub"></p>
+          <ul>
+            <li class="lead-in" data-i18n="pr0"></li>
+            <li data-i18n="pr1"></li><li data-i18n="pr2"></li><li data-i18n="pr3"></li><li data-i18n="pr4"></li><li data-i18n="pr5"></li><li data-i18n="pr6"></li>
+          </ul>
+          <a class="btn accent big" href="/app" data-i18n="ctaStart"></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="sec">
+    <div class="wrap narrow">
+      <h2 data-i18n="faqTitle"></h2>
+      <details><summary data-i18n="q1"></summary><p data-i18n="a1"></p></details>
+      <details><summary data-i18n="q2"></summary><p data-i18n="a2"></p></details>
+      <details><summary data-i18n="q3"></summary><p data-i18n="a3"></p></details>
+      <details><summary data-i18n="q4"></summary><p data-i18n="a4"></p></details>
+      <details><summary data-i18n="q5"></summary><p data-i18n="a5"></p></details>
+      <details><summary data-i18n="q6"></summary><p data-i18n="a6"></p></details>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <h2 data-i18n="ctaTitle"></h2>
+      <p data-i18n="ctaSub"></p>
+      <a class="btn accent big" href="/app" data-i18n="ctaStart"></a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap footin">
+    <div><b class="brand">QuickBill</b><p data-i18n="footerTag"></p></div>
+    <div>
+      <h3 data-i18n="footerProduct"></h3>
+      <a href="#features" data-i18n="navFeatures"></a>
+      <a href="#pricing" data-i18n="navPricing"></a>
+      <a href="#faq" data-i18n="navFaq"></a>
+      <a href="/app" data-i18n="openApp"></a>
+    </div>
+    <div>
+      <h3 data-i18n="footContact"></h3>
+      <a href="/terms" data-i18n="footTerms"></a>
+      <a href="/privacy" data-i18n="footPrivacy"></a>
+      <a id="foot-mail" href="#" hidden></a>
+    </div>
+    <p class="fnote" data-i18n="footerNote"></p>
+  </div>
+</footer>
+
+<script type="module">
+import * as I from "./i18n.js";
+import { CONFIG, emailLive } from "./config.js";
+let saved = null; try { saved = localStorage.getItem("qb.lang"); } catch {}
+// Pre-rendered language pages (/ko/ and so on) name their language on <html>; a saved choice still wins.
+I.setLang(I.detectLang(saved || document.documentElement.dataset.lang));
+const meta = (sel, v) => { const m = document.querySelector(sel); if (m) m.setAttribute("content", v); };
+const go = () => {
+  I.applyI18n();
+  document.documentElement.lang = I.getLang();
+  document.title = I.t("seoTitle");
+  meta('meta[name="description"]', I.t("seoDesc"));
+  const mail = document.getElementById("foot-mail");
+  if (emailLive()) { mail.href = "mailto:" + CONFIG.supportEmail; mail.textContent = CONFIG.supportEmail; mail.hidden = false; }
+};
+I.langSelect(document.getElementById("lang"), (l) => { I.setLang(l); try { localStorage.setItem("qb.lang", l); } catch {} go(); });
+go();
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

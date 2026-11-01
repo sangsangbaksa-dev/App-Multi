@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://stayline-family.pages.dev/sitemap.xml
