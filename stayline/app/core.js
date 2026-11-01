@@ -241,6 +241,20 @@
     }).join('\n');
   }
 
+  /* look back `years` years: every stretch of days where the count was over the limit, with the worst excess */
+  function audit(tr, today, years) {
+    today = today || todayStr();
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today), start = t - Math.round((years || 3) * 365), out = [], cur = null;
+    for (var d = start; d <= t; d++) {
+      var over = set[d] ? usedOn(set, rule, d) - rule.limit : 0;
+      if (over > 0) {
+        if (cur && cur.toN === d - 1) { cur.toN = d; if (over > cur.over) cur.over = over; }
+        else { cur = { fromN: d, toN: d, over: over }; out.push(cur); }
+      }
+    }
+    return out.map(function (e) { return { from: str(e.fromN), to: str(e.toN), over: e.over }; });
+  }
+
   /* days spent inside per calendar month, oldest first, ending with the month of `today` */
   function monthlyUsage(tr, today, months) {
     today = today || todayStr();
@@ -416,7 +430,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
-    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

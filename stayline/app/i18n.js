@@ -25,6 +25,7 @@
       groupH: 'Travel together', groupHint: 'Pick a start and a length to see how long everyone can stay at once. Each counter keeps its own rule.', groupMax: 'Arriving {date} together, the group can stay up to {n} days (until {end}).', groupNone: 'Arriving together that day already breaks the limit for someone.', groupWho: '{name}: up to {n} days', groupLimit: 'Limited by {name}.', groupEarly: 'Earliest start for {n} days together: {date}.', groupNoEarly: '{n} days together is not possible under every rule.', monthH: 'Days inside by month', monthCap: 'Last 12 months. Taller bar, more days inside.', monthTip: '{month}: {n} days', 
       winH: 'Arrival dates that work for {n} days:', winRange: '{a} to {b}', winNone: 'No arrival date in the next year fits {n} days.', pasteBtn: 'Paste trips', pasteH: 'Paste trips', pasteHint: 'One trip per line: two dates and an optional place, for example 2026-03-01 to 2026-03-10 Paris. Nothing is added until you press the button.', pasteFound: '{n} trips found.', pasteBad: 'Lines not understood: {lines}', pasteAdd: 'Add trips', pasteDone: '{n} trips added.', 
       copyBtn: 'Copy as text', copied: 'Copied.', copyFail: 'Could not copy.', bannerH: 'Needs your attention', 
+      auditH: 'Compliance check', auditOk: 'No days over the limit in the last 3 years.', auditEp: 'Over the limit from {from} to {to}, by up to {n} days.', auditNote: 'Based only on the trips you entered.', undo: 'Undo', undone: 'Undone.', tripGone: 'Trip removed.', counterGone: 'Counter deleted.', 
       badTrip: 'Check the dates: the last day cannot be before the first.', lang: 'Language', today: 'today', printTitle: 'Days inside'
     },
     ko: {
@@ -51,6 +52,7 @@
       groupH: '함께 여행', groupHint: '출발일과 일수를 넣으면 모두가 함께 머물 수 있는 기간을 보여 줍니다. 카운터마다 자기 규칙을 그대로 적용합니다.', groupMax: '{date}에 함께 입국하면 최대 {n}일, {end}까지 함께 머물 수 있습니다.', groupNone: '그날 함께 들어가면 이미 누군가의 한도를 넘습니다.', groupWho: '{name}: 최대 {n}일', groupLimit: '{name} 님이 한도를 정합니다.', groupEarly: '{n}일을 함께 머물 수 있는 가장 빠른 시작일: {date}.', groupNoEarly: '{n}일 동반 체류는 모든 규칙을 동시에 만족할 수 없습니다.', monthH: '월별 체류 일수', monthCap: '최근 12개월. 막대가 높을수록 체류가 많습니다.', monthTip: '{month}: {n}일', 
       winH: '{n}일 체류가 가능한 입국일:', winRange: '{a} ~ {b}', winNone: '앞으로 1년 안에 {n}일 체류가 가능한 입국일이 없습니다.', pasteBtn: '붙여넣기', pasteH: '체류 기록 붙여넣기', pasteHint: '한 줄에 체류 하나: 날짜 두 개와 선택 장소. 예) 2026-03-01 to 2026-03-10 파리. 버튼을 누르기 전에는 아무것도 추가되지 않습니다.', pasteFound: '체류 {n}건을 찾았습니다.', pasteBad: '이해하지 못한 줄: {lines}', pasteAdd: '기록 추가', pasteDone: '체류 기록 {n}건을 추가했습니다.', 
       copyBtn: '텍스트로 복사', copied: '복사했습니다.', copyFail: '복사하지 못했습니다.', bannerH: '확인이 필요해요', 
+      auditH: '위반 이력 점검', auditOk: '최근 3년간 한도를 넘은 날이 없습니다.', auditEp: '{from}부터 {to}까지 한도 초과(최대 {n}일).', auditNote: '입력한 체류 기록만 기준입니다.', undo: '실행 취소', undone: '되돌렸습니다.', tripGone: '체류 기록을 지웠습니다.', counterGone: '카운터를 삭제했습니다.', 
       badTrip: '날짜를 확인하세요. 마지막 날이 첫날보다 빠를 수 없습니다.', lang: '언어', today: '오늘', printTitle: '체류 일수'
     },
     ja: {
@@ -77,6 +79,7 @@
       groupH: 'みんなで旅行', groupHint: '開始日と日数を入れると、全員が一緒に滞在できる期間がわかります。カウンターごとに自分のルールを使います。', groupMax: '{date}に全員で入国すると、最大{n}日（{end}まで）一緒に滞在できます。', groupNone: 'その日に全員で入ると、誰かの上限をすでに超えます。', groupWho: '{name}：最大{n}日', groupLimit: '{name}さんが上限を決めています。', groupEarly: '{n}日一緒に滞在できる最短の開始日：{date}。', groupNoEarly: '{n}日の同行滞在は、すべてのルールを同時に満たせません。', monthH: '月別の滞在日数', monthCap: '直近12か月。棒が高いほど滞在が多い月です。', monthTip: '{month}：{n}日', 
       winH: '{n}日滞在できる入国日：', winRange: '{a} 〜 {b}', winNone: '今後1年で{n}日滞在できる入国日はありません。', pasteBtn: '貼り付け', pasteH: '滞在を貼り付け', pasteHint: '1行に1件：日付2つと任意の場所。例）2026-03-01 to 2026-03-10 パリ。ボタンを押すまでは何も追加されません。', pasteFound: '{n}件の滞在が見つかりました。', pasteBad: '読み取れない行：{lines}', pasteAdd: '記録を追加', pasteDone: '{n}件の滞在を追加しました。', 
       copyBtn: 'テキストでコピー', copied: 'コピーしました。', copyFail: 'コピーできませんでした。', bannerH: 'ご確認ください', 
+      auditH: '超過履歴のチェック', auditOk: '過去3年間、上限を超えた日はありません。', auditEp: '{from}から{to}まで上限超過（最大{n}日）。', auditNote: '入力した滞在記録のみが対象です。', undo: '元に戻す', undone: '元に戻しました。', tripGone: '滞在記録を削除しました。', counterGone: 'カウンターを削除しました。', 
       badTrip: '日付を確認してください。最終日は初日より前にできません。', lang: '言語', today: '今日', printTitle: '滞在日数'
     },
     zh: {
@@ -103,6 +106,7 @@
       groupH: '结伴出行', groupHint: '填入出发日和天数，看看大家最多能一起待多久。每个计数器仍按各自的规则计算。', groupMax: '{date}一起入境，大家最多可同时停留{n}天（至{end}）。', groupNone: '那天一起入境，就已经有人超限了。', groupWho: '{name}：最多{n}天', groupLimit: '受{name}限制。', groupEarly: '一起停留{n}天的最早出发日：{date}。', groupNoEarly: '一起停留{n}天无法同时满足所有规则。', monthH: '每月停留天数', monthCap: '最近12个月。柱越高，当月停留越多。', monthTip: '{month}：{n}天', 
       winH: '可停留{n}天的入境日期：', winRange: '{a} 至 {b}', winNone: '未来一年内没有可停留{n}天的入境日期。', pasteBtn: '粘贴行程', pasteH: '粘贴行程', pasteHint: '每行一条行程：两个日期加可选地点，例如 2026-03-01 to 2026-03-10 巴黎。点击按钮之前不会添加任何内容。', pasteFound: '找到{n}条行程。', pasteBad: '无法识别的行：{lines}', pasteAdd: '添加行程', pasteDone: '已添加{n}条行程。', 
       copyBtn: '复制为文本', copied: '已复制。', copyFail: '无法复制。', bannerH: '需要留意', 
+      auditH: '超期记录检查', auditOk: '最近3年没有超出上限的日子。', auditEp: '{from}至{to}超出上限，最多超出{n}天。', auditNote: '仅依据你填写的行程。', undo: '撤销', undone: '已撤销。', tripGone: '已删除行程。', counterGone: '已删除计数器。', 
       badTrip: '请检查日期：最后一天不能早于第一天。', lang: '语言', today: '今天', printTitle: '停留天数'
     },
     es: {
@@ -129,6 +133,7 @@
       groupH: 'Viajar juntos', groupHint: 'Elige una salida y una duración para ver cuánto puede quedarse todo el grupo a la vez. Cada contador conserva su regla.', groupMax: 'Llegando juntos el {date}, el grupo puede quedarse hasta {n} días (hasta el {end}).', groupNone: 'Llegar juntos ese día ya supera el límite de alguien.', groupWho: '{name}: hasta {n} días', groupLimit: 'Lo limita {name}.', groupEarly: 'Salida más temprana para {n} días juntos: {date}.', groupNoEarly: '{n} días juntos no es posible con todas las reglas.', monthH: 'Días dentro por mes', monthCap: 'Últimos 12 meses. Barra más alta, más días dentro.', monthTip: '{month}: {n} días', 
       winH: 'Fechas de llegada válidas para {n} días:', winRange: 'del {a} al {b}', winNone: 'Ninguna fecha de llegada del próximo año permite {n} días.', pasteBtn: 'Pegar viajes', pasteH: 'Pegar viajes', pasteHint: 'Un viaje por línea: dos fechas y un lugar opcional, por ejemplo 2026-03-01 to 2026-03-10 París. No se añade nada hasta que pulses el botón.', pasteFound: '{n} viajes encontrados.', pasteBad: 'Líneas no entendidas: {lines}', pasteAdd: 'Añadir viajes', pasteDone: '{n} viajes añadidos.', 
       copyBtn: 'Copiar como texto', copied: 'Copiado.', copyFail: 'No se pudo copiar.', bannerH: 'Requiere tu atención', 
+      auditH: 'Revisión de excesos', auditOk: 'Ningún día por encima del límite en los últimos 3 años.', auditEp: 'Por encima del límite del {from} al {to}, hasta {n} días de más.', auditNote: 'Solo según los viajes que has introducido.', undo: 'Deshacer', undone: 'Deshecho.', tripGone: 'Viaje eliminado.', counterGone: 'Contador eliminado.', 
       badTrip: 'Revisa las fechas: el último día no puede ser anterior al primero.', lang: 'Idioma', today: 'hoy', printTitle: 'Días dentro'
     }
   };

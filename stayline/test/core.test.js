@@ -311,3 +311,13 @@ test('itineraryText: one line per leg', () => {
   const txt = C.itineraryText(sim).split('\n');
   assert.equal(txt.length, 2); assert.equal(txt[0], '2026-07-01 -> 2026-07-10 (10) OK'); assert.ok(txt[1].includes(' X 2026-'));
 });
+
+test('audit: finds overstay episodes with the worst excess; clean history is empty', () => {
+  assert.deepEqual(C.audit(tr([['2026-01-01', '2026-03-31']]), '2026-06-01', 1), []);
+  const t = tr([['2025-10-01', '2026-01-10']]); // 102 days
+  const a = C.audit(t, '2026-06-01', 1);
+  assert.equal(a.length, 1); assert.equal(a[0].from, '2025-12-30'); assert.equal(a[0].to, '2026-01-10'); assert.equal(a[0].over, 12);
+  const two = C.audit(tr([['2025-10-01', '2026-01-10'], ['2026-05-01', '2026-07-30']]), '2026-07-30', 1);
+  assert.equal(two.length, 2);
+  assert.deepEqual(C.audit(tr([['2026-01-01', '']], C.PRESETS.tax183), '2026-06-01', 1), []);
+});

@@ -70,3 +70,6 @@ textarea{font:inherit;color:var(--ink);background:#101315;border:1px solid var(-
 
 .banner{border:1px solid var(--warn);background:#2a1d12;border-radius:var(--r);padding:10px 14px;margin-bottom:12px;color:var(--ink)}.banner ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
 @media print{.banner{display:none}}
+
+.tundo{margin-left:12px;color:#14171a;border-color:#14171a;min-height:30px;padding:2px 10px}
+@media print{.card:has(.al-over){break-inside:avoid}}
