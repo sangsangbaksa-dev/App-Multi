@@ -15,6 +15,12 @@ billing, CSV export, client ledger and overdue ageing.
 - Timer that turns tracked hours into invoice lines.
 - Sheets: a formula grid (SUM, AVERAGE, MIN, MAX, COUNT, ROUND, ABS, IF, cell references), CSV import/export, fill from invoices, rows to invoice. `sheet.js` is the engine; formulas are parsed by hand, no eval.
 - Documents: proposal, agreement and scope templates with {{client}}/{{from}}/{{date}} fields, own templates, print or save as PDF.
+- Client links (Pro): "Copy client link" puts a snapshot of the invoice in the URL fragment (`view.html#d=...`). The client opens a read-only page with status (due in N days / overdue with late fee / paid), balance, an optional https "Pay online" button (the invoice's payment link field), print/PDF and a language switch. Nothing is uploaded: the fragment never reaches a server. The link is a snapshot, so send a new one after changing the invoice. Overdue reminders append the link. `share.js` encodes/decodes/validates (only https pay links, size and field limits) and is covered by `tests/share.test.js`.
+- Combined totals (Pro): with invoices in more than one currency, the list shows a total in a base currency you pick, using exchange rates you type (`fx.js`). A currency with no rate is listed as left out, never guessed. Nothing is fetched.
+- Dated payments: record each payment with its date in the invoice editor (`recordPayment` in `logic.js`; `paid` stays the number the rest of the app reads). Insights then shows average days to be paid, share paid on time, cash received this month and the slowest-paying clients, and a CSV of all dated payments for your accountant.
+- Client memory (Pro): saving an invoice remembers that client's email, currency, tax, payment terms (days), payment info and pay link (`clients.js`). Picking the client on a new invoice fills them in. "Email client" opens your mail app with a ready message (invoice, quote or overdue reminder, plus the client link). Profiles are part of the JSON backup.
+- Saved items (Pro): descriptions you bill are remembered with their last price (`catalog.js`, most used first, capped at 200). Typing a known description in a new line offers it and fills the price if it is still 0. Part of the JSON backup.
+- Upcoming recurring invoices: Insights lists the next 3 months of scheduled repeat invoices with an expected total per currency (`upcomingRecurring` in `logic.js`).
 - English, Korean, Japanese, Chinese, Spanish with local currency/date formats.
 
 ## Selling it
@@ -55,4 +61,4 @@ Tests: `npm test` (logic and storage), `node tests/e2e.cjs`, `node tests/e2e-pol
 - `vercel.json` sets the security headers, including the content security policy. `node tests/serve.cjs` serves the folder with the same headers (and runs the license function) for the e2e tests.
 - Steps that need the owner (payment account, domain, environment variables, tax questions) are in `../docs/quickbill/launch-checklist.md`; announcement and pilot texts are in `../docs/quickbill/copy.md`.
 
-Tests: also `node tests/e2e-license.cjs` and `node tests/e2e-site.cjs`.
+Tests: also `node tests/e2e-license.cjs`, `node tests/e2e-site.cjs` and `node tests/e2e-share.cjs` (client link, payment log, remembered client, saved items).

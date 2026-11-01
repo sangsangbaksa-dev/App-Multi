@@ -2,13 +2,29 @@
   'use strict';
   var C = window.SB, I = window.I18N, CFG = window.SB_SITE;
   var KEY = 'stampbook.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true;
+  var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true, view = 'packs', calYm = C.todayStr().slice(0, 7), calDay = '';
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.packs)) return s; } catch (e) {}
     return { v: 1, packs: [], teacher: '', pro: false, lang: '' };
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; } catch (e) { storageOk = false; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; } catch (e) { storageOk = false; } if (cloud) cloud.changed(); }
+
+  /* Optional cloud sync (Supabase). Off unless config.js has a project URL and key. Licence fields stay on this device. */
+  var LOCAL_ONLY = ['pro', 'key', 'licMode', 'instanceId', 'licChecked', 'lang'];
+  var cloud = window.CloudSync ? window.CloudSync.create({
+    url: CFG.supabaseUrl, anonKey: CFG.supabaseKey, app: 'stampbook', storage: window.localStorage, device: (navigator.platform || 'web').slice(0, 60),
+    snapshot: function () { var o = JSON.parse(JSON.stringify(state)); LOCAL_ONLY.forEach(function (k) { delete o[k]; }); return o; },
+    isEmpty: function (snap) { return !snap.packs || !snap.packs.length; },
+    apply: function (snap) {
+      if (!snap || !Array.isArray(snap.packs)) return;
+      var keep = {}; LOCAL_ONLY.forEach(function (k) { keep[k] = state[k]; });
+      try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ teacher: '', lang: '' }, snap, keep))); } catch (e) { return; }
+      location.reload();
+    },
+    onResult: function (r) { if (r.status === 'pushed') toast(window.CloudI18n.t(lang, 'pushed')); }
+  }) : null;
+  if (cloud && !cloud.enabled()) cloud = null;
   function T(k, v) { return I.t(lang, k, v); }
   function h(tag, attrs, kids) {
     var e = document.createElement(tag);
@@ -86,6 +102,24 @@
       h('div', {}, [h('b', {}, perCur(function (ps) { return C.totalUnearned(ps, today); })), h('span', {}, T('owed'))])
     ]));
     if (!storageOk) root.appendChild(h('div', { class: 'warnbar', role: 'alert' }, T('storageErr')));
+    root.appendChild(tabs());
+    if (view === 'cal') root.appendChild(calendarView(today));
+    else if (view === 'ins') root.appendChild(insightsView(today));
+    else packsView(today);
+
+    root.appendChild(settings());
+    root.appendChild(h('p', { class: 'note' }, T('privacy')));
+    root.appendChild(newDialog());
+    root.appendChild(upgradeDialog());
+  }
+  function packsView(today) {
+    if (C.backupDue(state.packs, state.lastBackup, Date.now())) root.appendChild(h('div', { class: 'warnbar', role: 'status' }, [T('backupNudge') + ' ', h('button', { class: 'ghost sm', onclick: doBackup }, T('backupNow'))]));
+    var plan = C.agenda(state.packs, today, 1);
+    if (plan.length) root.appendChild(h('div', { class: 'card todaybox' }, [h('h3', {}, T('todayH')), h('ul', { class: 'evs' }, plan.map(function (e) {
+      var p = state.packs.filter(function (x) { return x.id === e.packId; })[0];
+      return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'ln' }, T('left', { n: C.remaining(p) })),
+        h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(p, today); save(); render(); } }, T('skip')),
+        h('button', { class: 'stampbtn sm', onclick: function () { stamp(p, today); } }, T('stampToday'))]); }))]));
     var att = C.attention(state.packs, today);
     root.appendChild(h('div', { class: 'row', style: 'margin-bottom:16px' }, [h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack')),
       att.length ? h('span', { class: 'chip c-low' }, T('attn', { n: att.length })) : null]));
@@ -104,12 +138,101 @@
     var lap = C.lapsed(state.packs, today);
     if (lap.length) root.appendChild(h('div', { class: 'lapsed' }, [h('h3', {}, T('lapsedH')), h('div', { class: 'note' }, T('lapsedB'))]));
 
-    root.appendChild(settings());
-    root.appendChild(h('p', { class: 'note' }, T('privacy')));
-    root.appendChild(newDialog());
-    root.appendChild(upgradeDialog());
   }
   var listBox;
+
+  /* ---------- calendar + insights ---------- */
+  function tabs() {
+    return h('div', { class: 'tabs', role: 'tablist' }, [['packs', 'tabPacks'], ['cal', 'tabCal'], ['ins', 'tabInsights']].map(function (t) {
+      return h('button', { class: 'ghost' + (view === t[0] ? ' on' : ''), role: 'tab', 'aria-selected': String(view === t[0]), onclick: function () { view = t[0]; render(); } }, T(t[1]));
+    }));
+  }
+  function fmt(opts, ds) { try { return new Intl.DateTimeFormat(lang, opts).format(C.parse(ds)); } catch (e) { return ds; } }
+  function weekStart() { return lang === 'es' || lang === 'zh' ? 1 : 0; }
+  function calendarView(today) {
+    var ws = weekStart(), map = C.dayMap(state.packs, calYm), plan = {}, box = h('div', { class: 'cal' });
+    var head = h('div', { class: 'calhead' }, [
+      h('button', { class: 'ghost', 'aria-label': T('calPrev'), onclick: function () { calYm = C.ymAdd(calYm, -1); calDay = ''; render(); } }, '‹'),
+      h('b', { 'aria-live': 'polite' }, fmt({ year: 'numeric', month: 'long' }, calYm + '-01')),
+      h('button', { class: 'ghost', 'aria-label': T('calNext'), onclick: function () { calYm = C.ymAdd(calYm, 1); calDay = ''; render(); } }, '›'),
+      h('button', { class: 'ghost', onclick: function () { calYm = today.slice(0, 7); calDay = today; render(); } }, T('calThisMonth'))]);
+    state.packs.reduce(function (acc, p) { return acc.concat(C.plannedWithSkips(p, today, 190)); }, []).forEach(function (e) { if (e.date.slice(0, 7) === calYm) (plan[e.date] = plan[e.date] || []).push(e); });
+    var grid = h('div', { class: 'calgrid', role: 'grid' });
+    for (var i = 0; i < 7; i++) grid.appendChild(h('div', { class: 'dow', role: 'columnheader' }, fmt({ weekday: 'short' }, C.addDays('2026-11-01', (i + ws) % 7))));
+    C.monthGrid(calYm, ws).forEach(function (d) {
+      if (!d) return grid.appendChild(h('div', { class: 'day blank' }));
+      var ev = map[d] || [], n = ev.filter(function (e) { return e.kind !== 'excused'; }).length;
+      grid.appendChild(h('button', { type: 'button', class: 'day' + (d === today ? ' today' : '') + (d === calDay ? ' sel' : '') + (ev.length ? ' has' : '') + (plan[d] ? ' plan' : ''),
+        'aria-pressed': String(d === calDay), 'aria-label': d + (ev.length ? ' · ' + ev.length : ''),
+        onclick: function () { calDay = calDay === d ? '' : d; render(); } },
+        [h('span', {}, String(+d.slice(8))), ev.length ? h('i', { class: 'dots' }, ev.slice(0, 4).map(function (e) { return h('u', { class: 'k-' + (e.kind || 'lesson') }); })) : (plan[d] ? h('i', { class: 'dots' }, [h('u', { class: 'k-plan' })]) : null),
+         n > 4 ? h('em', {}, '+' + (n - 4)) : null]));
+    });
+    box.appendChild(head); box.appendChild(grid);
+    box.appendChild(h('div', { class: 'legend note' }, [['lesson', 'legendLesson'], ['noshow', 'legendNoshow'], ['excused', 'legendExcused'], ['plan', 'planned']].map(function (k) {
+      return h('span', {}, [h('u', { class: 'k-' + k[0] }), ' ' + T(k[1])]); })));
+    if (calDay && calDay.slice(0, 7) === calYm) {
+      var list = map[calDay] || [];
+      box.appendChild(h('div', { class: 'card calday' }, [h('h3', {}, T('calDay', { date: fmt({ dateStyle: 'full' }, calDay) })),
+        (plan[calDay] || []).length ? h('ul', { class: 'evs' }, plan[calDay].map(function (e) { var pk = state.packs.filter(function (x) { return x.id === e.packId; })[0]; return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'tag t-excused' }, T(e.skipped ? 'skipped' : 'planned')),
+          h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(pk, e.date); save(); render(); } }, T(e.skipped ? 'unskip' : 'skip'))]); })) : null,
+        list.length ? h('ul', { class: 'evs' }, list.map(function (e) {
+          return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, h('span', { class: 'ln' }, e.note)]); }))
+          : ((plan[calDay] || []).length ? null : h('p', { class: 'note' }, T('calNone')))]));
+    }
+    return box;
+  }
+  function bars(items, max, cls) {
+    return h('div', { class: 'bars ' + (cls || '') }, items.map(function (it) {
+      return h('div', { class: 'bar' + (it.hot ? ' hot' : '') }, [h('span', { class: 'bv' }, String(it.v)),
+        h('i', { style: 'height:' + (max ? Math.max(it.v ? 4 : 0, Math.round(it.v / max * 100)) : 0) + '%', title: it.l + ': ' + it.v }), h('span', { class: 'bl' }, it.l)]);
+    }));
+  }
+  function sumByCur(fn) {
+    var curs = state.packs.map(function (p) { return p.currency || 'USD'; }).filter(function (c, i, x) { return x.indexOf(c) === i; });
+    return curs.map(function (c) { return money(fn(state.packs.filter(function (p) { return (p.currency || 'USD') === c; })), c); }).join(' + ');
+  }
+  function insightsView(today) {
+    var ov = C.overview(state.packs, today), box = h('div', { class: 'ins' });
+    if (!ov.lessons) { box.appendChild(h('div', { class: 'empty' }, [h('p', {}, T('insNoData'))])); return box; }
+    box.appendChild(h('div', { class: 'sum' }, [
+      h('div', {}, [h('b', {}, String(ov.students)), h('span', {}, T('ovStudents'))]),
+      h('div', {}, [h('b', {}, String(ov.lessons)), h('span', {}, T('ovLessons'))]),
+      h('div', {}, [h('b', {}, ov.noshowRate + '%'), h('span', {}, T('ovNoshow'))])]));
+    var tr = C.monthlyTrend(state.packs, today.slice(0, 7), 6), tmax = Math.max.apply(null, tr.map(function (x) { return x.lessons; }));
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insTrend')),
+      bars(tr.map(function (x, i) { return { v: x.lessons, l: fmt({ month: 'short' }, x.ym + '-01'), hot: i === tr.length - 1 }; }), tmax)]));
+    var wc = C.weekdayCounts(state.packs), wmax = Math.max.apply(null, wc), ws = weekStart();
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insWeekday')),
+      bars([0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = (i + ws) % 7; return { v: wc[d], l: fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)), hot: wmax > 0 && wc[d] === wmax }; }), wmax, 'wk')]));
+    var qs = C.quiet(state.packs, today, 14);
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insQuiet')), h('p', { class: 'note' }, T('insQuietB', { d: 14 })),
+      qs.length ? h('ul', { class: 'evs' }, qs.map(function (r) {
+        return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('left', { n: r.left }) + ' · ' + (r.sinceLast === null ? T('stNever') : T('stAgo', { d: r.sinceLast })))]); }))
+        : h('p', { class: 'note' }, T('insQuietNone'))]));
+    var fc = C.forecast(state.packs, today, 30);
+    if (fc.lessons) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('fcH')), h('p', {}, T('fcB', { n: fc.lessons, v: sumByCur(function (ps) { return C.forecast(ps, today, 30).value; }) }))]));
+    var up = C.unpaid(state.packs);
+    if (up.length) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('owedH') + ' · ' + sumByCur(C.outstanding)), h('ul', { class: 'evs' }, up.map(function (p) {
+      return h('li', {}, [h('b', {}, p.student), h('span', { class: 'ln' }, money(p.price, p.currency) + ' · ' + (p.start || ''))]); }))]));
+    var res = h('ul', { class: 'evs', 'aria-live': 'polite' });
+    var qin = h('input', { type: 'search', placeholder: T('noteSearch'), 'aria-label': T('noteSearch'), oninput: function (e) {
+      res.textContent = ''; var hits = C.searchNotes(state.packs, e.target.value, 30);
+      hits.forEach(function (x) { res.appendChild(h('li', {}, [h('span', { class: 'ld' }, x.date), h('b', {}, x.student), h('span', { class: 'ln' }, x.note)])); });
+      if (!hits.length && e.target.value.trim().length >= 2) res.appendChild(h('li', { class: 'note' }, T('noteNone')));
+    } });
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('noteSearch')), qin, res]));
+    var rows = C.studentStats(state.packs, today);
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insStudents')), h('button', { class: 'ghost sm', style: 'margin-bottom:8px', onclick: function () { if (!state.pro) return needPro(); download('stampbook-stats.csv', C.statsCsv(state.packs, today), 'text/csv'); } }, T('statsCsvBtn')), h('ul', { class: 'evs' }, rows.map(function (r) {
+      var bits = [T('stLessons', { n: r.lessons })];
+      if (r.attendance !== null) bits.push(r.attendance + '% ' + T('stAttend'));
+      if (r.last) bits.push(T('stLast') + ' ' + r.last);
+      if (r.avgGap !== null) bits.push(T('stGap', { d: r.avgGap }));
+      bits.push(money(r.spent, r.currency) + ' ' + T('stSpent'));
+      return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, bits.join(' · '))]);
+    }))]));
+    return box;
+  }
   function renderList() {
     if (!listBox) return;
     var today = C.todayStr(), order = { low: 0, active: 1, expired: 2, done: 3 };
@@ -160,6 +283,8 @@
     var foot = [];
     if (st === 'low' || st === 'expired' || st === 'done') foot.push(h('button', { class: 'pri', onclick: function () { renewPack(p); } }, T('renewPack')));
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
       h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del')));
@@ -169,12 +294,35 @@
           h('span', { class: 'ln' }, s.note || ''),
           h('button', { class: 'ghost sm', 'aria-label': T('editNote') + ' ' + s.date, onclick: function () { var v = prompt(T('notePh'), s.note || ''); if (v !== null) { C.setNote(p, s.id, v); save(); render(); } } }, T('editNote'))]);
       })) : h('p', { class: 'note' }, T('histEmpty'))]);
+    var sch = scheduleEditor(p);
     return h('section', { class: 'card ' + st, 'aria-label': p.student }, [
-      h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', { class: 'chip c-' + st }, T('s_' + st))]),
+      h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', {}, [p.paid === false ? h('span', { class: 'chip c-expired', style: 'margin-right:6px' }, T('unpaid')) : null, h('span', { class: 'chip c-' + st }, T('s_' + st))])]),
       h('div', { class: 'meta' }, [T('left', { n: rem }), h('span', { class: soon ? 'soon' : '' }, exp + (soon ? ' · ' + T('soon') : '')), money(p.price, p.currency)].reduce(function (a, x, i) { if (i) a.push(' · '); a.push(x); return a; }, [])),
-      grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, log,
+      grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
       h('div', { class: 'foot' }, foot)
     ]);
+  }
+  function scheduleEditor(p) {
+    var cur = p.schedule || { days: [], time: '' }, ws = weekStart(), sel = cur.days.slice(), time = h('input', { type: 'time', value: cur.time || '', 'aria-label': T('schedTime') });
+    var btns = [0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = (i + ws) % 7;
+      var b = h('button', { type: 'button', class: 'ghost sm' + (sel.indexOf(d) !== -1 ? ' on' : ''), 'aria-pressed': String(sel.indexOf(d) !== -1), onclick: function () {
+        var k = sel.indexOf(d); if (k === -1) sel.push(d); else sel.splice(k, 1);
+        var on = k === -1; b.className = 'ghost sm' + (on ? ' on' : ''); b.setAttribute('aria-pressed', String(on)); } }, fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)));
+      return b; });
+    var names = cur.days.map(function (d) { return fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)); }).join(' ');
+    return h('details', { class: 'sched' }, [h('summary', {}, T('schedH') + (names ? ' · ' + names + (cur.time ? ' ' + cur.time : '') : '')),
+      h('p', { class: 'note' }, T('schedHint')), h('div', { class: 'row' }, btns),
+      h('div', { class: 'row', style: 'margin-top:8px' }, [h('div', { style: 'flex:1;min-width:120px' }, time),
+        h('button', { class: 'pri', onclick: function () { C.setSchedule(p, sel, time.value); save(); render(); toast(T('schedSaved')); } }, T('schedSave'))])]);
+  }
+  function doBackup() { download('stampbook-' + C.todayStr() + '.json', JSON.stringify(Object.assign({}, state, { lastBackup: Date.now() })), 'application/json'); state.lastBackup = Date.now(); save(); toast(T('backupDone')); render(); }
+  function reportText(p, ym) {
+    var r = C.report(p, ym, C.todayStr()), out = [T('reportHead', { name: p.student, month: fmt({ year: 'numeric', month: 'long' }, ym + '-01') })];
+    if (!r.rows.length) out.push(T('reportNone'));
+    r.rows.forEach(function (x) { out.push(x.date.slice(5).replace('-', '/') + (x.kind ? ' [' + T(x.kind === 'noshow' ? 'kNoshow' : 'kExcused') + ']' : '') + (x.note ? ' ' + x.note : '')); });
+    out.push(T('reportLine', { n: r.lessons, a: r.noshow, b: r.excused, left: r.left, total: r.total }));
+    if (r.expires) out.push(T('reportExp', { date: r.expires }));
+    return out.join('\n');
   }
   function renewPack(p) {
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
@@ -208,6 +356,9 @@
       valid: h('input', { id: 'f-valid', type: 'number', min: 0, max: 60, value: 3, inputmode: 'numeric' })
     };
     function lab(id, key, el) { return [h('label', { for: id }, T(key)), el]; }
+    var pre = C.presets(state.packs, 3), preRow = pre.length ? [h('div', { class: 'row presets', role: 'group', 'aria-label': T('presetH') }, pre.map(function (x) {
+      return h('button', { type: 'button', class: 'ghost sm', onclick: function () { f.total.value = x.total; f.price.value = x.price; f.cur.value = x.currency || f.cur.value; f.valid.value = x.months; } },
+        T('presetFmt', { n: x.total, price: money(x.price, x.currency), m: x.months })); }))] : [];
     var form = h('form', { method: 'dialog', onsubmit: function (e) {
       e.preventDefault();
       if (!state.pro && activeCount() >= CFG.freeLimit) { document.getElementById('dlg').close(); showUpgrade(); return; }
@@ -216,7 +367,7 @@
       state.packs.unshift({ id: uid(), student: f.name.value.trim(), total: total, price: price, currency: (f.cur.value || 'USD').toUpperCase().slice(0, 3),
         start: f.start.value, months: months, expires: months > 0 ? C.addMonths(f.start.value, months) : '', stamps: [], paid: true });
       save(); render();
-    } }, [].concat(lab('f-name', 'student', f.name),
+    } }, [].concat(preRow, lab('f-name', 'student', f.name),
       [h('div', { class: 'two' }, [h('div', {}, lab('f-total', 'lessons', f.total)), h('div', {}, lab('f-price', 'price', f.price))])],
       [h('div', { class: 'two' }, [h('div', {}, lab('f-cur', 'currency', f.cur)), h('div', {}, lab('f-start', 'start', f.start))])],
       lab('f-valid', 'valid', f.valid),
@@ -237,7 +388,7 @@
 
   /* ---------- settings: teacher name, backup, csv, licence ---------- */
   function download(name, text, type) {
-    var a = h('a', { href: URL.createObjectURL(new Blob([text], { type: type })), download: name });
+    var a = h('a', { href: URL.createObjectURL(new Blob([type === 'text/csv' ? '\uFEFF' + text : text], { type: type })), download: name });
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function settings() {
@@ -248,18 +399,23 @@
         try {
           var o = JSON.parse(r.result); if (!o || !Array.isArray(o.packs)) throw 0;
           o.packs = o.packs.filter(function (p) { return p && typeof p.student === 'string' && p.total > 0 && Array.isArray(p.stamps); });
+          if (state.packs.length && confirm(T('mergeAsk'))) { var mg = C.mergePacks(state.packs, o.packs); state.packs = mg.packs; save(); render(); return toast(T('merged', { a: mg.added, m: mg.merged })); }
           var keep = { pro: state.pro, key: state.key, licMode: state.licMode, instanceId: state.instanceId, licChecked: state.licChecked }; state = Object.assign({ teacher: '', lang: '' }, o, keep); save(); render(); toast(T('restored'));
         } catch (x) { toast(T('badFile')); }
       }; r.readAsText(fl);
     } });
     var key = h('input', { id: 'lic', placeholder: T('licPh'), autocapitalize: 'characters', autocomplete: 'off', spellcheck: 'false' });
+    var cloudPanel = cloud && window.CloudPanel ? window.CloudPanel.build({ cloud: cloud, lang: function () { return lang; } }) : null;
     return h('div', { class: 'settings' }, [
       h('label', { for: 's-t' }, T('teacher')), teacher,
       h('div', { class: 'row', style: 'margin:14px 0' }, [
-        h('button', { class: 'ghost', onclick: function () { download('stampbook-' + C.todayStr() + '.json', JSON.stringify(state), 'application/json'); toast(T('backupDone')); } }, T('exp')),
+        h('button', { class: 'ghost', onclick: doBackup }, T('exp')),
+        h('button', { class: 'ghost', onclick: function () { var ics = C.toIcs(state.packs, C.todayStr(), 120, Date.now()); if (ics.indexOf('BEGIN:VEVENT') === -1) return toast(T('icsEmpty')); download('stampbook-lessons.ics', ics, 'text/calendar'); } }, T('icsBtn') + ' (.ics)'),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
-        h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv'))
+        h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv')),
+        h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); var ym = C.todayStr().slice(0, 7); download('stampbook-' + ym + '.csv', C.monthReport(state.packs, ym), 'text/csv'); } }, T('monthCsv'))
       ]),
+      cloudPanel ? h('div', { style: 'margin:14px 0' }, [cloudPanel.el]) : null,
       state.pro ? null : h('div', {}, [
         h('label', { for: 'lic' }, T('lic')),
         h('div', { class: 'row' }, [key,
@@ -304,5 +460,6 @@
   window.addEventListener('hashchange', render);
   render();
   recheck();
+  if (cloud && cloud.user()) cloud.sync().then(function (r) { if (r.status === 'pulled') toast(window.CloudI18n.t(lang, 'pulled')); });
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();

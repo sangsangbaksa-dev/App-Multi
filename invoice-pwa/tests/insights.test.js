@@ -92,3 +92,19 @@ test("taxEstimate is a percentage of positive profit and refuses nonsense rates"
   assert.equal(L.taxEstimate(1000, 100), null);
   assert.equal(L.taxEstimate(1000, -1), null);
 });
+
+test("topClients ranks by billed in the window, skips quotes, drafts, other currencies and old months, share sums to the total", () => {
+  const list = [
+    inv({ client: "A", issueDate: "2026-10-01", items: [{ qty: 1, price: 300 }] }),
+    inv({ client: "A", issueDate: "2026-09-01", items: [{ qty: 1, price: 100 }] }),
+    inv({ client: "B", issueDate: "2026-08-01", items: [{ qty: 1, price: 100 }] }),
+    inv({ client: "C", issueDate: "2026-10-02", status: "draft" }),
+    inv({ client: "D", issueDate: "2026-10-02", type: "quote" }),
+    inv({ client: "E", issueDate: "2026-10-02", currency: "EUR" }),
+    inv({ client: "F", issueDate: "2024-01-01" }),
+  ];
+  const top = L.topClients(list, "2026-10-15", "USD", 5);
+  assert.deepEqual(top, [{ client: "A", billed: 400, share: 80 }, { client: "B", billed: 100, share: 20 }]);
+  assert.equal(L.topClients(list, "2026-10-15", "USD", 1).length, 1);
+  assert.deepEqual(L.topClients([], "2026-10-15"), []);
+});

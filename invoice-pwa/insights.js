@@ -8,7 +8,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fill = (tpl, vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), tpl);
 
-export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) {
+export function initInsights({ download, getInvoices, isPro, openUpgrade, today, store }) {
   const getExpenses = () => store.get("qb.expenses", []).filter(L.validExpense);
   const saveExpenses = (list) => store.set("qb.expenses", list);
   const money = (n, cur) => L.formatMoney(n, cur, I.locale());
@@ -37,6 +37,13 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
       `<tr><td>${esc(r.month)}</td><td class="r">${esc(money(r.billed, cur))}</td><td class="r">${esc(money(r.collected, cur))}</td></tr>`).join("")}</tbody>`;
   }
 
+  function renderTop(rows, cur) {
+    const t = $("#ins-top");
+    t.hidden = !rows.length;
+    t.innerHTML = `<caption>${esc(I.t("insTop"))}</caption><thead><tr><th>${esc(I.t("insClient"))}</th><th class="r">${esc(I.t("insBilled"))}</th><th class="r">${esc(I.t("insShare"))}</th></tr></thead><tbody>${rows.map((r) =>
+      `<tr><td>${esc(r.client)}</td><td class="r">${esc(money(r.billed, cur))}</td><td class="r">${r.share}%</td></tr>`).join("")}</tbody>`;
+  }
+
   function renderInsights() {
     const invoices = getInvoices();
     const hasAny = invoices.some((i) => !L.isQuote(i));
@@ -46,10 +53,12 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
     $("#ins-table").hidden = !hasAny;
     $("#ins-cards").hidden = !hasAny;
     $("#ins-other").hidden = !others.length;
+    $("#ins-top").hidden = !hasAny;
     if (!hasAny) return;
     const flow = L.monthlyFlow(invoices, today(), 12, currency);
     renderChart(flow, currency);
     renderTable(flow, currency);
+    renderTop(L.topClients(invoices, today(), currency), currency);
     $("#ins-other").textContent = fill(I.raw("insOther"), { list: others.join(", ") });
     const f = L.forecast(invoices, today(), currency);
     $("#ins-cards").innerHTML = [
@@ -57,6 +66,38 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
       [I.t("insNext3"), f.next3],
       [I.t("insDueSoon"), f.dueSoon],
     ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
+  }
+
+  $("#pay-csv").onclick = () => {
+    if (!isPro()) return openUpgrade(I.t("payCsvPro"));
+    download("payments.csv", "text/csv", L.paymentsCSV(getInvoices()));
+  };
+
+  function renderUpcoming() {
+    const rows = L.upcomingRecurring(getInvoices(), today(), 3);
+    $("#up-empty").hidden = rows.length > 0;
+    $("#up-table").hidden = !rows.length;
+    $("#up-table").innerHTML = rows.slice(0, 30).map((r) => `<tr><td>${esc(I.formatDate(r.date))}</td><td>${esc(r.client)}</td><td>${esc(I.t(r.freq === "weekly" ? "upWeekly" : "upMonthly"))}</td><td class="r">${esc(money(r.amount, r.currency))}</td></tr>`).join("");
+    const totals = Object.entries(L.upcomingTotals(rows)).map(([c, v]) => money(v, c)).join(" · ");
+    $("#up-total").textContent = rows.length ? I.t("upTotal", { list: totals }) : "";
+  }
+
+  // Needs dated payments (recorded in the invoice editor); older invoices without a log are left out.
+  function renderPaySpeed() {
+    const invoices = getInvoices();
+    const st = L.paymentStats(invoices);
+    const { currency } = L.currencyOf(invoices);
+    const got = L.receivedByMonth(invoices, today(), 1, currency)[0]?.received ?? 0;
+    $("#pay-empty").hidden = st.count > 0 || got > 0;
+    $("#pay-cards").hidden = !(st.count || got);
+    $("#pay-based").hidden = !st.count;
+    $("#pay-cards").innerHTML = [
+      ...(st.count ? [[I.t("insPayAvg"), String(st.avgDays)], [I.t("insPayOnTime"), st.onTimePct + "%"]] : []),
+      [I.t("insReceived"), money(got, currency)],
+    ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(v)}</b></div>`).join("");
+    $("#pay-based").textContent = I.t("insPayBased", { n: st.count });
+    $("#pay-clients").innerHTML = st.byClient.length < 2 ? "" : `<h3 class="h">${esc(I.t("insPayClients"))}</h3><table class="mini">${st.byClient.slice(0, 5)
+      .map((c) => `<tr><td>${esc(c.client)}</td><td class="r">${esc(I.t("insPayDays", { d: c.avgDays, n: c.count }))}</td></tr>`).join("")}</table>`;
   }
 
   // Calculators show amounts in the same currency as the charts: the one used most on the invoices.
@@ -157,6 +198,8 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
   return {
     render() {
       renderInsights();
+      renderPaySpeed();
+      renderUpcoming();
       renderExpenses();
       renderReminders();
       calcRate();

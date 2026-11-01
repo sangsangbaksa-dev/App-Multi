@@ -10,7 +10,10 @@
     priceAmount: '19',
     priceCurrency: 'USD',
     freeLimit: 1,
-    licenseApi: '/api/license'
+    licenseApi: '/api/license',
+    /* Optional cloud login/backup (Supabase). Empty strings turn the feature off. The publishable key is public by design; row level security protects the data. */
+    supabaseUrl: 'https://fiiljdmbnmvtayffsydb.supabase.co',
+    supabaseKey: 'sb_publishable_Ega8x9XFjiT13lh4L6fArQ_by7MILgA'
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = CFG; else root.SL_CONFIG = CFG;
 })(typeof window !== 'undefined' ? window : globalThis);

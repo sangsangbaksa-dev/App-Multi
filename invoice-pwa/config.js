@@ -15,6 +15,9 @@ export const CONFIG = {
   refundDays: 14,
   // Serverless function that checks license keys with the Lemon Squeezy License API (no secret needed).
   licenseApi: "/api/license",
+  // Optional cloud login/backup (Supabase). Empty strings turn the feature off. The publishable key is public by design; row level security protects the data.
+  supabaseUrl: "https://fiiljdmbnmvtayffsydb.supabase.co",
+  supabaseKey: "sb_publishable_Ega8x9XFjiT13lh4L6fArQ_by7MILgA",
 };
 
 export const isPlaceholder = (v) => /example\.com/.test(String(v || ""));

@@ -1,4 +1,4 @@
-var V='stampbook-v2',F=['./','index.html','style.css','core.js','i18n.js','../config.js','app.js'];
+var V='stampbook-v4',F=['./','index.html','style.css','core.js','i18n.js','../config.js','app.js','cloud-i18n.js','cloud-sync.js','cloud-panel.js'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(V).then(function(c){return c.addAll(F)}).then(function(){return self.skipWaiting()}))});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(x){return x!==V}).map(function(x){return caches.delete(x)}))}).then(function(){return self.clients.claim()}))});
 self.addEventListener('fetch',function(e){if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(function(r){var c=r.clone();caches.open(V).then(function(x){x.put(e.request,c)});return r}).catch(function(){return caches.match(e.request)}))});

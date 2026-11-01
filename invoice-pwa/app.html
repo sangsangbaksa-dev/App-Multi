@@ -37,6 +37,7 @@
   <section id="list-view" class="noprint">
     <p class="muted" data-i18n="privacy"></p>
     <div id="dash" class="cards"></div>
+    <div id="fx"></div>
     <div id="clientsum"></div>
     <div id="ageing"></div>
     <div id="filters" class="row filters" hidden>
@@ -74,7 +75,9 @@
       <div class="grid">
         <label><span data-i18n="from"></span><input name="from" required></label>
         <label><span data-i18n="client"></span><input name="client" list="clients" required></label>
+        <label data-pro><span data-i18n="clientEmail"></span><input type="email" name="clientEmail" maxlength="190" autocomplete="off"></label>
         <datalist id="clients"></datalist>
+        <datalist id="catalog"></datalist>
         <label><span data-i18n="number"></span><input name="number" required></label>
         <label><span data-i18n="currency"></span>
           <select name="currency"><option>USD</option><option>EUR</option><option>GBP</option><option>KRW</option><option>JPY</option><option>CNY</option><option>CAD</option><option>AUD</option></select></label>
@@ -87,8 +90,19 @@
         <label id="paid-wrap"><span data-i18n="paidAmt"></span><input type="number" step="0.01" min="0" name="paid" value="0"></label>
         <label data-pro><span data-i18n="recurring"></span>
           <select name="recur"><option value="" data-i18n="none"></option><option value="weekly" data-i18n="weekly"></option><option value="monthly" data-i18n="monthly"></option></select></label>
+        <label data-pro><span data-i18n="payLinkL"></span><input type="url" name="payLink" placeholder="https://" maxlength="500" autocomplete="off"></label>
         <label data-pro><span data-i18n="logo"></span><input type="file" id="logo-file" accept="image/*"></label>
       </div>
+      <section id="pay-log" class="paylog">
+        <h2 class="h" data-i18n="payLogHead"></h2>
+        <div id="pay-list"></div>
+        <div class="row paylog-add">
+          <input type="date" id="pay-date" data-i18n-aria="payDate">
+          <input type="number" id="pay-amt" min="0" step="any" inputmode="decimal" data-i18n-aria="payAmt" data-i18n-ph="payAmt">
+          <button type="button" id="pay-add" data-i18n="payAdd"></button>
+        </div>
+        <p id="pay-err" class="late" role="alert"></p>
+      </section>
       <h2 class="h" data-i18n="items"></h2>
       <div id="items"></div>
       <button type="button" id="btn-add" data-i18n="addItem"></button>
@@ -100,6 +114,8 @@
         <button type="button" id="btn-convert" class="accent" data-i18n="convert"></button>
         <button type="button" id="btn-latefee" data-i18n="lateFee"></button>
         <button type="button" id="btn-remind" data-i18n="reminder"></button>
+        <button type="button" id="btn-share" data-pro data-i18n="shareLink"></button>
+        <button type="button" id="btn-email" data-pro data-i18n="emailBtn"></button>
         <button type="button" id="btn-dup" data-i18n="duplicate"></button>
         <button type="button" id="btn-print" data-i18n="print"></button>
         <button type="button" id="btn-logo-rm" data-i18n="logoRemove"></button>
@@ -172,8 +188,24 @@
       <figcaption class="legend muted"><span class="sw sw-b"></span><span data-i18n="insBilled"></span> <span class="sw sw-c"></span><span data-i18n="insCollected"></span></figcaption>
     </figure>
     <table class="mini" id="ins-table" hidden></table>
+    <table class="mini" id="ins-top" hidden></table>
     <p id="ins-other" class="muted" hidden></p>
     <div id="ins-cards" class="cards" hidden></div>
+  </section>
+  <section aria-labelledby="up-h">
+    <h2 class="h" id="up-h" data-i18n="upHead"></h2>
+    <p class="muted" data-i18n="upNote"></p>
+    <p id="up-empty" class="muted" data-i18n="upNone" hidden></p>
+    <table class="mini" id="up-table" hidden></table>
+    <p id="up-total" class="calc-out"></p>
+  </section>
+  <section aria-labelledby="pay-h">
+    <h2 class="h" id="pay-h" data-i18n="insPayHead"></h2>
+    <p id="pay-empty" class="muted" data-i18n="insPayNone" hidden></p>
+    <div id="pay-cards" class="cards" hidden></div>
+    <p id="pay-based" class="muted" hidden></p>
+    <div id="pay-clients"></div>
+    <div class="row"><button type="button" id="pay-csv" data-pro data-i18n="payCsv"></button></div>
   </section>
   <section aria-labelledby="calc-h">
     <h2 class="h" id="calc-h" data-i18n="calcHead"></h2>
@@ -257,6 +289,7 @@
     <button value="cancel" data-i18n="close"></button>
   </form>
 </dialog>
+<script src="cloud-i18n.js"></script><script src="cloud-sync.js"></script><script src="cloud-panel.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>
