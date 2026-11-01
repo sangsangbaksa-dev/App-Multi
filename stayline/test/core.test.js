@@ -337,3 +337,20 @@ test('calendarMonth: Monday-first grid, stay / planned / over / today marks', ()
 test('addMonth rolls the year', () => {
   assert.equal(C.addMonth('2026-12', 1), '2027-01'); assert.equal(C.addMonth('2026-01', -1), '2025-12'); assert.equal(C.addMonth('2026-05', 0), '2026-05');
 });
+
+test('autoItinerary: earliest legs that all fit, spaced by the gap', () => {
+  const t = tr([]);
+  const d = C.autoItinerary(t, 3, 30, 10, '2026-06-01', '2026-06-01');
+  assert.equal(d.length, 3); assert.equal(d[0].from, '2026-06-01'); assert.equal(d[0].to, '2026-06-30');
+  assert.equal(d[1].from, '2026-07-11');                       // 10 days out between legs
+  assert.equal(C.simulate(t, d, '2026-06-01').ok, true);
+  assert.equal(C.simulate(t, d, '2026-06-01').peak, 90);                   // exactly at the limit, never over
+  assert.equal(C.autoItinerary(t, 4, 30, 10, '2026-06-01', '2026-06-01')[3].from > '2026-09-10', true); // the 4th must wait for room
+});
+test('autoItinerary: whatever it returns passes the simulator', () => {
+  const t = tr([['2026-04-01', '2026-05-15']]);
+  const d = C.autoItinerary(t, 6, 25, 5, '2026-06-01', '2026-06-01');
+  assert.ok(d.length >= 1); assert.equal(C.simulate(t, d, '2026-06-01').ok, true);
+  assert.deepEqual(C.autoItinerary(t, 3, 91, 0, '2026-06-01'), []);
+  assert.deepEqual(C.autoItinerary(t, 0, 10, 0, '2026-06-01'), []);
+});

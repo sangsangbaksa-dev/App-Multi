@@ -279,6 +279,23 @@
     return str(d.getTime() / 86400000).slice(0, 7);
   }
 
+  /* greedy auto-itinerary: `count` trips of `nights` days, each as early as the rules allow, at least `gap` days after the last.
+     Returns drafts that fit (fewer than `count` if the rule runs out of room within a year of searching). */
+  function autoItinerary(tr, count, nights, gap, from, today) {
+    today = today || todayStr();
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), f = dn(from), out = [];
+    nights = Math.floor(nights); gap = Math.max(0, Math.floor(gap) || 0);
+    if (!(nights >= 1) || nights > rule.limit) return out;
+    for (var n = 0; n < Math.min(20, Math.floor(count) || 0); n++) {
+      var e = firstFit(set, rule, nights, f);
+      if (e === null || e > f + 400) break;
+      for (var i = 0; i < nights; i++) set[e + i] = true;
+      out.push({ id: 'a' + n, from: str(e), to: str(e + nights - 1) });
+      f = e + nights + gap;
+    }
+    return out;
+  }
+
   /* days spent inside per calendar month, oldest first, ending with the month of `today` */
   function monthlyUsage(tr, today, months) {
     today = today || todayStr();
@@ -454,7 +471,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
-    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

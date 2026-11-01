@@ -79,3 +79,5 @@ textarea{font:inherit;color:var(--ink);background:#101315;border:1px solid var(-
 .cal .day.in{background:var(--amber);color:#1a1300;font-weight:700}.cal .day.plan{border-color:var(--amber);color:var(--amber);font-weight:700}
 .cal .day.over{background:var(--bad);border-color:var(--bad);color:#fff}.cal .day.now{outline:2px solid var(--ink);outline-offset:1px}
 @media print{.card:has(.cal){display:none}}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.auto{margin-bottom:10px}.auto summary{cursor:pointer;color:var(--amber);margin-bottom:8px}

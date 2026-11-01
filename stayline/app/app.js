@@ -180,7 +180,15 @@
         h('button', { class: 'ghost x', 'aria-label': T('removeLeg'), onclick: function () { C.removeDraft(tr, l.id); save(); render(); } }, '×')
       ]);
     });
-    return h('section', { class: 'card' }, [h('h2', null, T('whatH')), h('p', { class: 'muted' }, T('whatHint')),
+    var ac = h('input', { type: 'number', min: 1, max: 20, value: 3, id: 'a-n', inputmode: 'numeric' }), ad = h('input', { type: 'number', min: 1, max: 366, value: 14, id: 'a-d', inputmode: 'numeric' }), ag = h('input', { type: 'number', min: 0, max: 365, value: 30, id: 'a-g', inputmode: 'numeric' });
+    var autoBox = h('details', { class: 'auto' }, [h('summary', null, T('autoH')),
+      h('div', { class: 'grid3' }, [h('label', null, [T('autoCount'), ac]), h('label', null, [T('autoNights'), ad]), h('label', null, [T('autoGap'), ag])]),
+      h('div', { class: 'row' }, [h('button', { class: 'ghost small', onclick: function () {
+        var d = C.autoItinerary(tr, +ac.value, +ad.value, +ag.value, C.todayStr(), C.todayStr());
+        if (!d.length) { toast(T('autoNone')); return; }
+        tr.drafts = []; d.forEach(function (x) { C.addDraft(tr, x); }); save(); render();
+      } }, T('autoBtn'))])]);
+    return h('section', { class: 'card' }, [h('h2', null, T('whatH')), h('p', { class: 'muted' }, T('whatHint')), autoBox,
       h('div', { class: 'grid2' }, [h('label', null, [T('from'), from]), h('label', null, [T('to'), to])]),
       err, h('div', { class: 'row' }, [h('button', { class: 'pri small', onclick: function () {
         if (!C.addDraft(tr, { from: from.value, to: to.value })) { err.textContent = T('badTrip'); return; }
