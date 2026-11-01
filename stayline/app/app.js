@@ -383,11 +383,28 @@
       h('div', { class: 'row center' }, [h('button', { class: 'pri', onclick: quickStart }, T('quick')), h('button', { class: 'ghost', onclick: function () { creating = true; render(); } }, T('newTracker'))])]);
   }
 
+  /* opt-in reminder: one system notification per day, only when the app is opened and something is urgent */
+  function remind() {
+    if (!state.remind || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    var today = C.todayStr(), list = C.urgent(state.trackers, today);
+    if (!list.length || state.remindedOn === today) return;
+    try {
+      new Notification(T('bannerH'), { body: list.slice(0, 3).map(function (u) { return T('a_' + u.kind) + ' · ' + (u.name || T('namePh')) + ' · ' + fmt(u.date); }).join('\n'), icon: '../icon.svg' });
+      state.remindedOn = today; save();
+    } catch (e) {}
+  }
+  function toggleRemind() {
+    if (state.remind) { state.remind = false; save(); render(); return; }
+    if (typeof Notification === 'undefined') { toast(T('remindNo')); return; }
+    Notification.requestPermission().then(function (p) {
+      if (p === 'granted') { state.remind = true; save(); toast(T('remindOk')); render(); remind(); } else toast(T('remindNo'));
+    });
+  }
   function footer(tr) {
     var file = h('input', { type: 'file', accept: 'application/json', hidden: '', onchange: function () {
       var f = file.files[0]; if (!f) return; var r = new FileReader();
       r.onload = function () {
-        try { var s = JSON.parse(r.result); if (!s || !Array.isArray(s.trackers)) throw 0; state = { v: 1, trackers: C.sanitize(s.trackers), active: s.active || '', pro: state.pro, lang: state.lang }; save(); render(); toast(T('restored')); }
+        try { var s = JSON.parse(r.result); if (!s || !Array.isArray(s.trackers)) throw 0; state = { v: 1, trackers: C.sanitize(s.trackers), active: s.active || '', pro: state.pro, lang: state.lang, remind: state.remind, remindedOn: state.remindedOn }; save(); render(); toast(T('restored')); }
         catch (e) { toast(T('badFile')); }
       };
       r.readAsText(f);
@@ -416,6 +433,7 @@
         } }, T('activate')),
         h('a', { class: 'ghost link', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))
       ]),
+      h('div', null, [h('button', { class: 'ghost', onclick: toggleRemind }, state.remind ? T('remindOff') : T('remindOn')), h('p', { class: 'fine' }, T('remindHint'))]),
       tr ? h('button', { class: 'ghost danger', onclick: function () {
         if (!confirm(T('confDel'))) return;
         undoable(T('counterGone'), function () { state.trackers = state.trackers.filter(function (t) { return t.id !== tr.id; }); state.active = ''; save(); render(); });
@@ -449,5 +467,6 @@
   }
   document.addEventListener('cancel', function () { adding = creating = editCounter = upsell = pasting = false; editing = ''; setTimeout(render, 0); }, true);
   render();
+  remind();
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();

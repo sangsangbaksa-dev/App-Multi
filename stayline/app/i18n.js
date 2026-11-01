@@ -27,6 +27,7 @@
       copyBtn: 'Copy as text', copied: 'Copied.', copyFail: 'Could not copy.', bannerH: 'Needs your attention', 
       auditH: 'Compliance check', auditOk: 'No days over the limit in the last 3 years.', auditEp: 'Over the limit from {from} to {to}, by up to {n} days.', auditNote: 'Based only on the trips you entered.', undo: 'Undo', undone: 'Undone.', tripGone: 'Trip removed.', counterGone: 'Counter deleted.', 
       calH: 'Calendar', calPrev: 'Previous month', calNext: 'Next month', calLegend: 'Filled: inside. Outlined: planned. Red: over the limit.', 
+      remindOn: 'Remind me when I open the app', remindHint: 'Shows a notification on days when something needs attention. It only runs while the app is opened.', remindOk: 'Reminders are on.', remindNo: 'Notifications are blocked in this browser.', remindOff: 'Turn reminders off', 
       badTrip: 'Check the dates: the last day cannot be before the first.', lang: 'Language', today: 'today', printTitle: 'Days inside'
     },
     ko: {
@@ -55,6 +56,7 @@
       copyBtn: '텍스트로 복사', copied: '복사했습니다.', copyFail: '복사하지 못했습니다.', bannerH: '확인이 필요해요', 
       auditH: '위반 이력 점검', auditOk: '최근 3년간 한도를 넘은 날이 없습니다.', auditEp: '{from}부터 {to}까지 한도 초과(최대 {n}일).', auditNote: '입력한 체류 기록만 기준입니다.', undo: '실행 취소', undone: '되돌렸습니다.', tripGone: '체류 기록을 지웠습니다.', counterGone: '카운터를 삭제했습니다.', 
       calH: '달력', calPrev: '이전 달', calNext: '다음 달', calLegend: '채움: 체류, 윤곽선: 예정, 빨강: 한도 초과.', 
+      remindOn: '앱을 열 때 알림 받기', remindHint: '확인할 일이 있는 날 알림을 띄웁니다. 앱을 열었을 때만 작동합니다.', remindOk: '알림을 켰습니다.', remindNo: '이 브라우저에서 알림이 차단되어 있습니다.', remindOff: '알림 끄기', 
       badTrip: '날짜를 확인하세요. 마지막 날이 첫날보다 빠를 수 없습니다.', lang: '언어', today: '오늘', printTitle: '체류 일수'
     },
     ja: {
@@ -83,6 +85,7 @@
       copyBtn: 'テキストでコピー', copied: 'コピーしました。', copyFail: 'コピーできませんでした。', bannerH: 'ご確認ください', 
       auditH: '超過履歴のチェック', auditOk: '過去3年間、上限を超えた日はありません。', auditEp: '{from}から{to}まで上限超過（最大{n}日）。', auditNote: '入力した滞在記録のみが対象です。', undo: '元に戻す', undone: '元に戻しました。', tripGone: '滞在記録を削除しました。', counterGone: 'カウンターを削除しました。', 
       calH: 'カレンダー', calPrev: '前の月', calNext: '次の月', calLegend: '塗り：滞在、枠線：予定、赤：上限超過。', 
+      remindOn: 'アプリを開いたときに通知', remindHint: '確認が必要な日に通知を表示します。アプリを開いているときだけ動作します。', remindOk: '通知をオンにしました。', remindNo: 'このブラウザでは通知がブロックされています。', remindOff: '通知をオフにする', 
       badTrip: '日付を確認してください。最終日は初日より前にできません。', lang: '言語', today: '今日', printTitle: '滞在日数'
     },
     zh: {
@@ -111,6 +114,7 @@
       copyBtn: '复制为文本', copied: '已复制。', copyFail: '无法复制。', bannerH: '需要留意', 
       auditH: '超期记录检查', auditOk: '最近3年没有超出上限的日子。', auditEp: '{from}至{to}超出上限，最多超出{n}天。', auditNote: '仅依据你填写的行程。', undo: '撤销', undone: '已撤销。', tripGone: '已删除行程。', counterGone: '已删除计数器。', 
       calH: '日历', calPrev: '上个月', calNext: '下个月', calLegend: '实心：在境内。空心：计划。红色：超出上限。', 
+      remindOn: '打开应用时提醒我', remindHint: '有需要留意的事项时显示通知。仅在打开应用时生效。', remindOk: '提醒已开启。', remindNo: '此浏览器已屏蔽通知。', remindOff: '关闭提醒', 
       badTrip: '请检查日期：最后一天不能早于第一天。', lang: '语言', today: '今天', printTitle: '停留天数'
     },
     es: {
@@ -139,6 +143,7 @@
       copyBtn: 'Copiar como texto', copied: 'Copiado.', copyFail: 'No se pudo copiar.', bannerH: 'Requiere tu atención', 
       auditH: 'Revisión de excesos', auditOk: 'Ningún día por encima del límite en los últimos 3 años.', auditEp: 'Por encima del límite del {from} al {to}, hasta {n} días de más.', auditNote: 'Solo según los viajes que has introducido.', undo: 'Deshacer', undone: 'Deshecho.', tripGone: 'Viaje eliminado.', counterGone: 'Contador eliminado.', 
       calH: 'Calendario', calPrev: 'Mes anterior', calNext: 'Mes siguiente', calLegend: 'Relleno: dentro. Contorno: previsto. Rojo: sobre el límite.', 
+      remindOn: 'Avisarme al abrir la app', remindHint: 'Muestra una notificación los días en que algo requiere atención. Solo funciona con la app abierta.', remindOk: 'Avisos activados.', remindNo: 'Las notificaciones están bloqueadas en este navegador.', remindOff: 'Desactivar avisos', 
       badTrip: 'Revisa las fechas: el último día no puede ser anterior al primero.', lang: 'Idioma', today: 'hoy', printTitle: 'Días dentro'
     }
   };
