@@ -221,6 +221,26 @@
     return { trips: trips, bad: bad };
   }
 
+  /* heads-ups worth a banner today, across all counters: over, leave-by within 7 days, breach ahead within 14,
+     permit ending within 30 (or already ended). Most urgent first. */
+  var URGENT_DAYS = { over: 0, leave_by: 7, breach_ahead: 14, permit_end: 30, permit_gone: 0 };
+  function urgent(trackers, today) {
+    today = today || todayStr();
+    var out = [];
+    trackers.forEach(function (tr) {
+      alerts(tr, today).forEach(function (a) {
+        if (a.kind === 'over' || a.kind === 'permit_gone' || (a.kind in URGENT_DAYS && a.in >= 0 && a.in <= URGENT_DAYS[a.kind])) out.push({ kind: a.kind, date: a.date, in: a.in, id: tr.id, name: tr.name });
+      });
+    });
+    return out.sort(function (a, b) { return a.in - b.in; });
+  }
+  /* plain-text version of a what-if result, for sharing */
+  function itineraryText(sim, label) {
+    return sim.legs.map(function (l) {
+      return l.from + ' -> ' + l.to + ' (' + l.days + ') ' + (l.ok ? 'OK' : 'X ' + l.breachDate) + (label ? ' ' + label(l) : '');
+    }).join('\n');
+  }
+
   /* days spent inside per calendar month, oldest first, ending with the month of `today` */
   function monthlyUsage(tr, today, months) {
     today = today || todayStr();
@@ -396,7 +416,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
-    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

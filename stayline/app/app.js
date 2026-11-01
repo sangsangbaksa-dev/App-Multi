@@ -141,6 +141,14 @@
   }
 
   function rel(n) { return n === 0 ? T('todayWord') : n === 1 ? T('inDay') : T('inDays', { n: n }); }
+  function banner() {
+    var list = C.urgent(state.trackers, C.todayStr());
+    if (!list.length) return null;
+    return h('section', { class: 'banner', role: 'region', 'aria-label': T('bannerH') }, [h('strong', null, T('bannerH')),
+      h('ul', null, list.slice(0, 5).map(function (u) {
+        return h('li', null, T('a_' + u.kind) + ' · ' + (u.name || T('namePh')) + ' · ' + fmt(u.date) + (u.in >= 0 ? ' · ' + rel(u.in) : ''));
+      }))]);
+  }
   function keyDates(tr) {
     var list = C.alerts(tr, C.todayStr());
     return h('section', { class: 'card' }, [h('h2', null, T('alertsH')),
@@ -174,6 +182,10 @@
       n ? h('ul', { class: 'trips legs' }, rows) : h('p', { class: 'muted' }, T('noLegs')),
       n ? h('p', { class: 'verdict ' + (res.ok ? 'v-ok' : 'v-bad'), role: 'status' }, T(res.ok ? 'whatOk' : 'whatBad')) : null,
       n ? h('div', { class: 'row' }, [
+        h('button', { class: 'ghost', onclick: function () {
+          var txt = C.itineraryText(res, function (l) { return l.ok ? '' : T('legBreach', { date: l.breachDate }); }).trim();
+          (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast(T('copied')); }, function () { toast(T('copyFail')); });
+        } }, T('copyBtn')),
         h('button', { class: 'ghost', onclick: function () { tr.drafts = []; save(); render(); } }, T('clearAll')),
         h('button', { class: 'pri', onclick: function () { var k = C.commitDrafts(tr); save(); render(); toast(T('applied', { n: k })); } }, T('applyAll'))]) : null]);
   }
@@ -387,6 +399,7 @@
     var tr = current(), kids = [header()];
     if (!tr) kids.push(h('p', { class: 'tag' }, T('tag')), empty());
     else {
+      var bn = banner(); if (bn) kids.push(bn);
       kids.push(tabs());
       if (state.trackers.length > 1) kids.push(overview());
       kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr));

@@ -67,3 +67,6 @@ dialog{background:var(--card);color:var(--ink);border:1px solid var(--line);bord
 textarea{font:inherit;color:var(--ink);background:#101315;border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;resize:vertical}
 .wins{margin-top:8px}
 @media print{.wins{display:none}}
+
+.banner{border:1px solid var(--warn);background:#2a1d12;border-radius:var(--r);padding:10px 14px;margin-bottom:12px;color:var(--ink)}.banner ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
+@media print{.banner{display:none}}

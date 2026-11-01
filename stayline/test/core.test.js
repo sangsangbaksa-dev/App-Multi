@@ -295,3 +295,19 @@ test('parseTrips: lines with 1 or 2 dates, place text, bad lines reported', () =
   assert.deepEqual(r.trips[2], { place: '', from: '2026-05-02', to: '2026-05-02' });
   assert.deepEqual(C.parseTrips('').trips, []);
 });
+
+test('urgent: only near-term items, across counters, most urgent first', () => {
+  const a = tr([['2026-06-01', '']]); a.id = 'a'; a.name = 'Ana'; // leave-by Aug 29
+  const b = tr([]); b.id = 'b'; b.name = 'Ben'; b.expires = '2026-06-25';
+  const u = C.urgent([a, b], '2026-06-10');
+  assert.deepEqual(u.map(x => x.kind), ['permit_end']);          // permit in 15 days is within 30; Aug 29 is not within 7
+  const u2 = C.urgent([a, b], '2026-08-25');
+  assert.deepEqual(u2.map(x => x.kind + ':' + x.id), ['permit_gone:b', 'leave_by:a']);
+  assert.deepEqual(C.urgent([tr([])], '2026-06-10'), []);
+  assert.equal(C.urgent([tr([['2026-01-01', '2026-04-10']])], '2026-04-10')[0].kind, 'over');
+});
+test('itineraryText: one line per leg', () => {
+  const sim = C.simulate(tr([]), drafts([['2026-07-01', '2026-07-10'], ['2026-08-01', '2026-12-31']]), '2026-06-01');
+  const txt = C.itineraryText(sim).split('\n');
+  assert.equal(txt.length, 2); assert.equal(txt[0], '2026-07-01 -> 2026-07-10 (10) OK'); assert.ok(txt[1].includes(' X 2026-'));
+});
