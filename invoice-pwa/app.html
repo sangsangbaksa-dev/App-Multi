@@ -87,6 +87,7 @@
         <label id="paid-wrap"><span data-i18n="paidAmt"></span><input type="number" step="0.01" min="0" name="paid" value="0"></label>
         <label data-pro><span data-i18n="recurring"></span>
           <select name="recur"><option value="" data-i18n="none"></option><option value="weekly" data-i18n="weekly"></option><option value="monthly" data-i18n="monthly"></option></select></label>
+        <label data-pro><span data-i18n="payLinkL"></span><input type="url" name="payLink" placeholder="https://" maxlength="500" autocomplete="off"></label>
         <label data-pro><span data-i18n="logo"></span><input type="file" id="logo-file" accept="image/*"></label>
       </div>
       <h2 class="h" data-i18n="items"></h2>
@@ -100,6 +101,7 @@
         <button type="button" id="btn-convert" class="accent" data-i18n="convert"></button>
         <button type="button" id="btn-latefee" data-i18n="lateFee"></button>
         <button type="button" id="btn-remind" data-i18n="reminder"></button>
+        <button type="button" id="btn-share" data-pro data-i18n="shareLink"></button>
         <button type="button" id="btn-dup" data-i18n="duplicate"></button>
         <button type="button" id="btn-print" data-i18n="print"></button>
         <button type="button" id="btn-logo-rm" data-i18n="logoRemove"></button>

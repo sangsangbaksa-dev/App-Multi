@@ -25,3 +25,8 @@ test("t interpolates and falls back", () => {
   I.setLang("en");
   assert.equal(I.t("nope"), "nope");
 });
+test("client page strings exist in every language", () => {
+  for (const l of Object.keys(I.LANGS)) for (const k of ["shareLink", "shareCopied", "vwPaid", "vwOverdue", "vwPay", "vwBad", "payLinkL"]) {
+    assert.ok(I.DICT[l][k] && I.DICT[l][k] !== I.DICT.en[k] || l === "en", `${l}.${k}`);
+  }
+});

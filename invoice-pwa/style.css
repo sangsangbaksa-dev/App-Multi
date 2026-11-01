@@ -90,9 +90,9 @@ table.mini td{color:var(--ink)}
 /* the invoice itself always prints on white paper */
 #preview{margin-top:1.8rem;padding:2rem;border:1px solid var(--rule);background:var(--sheet);color:#211e18;box-shadow:3px 3px 0 var(--rule)}
 #preview h2{margin-top:0}
-#preview table{width:100%;border-collapse:collapse;margin:1rem 0}
-#preview td,#preview th{padding:.4rem;border-bottom:1px solid #d9d2c1;text-align:left}
-#preview .r{text-align:right}
+#preview table,#vw-paper table{width:100%;border-collapse:collapse;margin:1rem 0}
+#preview td,#preview th,#vw-paper td,#vw-paper th{padding:.4rem;border-bottom:1px solid #d9d2c1;text-align:left}
+#preview .r,#vw-paper .r{text-align:right}
 #preview .logo{max-height:60px;max-width:200px;display:block;margin-bottom:.8rem}
 .wm{margin-top:1.5rem;font-size:.75rem;color:#6b6355}
 
@@ -177,3 +177,14 @@ dialog form input{flex:1 1 100%}
 .tip.locked button{margin-top:.3rem}
 /* phone width: five workspace tabs wrap onto their own row and scroll sideways instead of pushing the page wider */
 @media (max-width:600px){.tabs{order:3;flex:1 1 100%;width:100%;overflow-x:auto;margin-right:0}.tabs button{flex:0 0 auto}}
+
+/* client page (view.html) */
+.vw-main{max-width:46rem;margin:0 auto;padding:1rem 1.2rem 3rem}
+.vw-status{margin:1rem 0;padding:.9rem 1rem;border:1px solid var(--ink);border-left-width:6px;display:flex;flex-direction:column;gap:.2rem}
+.vw-head{font-family:var(--serif);font-size:1.4rem;font-weight:600}
+.vw-amt{font-size:1.05rem}
+.vw-overdue{border-color:var(--danger);color:var(--danger)}
+.vw-paid{border-color:var(--accent)}
+.vw-main .row{margin:.8rem 0}
+.vw-foot{margin-top:1.5rem;font-size:.85rem}
+@media print{.vw .bar,.vw-foot{display:none}.vw .sheet-paper{border:0;box-shadow:none;margin:0;padding:0}}

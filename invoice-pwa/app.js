@@ -6,6 +6,7 @@ import { initWorkspace } from "./workspace.js";
 import { ensureSchema } from "./storage.js";
 import { createAuth, localBackend } from "./auth.js";
 import { initAccount } from "./account.js";
+import { safeLink, shareUrl } from "./share.js";
 
 // The account layer is wired here only; swap localBackend for a Supabase backend without changing account.js.
 const auth = createAuth(localBackend(localStorage));
@@ -168,6 +169,7 @@ function renderPreview() {
   const late = L.overdue({ ...i, paid: L.isQuote(i) ? 0 : i.paid }, today());
   $("#btn-latefee").hidden = !late;
   $("#btn-remind").hidden = !late;
+  $("#btn-share").hidden = !i.number;
   const showLogo = logo && isPro();
   $("#btn-logo-rm").hidden = !logo;
   $("#preview").innerHTML = `${showLogo ? `<img class="logo" alt="" src="${esc(logo)}">` : ""}<h2>${I.t(L.isQuote(i) ? "quote" : "invoice")} ${esc(i.number)}</h2>
@@ -243,7 +245,7 @@ function newDoc(type, extra = {}) {
   const doc = {
     id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
     currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
-    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, status: "draft", notes: "", payinfo: last?.payinfo ?? "", recur: "", nextRun: "",
+    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", recur: "", nextRun: "",
     items: [{ desc: "", qty: 1, price: 0 }], lateFeePct: last?.lateFeePct ?? 0, ...extra,
   };
   openEditor(doc);
@@ -270,9 +272,24 @@ $("#btn-latefee").onclick = () => {
   $("#items").replaceChildren(...next.items.map(itemRow));
   renderPreview();
 };
+// The link opens a read-only page for the client; the invoice travels inside the link, nothing is uploaded.
+function clientLink() {
+  const inv = L.settle(readForm());
+  if (inv.payLink && !safeLink(inv.payLink)) { toast(I.t("payLinkBad")); $("#form").elements.payLink.focus(); return null; }
+  return shareUrl(new URL("view.html", location.href).href, { ...inv, payLink: safeLink(inv.payLink) }, I.getLang());
+}
+$("#btn-share").onclick = async () => {
+  if (!isPro()) return openUpgrade(I.t("sharePro"));
+  const link = clientLink();
+  if (!link) return;
+  try { await navigator.clipboard.writeText(link.url); toast(I.t(link.long ? "shareLong" : "shareCopied", { n: link.length })); }
+  catch { window.prompt(I.t("shareLink"), link.url); }
+};
 $("#btn-remind").onclick = async () => {
   const inv = readForm();
-  const text = I.t("reminderText", { client: inv.client, number: inv.number, amount: money(L.balanceOf(inv), inv.currency), date: I.formatDate(inv.dueDate), from: inv.from });
+  let text = I.t("reminderText", { client: inv.client, number: inv.number, amount: money(L.balanceOf(inv), inv.currency), date: I.formatDate(inv.dueDate), from: inv.from });
+  const link = isPro() && (!inv.payLink || safeLink(inv.payLink)) ? clientLink() : null;
+  if (link && !link.long) text += `\n\n${I.t("reminderLink", { url: link.url })}`;
   try { await navigator.clipboard.writeText(text); toast(I.t("reminderCopied")); }
   catch { window.prompt(I.t("reminder"), text); }
 };
@@ -281,6 +298,8 @@ $("#form").addEventListener("input", renderPreview);
 $("#form").onsubmit = (e) => {
   e.preventDefault();
   const inv = L.settle(readForm());
+  if (inv.payLink && !safeLink(inv.payLink)) { toast(I.t("payLinkBad")); return $("#form").elements.payLink.focus(); }
+  if (inv.payLink) inv.payLink = safeLink(inv.payLink);
   if (inv.recur && !isPro()) { $("#form").elements.recur.value = ""; renderPreview(); return openUpgrade(I.t("recurPro")); }
   if (!L.canSave(invoices, isPro(), inv.id)) return openUpgrade(limitMsg());
   const prev = invoices.find((x) => x.id === inv.id);
@@ -312,7 +331,7 @@ $("#btn-dup").onclick = () => {
   const src = readForm();
   const copy = newDoc(src.type, {
     from: src.from, client: src.client, currency: src.currency, taxRate: src.taxRate, discount: src.discount,
-    notes: src.notes, payinfo: src.payinfo, lateFeePct: src.lateFeePct,
+    notes: src.notes, payinfo: src.payinfo, payLink: src.payLink, lateFeePct: src.lateFeePct,
     items: src.items.filter((x) => !x.lateFee).map((x) => ({ ...x })),
   });
   if (copy) toast(I.t("dupNote"));
