@@ -252,3 +252,23 @@ test('alertsIcs: valid all-day events, upcoming only, escaped', () => {
   const gone = tr([]); gone.expires = '2026-01-01';
   assert.equal(C.alertsIcs([gone], '2026-06-10').includes('BEGIN:VEVENT'), false);
 });
+
+test('groupMaxStay: the tightest person limits the group', () => {
+  const a = tr([]), b = tr([['2026-05-01', '2026-06-09']]); b.id = 'b'; a.id = 'a';
+  const g = C.groupMaxStay([a, b], '2026-07-01', '2026-06-15');
+  assert.equal(g.days, 50); assert.deepEqual(g.limiting, ['b']);
+  assert.equal(g.people.find(p => p.id === 'a').max, 90);
+  assert.equal(C.groupMaxStay([], '2026-07-01').days, 0);
+});
+test('groupEarliest: first date everyone fits; mixed rules; impossible lengths', () => {
+  const a = tr([]), b = tr([['2026-01-01', '2026-03-31']]); // b used 90 days, room again from Jun 30
+  assert.equal(C.groupEarliest([a], 30, '2026-06-01', '2026-06-01'), '2026-06-01');
+  const e = C.groupEarliest([a, b], 10, '2026-06-01', '2026-06-01');
+  assert.ok(e > '2026-06-01'); assert.equal(C.simulate(b, drafts([[e, C.addDays(e, 9)]]), '2026-06-01').ok, true);
+  assert.equal(C.groupEarliest([a, tr([], { kind: 'rolling', limit: 20, window: 60 })], 30, '2026-06-01'), null);
+  assert.equal(C.groupEarliest([], 5, '2026-06-01'), null);
+});
+test('monthlyUsage: days per month, across a year boundary', () => {
+  const m = C.monthlyUsage(tr([['2025-12-30', '2026-01-02']]), '2026-02-10', 3);
+  assert.deepEqual(m, [{ month: '2025-12', days: 2 }, { month: '2026-01', days: 2 }, { month: '2026-02', days: 0 }]);
+});

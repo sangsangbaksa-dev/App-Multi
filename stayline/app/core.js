@@ -161,6 +161,49 @@
     return n;
   }
 
+  /* ---- family / group: one trip for several counters (each keeps its own rule) ---- */
+  function fitsRun(base, rule, e, nights) {
+    var set = {}, k;
+    for (k in base) set[k] = true;
+    for (var i = 0; i < nights; i++) set[e + i] = true;
+    return firstBreach(set, rule, e) === null;
+  }
+  /* everyone arrives on `entry`: how long can the group stay together, and who is the limit? */
+  function groupMaxStay(trackers, entry, today) {
+    today = today || todayStr();
+    var people = trackers.map(function (tr) { return { id: tr.id, name: tr.name, max: maxStay(tr, entry, today) }; });
+    var min = people.length ? Math.min.apply(null, people.map(function (p) { return p.max; })) : 0;
+    return { days: min, people: people, limiting: people.filter(function (p) { return p.max === min; }).map(function (p) { return p.id; }) };
+  }
+  /* first arrival date >= from when the whole group can stay `nights` days; null if some rule never allows it */
+  function groupEarliest(trackers, nights, from, today) {
+    today = today || todayStr();
+    nights = Math.floor(nights);
+    if (!trackers.length || !(nights >= 1)) return null;
+    var rules = trackers.map(function (tr) { return cleanRule(tr.rule); });
+    if (rules.some(function (r) { return nights > r.limit; })) return null;
+    var bases = trackers.map(function (tr) { return stayDays(tr.trips, today); });
+    for (var e = dn(from), end = e + 800; e < end; e++) {
+      var all = true;
+      for (var i = 0; i < trackers.length && all; i++) all = fitsRun(bases[i], rules[i], e, nights);
+      if (all) return str(e);
+    }
+    return null;
+  }
+
+  /* days spent inside per calendar month, oldest first, ending with the month of `today` */
+  function monthlyUsage(tr, today, months) {
+    today = today || todayStr();
+    var set = stayDays(tr.trips, today), t = new Date(dn(today) * 86400000), out = [];
+    for (var i = months - 1; i >= 0; i--) {
+      var y = t.getUTCFullYear(), m = t.getUTCMonth() - i;
+      var first = Date.UTC(y, m, 1) / 86400000, next = Date.UTC(y, m + 1, 1) / 86400000, n = 0;
+      for (var d = first; d < next; d++) if (set[d]) n++;
+      out.push({ month: str(first).slice(0, 7), days: n });
+    }
+    return out;
+  }
+
   /* days left on each of the next `n` days if nothing new is added (an ongoing stay is assumed to end today) */
   function forecast(tr, today, n) {
     today = today || todayStr();
@@ -323,7 +366,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
-    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, alerts: alerts, alertsIcs: alertsIcs,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

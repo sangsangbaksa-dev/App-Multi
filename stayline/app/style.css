@@ -60,3 +60,6 @@ dialog{background:var(--card);color:var(--ink);border:1px solid var(--line);bord
 .legs .dates{white-space:normal}.legs li.leg-bad strong{color:var(--bad)}.legs li.leg-ok strong{color:var(--good)}.verdict{font-weight:600;margin:8px 0 0}.v-ok{color:var(--good)}.v-bad{color:var(--bad)}
 .fc{display:flex;align-items:flex-end;gap:1px;height:64px;margin-bottom:8px}.fc i{flex:1;min-width:0;background:var(--amber);border-radius:1px 1px 0 0;opacity:.85}.fc i.neg{background:var(--bad)}.small{font-size:.8rem}
 @media print{.card:has(#w-from),.alerts,.fc{display:none}}
+
+.fc.months i{background:var(--good)}.fc.months{height:56px}
+@media print{.card:has(#g-arrive),.months{display:none}}

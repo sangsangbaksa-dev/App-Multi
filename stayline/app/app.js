@@ -181,6 +181,35 @@
     return h('section', { class: 'card' }, [h('h2', null, T('forecastH')), bars, h('p', { class: 'muted small' }, T('forecastCap'))]);
   }
 
+  function groupCard() {
+    var start = plan.garrive || C.addDays(C.todayStr(), 1), n = plan.gnights || 14, all = state.trackers;
+    var out = h('div', { class: 'plan-out', id: 'g-out', role: 'status' });
+    function calc() {
+      var a = document.getElementById('g-arrive').value, d = +document.getElementById('g-days').value;
+      plan.garrive = a; plan.gnights = d; out.replaceChildren();
+      if (!C.validDate(a) || !(d >= 1)) return;
+      var g = C.groupMaxStay(all, a, C.todayStr()), nm = {}, lim = C.groupEarliest(all, d, a, C.todayStr());
+      all.forEach(function (t) { nm[t.id] = t.name || T('namePh'); });
+      out.appendChild(h('p', null, g.days > 0 ? T('groupMax', { date: fmt(a), n: g.days, end: fmt(C.addDays(a, g.days - 1)) }) : T('groupNone')));
+      out.appendChild(h('ul', { class: 'alerts' }, g.people.map(function (p) { return h('li', null, h('span', null, T('groupWho', { name: nm[p.id], n: p.max }))); })));
+      out.appendChild(h('p', { class: 'muted' }, T('groupLimit', { name: g.limiting.map(function (id) { return nm[id]; }).join(', ') })));
+      out.appendChild(h('p', null, lim ? (lim === a ? T('planNow') : T('groupEarly', { n: d, date: fmt(lim) })) : T('groupNoEarly', { n: d })));
+    }
+    var card = h('section', { class: 'card' }, [h('h2', null, T('groupH')), h('p', { class: 'muted' }, T('groupHint')),
+      h('div', { class: 'grid2' }, [
+        h('label', null, [T('arrive'), h('input', { type: 'date', id: 'g-arrive', value: start, oninput: calc })]),
+        h('label', null, [T('nights'), h('input', { type: 'number', id: 'g-days', min: 1, max: 366, value: n, inputmode: 'numeric', oninput: calc })])]), out]);
+    setTimeout(calc, 0);
+    return card;
+  }
+  function monthCard(tr) {
+    var m = C.monthlyUsage(tr, C.todayStr(), 12);
+    var bars = h('div', { class: 'fc months', role: 'img', 'aria-label': T('monthCap') }, m.map(function (x) {
+      return h('i', { title: T('monthTip', { month: x.month, n: x.days }), style: 'height:' + Math.max(2, Math.round(x.days / 31 * 100)) + '%' });
+    }));
+    return h('section', { class: 'card' }, [h('h2', null, T('monthH')), bars, h('p', { class: 'muted small' }, T('monthCap'))]);
+  }
+
   function tripList(tr) {
     var list = tr.trips.length ? h('ul', { class: 'trips' }, tr.trips.map(function (t) {
       var days = Object.keys(C.stayDays([t], C.todayStr())).length;
@@ -339,7 +368,9 @@
     else {
       kids.push(tabs());
       if (state.trackers.length > 1) kids.push(overview());
-      kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr), forecastCard(tr), tripList(tr));
+      kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr));
+      if (state.trackers.length > 1) kids.push(groupCard());
+      kids.push(forecastCard(tr), monthCard(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }
