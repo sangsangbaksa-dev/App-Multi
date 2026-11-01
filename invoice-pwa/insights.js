@@ -8,7 +8,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fill = (tpl, vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), tpl);
 
-export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) {
+export function initInsights({ download, getInvoices, isPro, openUpgrade, today, store }) {
   const getExpenses = () => store.get("qb.expenses", []).filter(L.validExpense);
   const saveExpenses = (list) => store.set("qb.expenses", list);
   const money = (n, cur) => L.formatMoney(n, cur, I.locale());
@@ -58,6 +58,11 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
       [I.t("insDueSoon"), f.dueSoon],
     ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
   }
+
+  $("#pay-csv").onclick = () => {
+    if (!isPro()) return openUpgrade(I.t("payCsvPro"));
+    download("payments.csv", "text/csv", L.paymentsCSV(getInvoices()));
+  };
 
   function renderUpcoming() {
     const rows = L.upcomingRecurring(getInvoices(), today(), 3);

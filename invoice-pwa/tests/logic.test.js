@@ -237,3 +237,12 @@ test("upcomingRecurring skips runs before today and respects the cap", () => {
   assert.equal(L.upcomingRecurring([w], "2026-11-01", 1)[0].date >= "2026-11-01", true);
   assert.ok(L.upcomingRecurring([{ ...w, nextRun: "2026-11-01" }], "2026-11-01", 24, 3).length <= 3);
 });
+
+test("paymentsCSV lists dated payments, oldest first, and defuses formulas", () => {
+  const a = L.recordPayment({ ...base(), number: "INV-0002", client: "=HYPERLINK(\"x\")" }, "2026-10-09", 25);
+  const b = L.recordPayment(base(), "2026-10-05", 40);
+  const csv = L.paymentsCSV([a, b, { ...base(), type: "quote", payments: [{ date: "2026-01-01", amount: 1 }] }, { ...base(), status: "paid", paid: 100 }]).split("\n");
+  assert.equal(csv.length, 3);
+  assert.match(csv[1], /^"2026-10-05","INV-0001","A","USD","40"/);
+  assert.match(csv[2], /^"2026-10-09","INV-0002","'=HYPERLINK/);
+});

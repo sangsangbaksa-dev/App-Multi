@@ -406,3 +406,15 @@ export function upcomingTotals(rows) {
   for (const r of rows) out[r.currency] = round2((out[r.currency] || 0) + r.amount);
   return out;
 }
+
+// One row per dated payment, for an accountant. Cells that start with = + - @ are prefixed so spreadsheets don't run them.
+export function paymentsCSV(invoices) {
+  const cell = (v) => { const s = String(v ?? ""); return esc(/^[=+\-@\t\r]/.test(s) ? "'" + s : s); };
+  const rows = [];
+  for (const i of invoices) {
+    if (isQuote(i)) continue;
+    for (const p of i.payments || []) rows.push([p.date, i.number, i.client, i.currency, p.amount, i.dueDate, totalOf(i), balanceOf(i)]);
+  }
+  rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || String(a[1]).localeCompare(String(b[1])));
+  return [["paymentDate", "invoice", "client", "currency", "amount", "dueDate", "invoiceTotal", "invoiceBalance"].join(","), ...rows.map((r) => r.map(cell).join(","))].join("\n");
+}
