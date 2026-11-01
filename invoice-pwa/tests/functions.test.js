@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { handle } from "../functions/api/license.js";
+import { _clearCache } from "../api/license.js";
 
+test.beforeEach(_clearCache);
 const env = { GUMROAD_PRODUCT_ID: "prod-1" };
 const ls = (reply) => async () => ({ status: 200, json: async () => reply });
 const post = (body) => new Request("https://example.test/api/license", { method: "POST", body: JSON.stringify(body) });
@@ -16,6 +18,7 @@ test("Pages Function: GET reports whether the license check is configured", asyn
 test("Pages Function: activate accepts a paid key and refuses a refunded one", async () => {
   const ok = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ success: true, purchase: { refunded: false, chargebacked: false } }));
   assert.deepEqual(await ok.json(), { configured: true, valid: true, instance: "" });
+  _clearCache(); // a verdict is cached for 5 minutes; a refund shows after that
   const refunded = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ success: true, purchase: { refunded: true } }));
   assert.equal((await refunded.json()).reason, "revoked");
 });
