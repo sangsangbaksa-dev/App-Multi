@@ -109,7 +109,10 @@
       reportLine: 'Lessons {n} (no-show {a}, excused {b}) · {left} of {total} left',
       reportNone: 'No lessons this month.',
       reportExp: 'Valid until {date}',
-      reportCopied: 'Report copied. Send it to the student.'
+      reportCopied: 'Report copied. Send it to the student.',
+      skip: 'Skip',
+      unskip: 'Restore',
+      skipped: 'Skipped'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -219,7 +222,10 @@
       reportLine: '수업 {n}회 (노쇼 {a}, 사전 취소 {b}) · 남은 횟수 {left}/{total}',
       reportNone: '이번 달 수업이 없습니다.',
       reportExp: '유효기간 {date}까지',
-      reportCopied: '리포트를 복사했습니다. 수강생에게 보내세요.'
+      reportCopied: '리포트를 복사했습니다. 수강생에게 보내세요.',
+      skip: '건너뛰기',
+      unskip: '되돌리기',
+      skipped: '건너뜀'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -329,7 +335,10 @@
       reportLine: 'レッスン{n}回(無断欠席{a}、事前キャンセル{b}) · 残り{left}/{total}',
       reportNone: '今月のレッスンはありません。',
       reportExp: '{date}まで有効',
-      reportCopied: 'レポートをコピーしました。生徒に送ってください。'
+      reportCopied: 'レポートをコピーしました。生徒に送ってください。',
+      skip: 'スキップ',
+      unskip: '元に戻す',
+      skipped: 'スキップ済み'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -439,7 +448,10 @@
       reportLine: '上课 {n} 节(缺席 {a},提前请假 {b}) · 剩余 {left}/{total}',
       reportNone: '本月没有课。',
       reportExp: '有效期至 {date}',
-      reportCopied: '报告已复制,发给学员吧。'
+      reportCopied: '报告已复制,发给学员吧。',
+      skip: '跳过',
+      unskip: '恢复',
+      skipped: '已跳过'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -549,7 +561,10 @@
       reportLine: 'Clases {n} (ausencias {a}, canceladas {b}) · quedan {left} de {total}',
       reportNone: 'Sin clases este mes.',
       reportExp: 'Válido hasta el {date}',
-      reportCopied: 'Informe copiado. Envíaselo al alumno.'
+      reportCopied: 'Informe copiado. Envíaselo al alumno.',
+      skip: 'Omitir',
+      unskip: 'Restaurar',
+      skipped: 'Omitida'
     }
   };
   function pick(pref) {

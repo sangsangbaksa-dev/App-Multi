@@ -37,6 +37,9 @@ const srv = http.createServer((q, r) => {
   if (!(await pg.locator('.day.plan').count())) await pg.click('.calhead button >> nth=1'); // planned days may fall in next month
   await pg.waitForSelector('.day.plan');
   await pg.locator('.day.plan').first().click(); assert.ok((await pg.locator('.calday').textContent()).includes('Planned'));
+  // skip a planned day and restore it
+  await pg.locator('.calday .evs button', { hasText: 'Skip' }).click(); await pg.waitForSelector('.calday .tag:text("Skipped")');
+  await pg.locator('.calday .evs button', { hasText: 'Restore' }).click(); await pg.waitForSelector('.calday .tag:text("Planned")');
   // ics download
   await pg.click('.tabs button >> nth=0'); await pg.waitForSelector('.card');
   const [dl] = await Promise.all([pg.waitForEvent('download'), pg.locator('.settings button', { hasText: '.ics' }).click()]);

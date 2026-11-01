@@ -102,6 +102,7 @@
     if (plan.length) root.appendChild(h('div', { class: 'card todaybox' }, [h('h3', {}, T('todayH')), h('ul', { class: 'evs' }, plan.map(function (e) {
       var p = state.packs.filter(function (x) { return x.id === e.packId; })[0];
       return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'ln' }, T('left', { n: C.remaining(p) })),
+        h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(p, today); save(); render(); } }, T('skip')),
         h('button', { class: 'stampbtn sm', onclick: function () { stamp(p, today); } }, T('stampToday'))]); }))]));
     var att = C.attention(state.packs, today);
     root.appendChild(h('div', { class: 'row', style: 'margin-bottom:16px' }, [h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack')),
@@ -139,7 +140,7 @@
       h('b', { 'aria-live': 'polite' }, fmt({ year: 'numeric', month: 'long' }, calYm + '-01')),
       h('button', { class: 'ghost', 'aria-label': T('calNext'), onclick: function () { calYm = C.ymAdd(calYm, 1); calDay = ''; render(); } }, '›'),
       h('button', { class: 'ghost', onclick: function () { calYm = today.slice(0, 7); calDay = today; render(); } }, T('calThisMonth'))]);
-    C.agenda(state.packs, today, 190).forEach(function (e) { if (e.date.slice(0, 7) === calYm) (plan[e.date] = plan[e.date] || []).push(e); });
+    state.packs.reduce(function (acc, p) { return acc.concat(C.plannedWithSkips(p, today, 190)); }, []).forEach(function (e) { if (e.date.slice(0, 7) === calYm) (plan[e.date] = plan[e.date] || []).push(e); });
     var grid = h('div', { class: 'calgrid', role: 'grid' });
     for (var i = 0; i < 7; i++) grid.appendChild(h('div', { class: 'dow', role: 'columnheader' }, fmt({ weekday: 'short' }, C.addDays('2026-11-01', (i + ws) % 7))));
     C.monthGrid(calYm, ws).forEach(function (d) {
@@ -157,7 +158,8 @@
     if (calDay && calDay.slice(0, 7) === calYm) {
       var list = map[calDay] || [];
       box.appendChild(h('div', { class: 'card calday' }, [h('h3', {}, T('calDay', { date: fmt({ dateStyle: 'full' }, calDay) })),
-        (plan[calDay] || []).length ? h('ul', { class: 'evs' }, plan[calDay].map(function (e) { return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'tag t-excused' }, T('planned'))]); })) : null,
+        (plan[calDay] || []).length ? h('ul', { class: 'evs' }, plan[calDay].map(function (e) { var pk = state.packs.filter(function (x) { return x.id === e.packId; })[0]; return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'tag t-excused' }, T(e.skipped ? 'skipped' : 'planned')),
+          h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(pk, e.date); save(); render(); } }, T(e.skipped ? 'unskip' : 'skip'))]); })) : null,
         list.length ? h('ul', { class: 'evs' }, list.map(function (e) {
           return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, h('span', { class: 'ln' }, e.note)]); }))
           : ((plan[calDay] || []).length ? null : h('p', { class: 'note' }, T('calNone')))]));

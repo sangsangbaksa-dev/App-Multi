@@ -180,7 +180,9 @@
     (days || []).forEach(function (x) { x = +x; if (x >= 0 && x <= 6 && x % 1 === 0 && d.indexOf(x) === -1) d.push(x); });
     d.sort(function (a, b) { return a - b; });
     if (!d.length) { delete p.schedule; return null; }
+    var skip = p.schedule && p.schedule.skip ? p.schedule.skip : [];
     p.schedule = { days: d, time: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(time || '')) ? time : '' };
+    if (skip.length) p.schedule.skip = skip;
     return p.schedule;
   }
   /* planned lessons for one pack from `from` for `n` days: only while lessons remain, inside the validity window, skipping dates already stamped */
@@ -192,7 +194,7 @@
       var d = addDays(from, i);
       if (p.start && d < p.start) continue;
       if (p.expires && d > p.expires) break;
-      if (taken[d] || p.schedule.days.indexOf(parse(d).getDay()) === -1) continue;
+      if (taken[d] || p.schedule.days.indexOf(parse(d).getDay()) === -1 || (p.schedule.skip && p.schedule.skip.indexOf(d) !== -1)) continue;
       out.push({ date: d, time: p.schedule.time || '', packId: p.id, student: p.student });
     }
     return out;
@@ -225,6 +227,23 @@
     var n = 0; packs.forEach(function (p) { n += p.stamps.length; });
     if (n < 5) return false;
     return !lastBackup || nowMs - lastBackup >= 14 * DAY;
+  }
+
+  /* skip one planned date (holiday, teacher away) without touching the weekly pattern; skipping again restores it */
+  function toggleSkip(p, date) {
+    if (!p.schedule) return false;
+    var sk = p.schedule.skip || [], i = sk.indexOf(date);
+    if (i === -1) sk.push(date); else sk.splice(i, 1);
+    sk.sort();
+    if (sk.length) p.schedule.skip = sk; else delete p.schedule.skip;
+    return i === -1;
+  }
+  /* planned lessons including skipped ones, flagged, for showing in the calendar so a skip can be undone */
+  function plannedWithSkips(p, from, n) {
+    if (!p.schedule || !(p.schedule.skip || []).length) return upcoming(p, from, n);
+    var sk = p.schedule.skip, save = p.schedule; p.schedule = { days: save.days, time: save.time };
+    var all = upcoming(p, from, n); p.schedule = save;
+    return all.map(function (e) { e.skipped = sk.indexOf(e.date) !== -1; return e; });
   }
 
   /* ---- payments, note search, forecast ---- */
@@ -342,7 +361,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
-    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, presets: presets, report: report,
+    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, presets: presets, report: report,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;

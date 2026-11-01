@@ -239,3 +239,17 @@ test('report summarises one month of a pack', () => {
   assert.deepEqual([r.lessons, r.noshow, r.excused, r.left, r.total, r.status], [2, 1, 1, 2, 5, 'active']);
   assert.equal(r.rows[0].note, 'scales'); assert.deepEqual(C.report(p, '2026-08', '2026-11-01').rows, []);
 });
+
+/* ---- skipped dates ---- */
+test('toggleSkip hides one planned date and restores it', () => {
+  const p = sched(); assert.equal(C.toggleSkip(p, '2026-11-02'), true);
+  assert.deepEqual(C.upcoming(p, '2026-11-01', 14).map(e => e.date), ['2026-11-04', '2026-11-09', '2026-11-11'], 'next lesson fills the freed slot');
+  assert.deepEqual(C.plannedWithSkips(p, '2026-11-01', 14).map(e => e.date + (e.skipped ? '!' : '')), ['2026-11-02!', '2026-11-04', '2026-11-09']);
+  assert.equal(C.toggleSkip(p, '2026-11-02'), false); assert.equal(p.schedule.skip, undefined);
+  assert.equal(C.toggleSkip(mk(), '2026-11-02'), false, 'no schedule, nothing to skip');
+});
+test('editing the weekly pattern keeps skipped dates', () => {
+  const p = sched(); C.toggleSkip(p, '2026-11-09'); C.setSchedule(p, [1], '10:00');
+  assert.deepEqual(p.schedule, { days: [1], time: '10:00', skip: ['2026-11-09'] });
+  assert.deepEqual(C.upcoming(p, '2026-11-01', 20).map(e => e.date), ['2026-11-02', '2026-11-16']);
+});
