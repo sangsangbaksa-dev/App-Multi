@@ -34,14 +34,15 @@ const BASE = "http://localhost:8124";
     await tryKey("REVOKED-key-001");
     await p.waitForFunction(() => /refunded|disabled/.test(document.querySelector("#lic-msg").textContent));
     await p.click("#dlg button[value=cancel]");
+    // Gumroad answers "does not exist" for another product's key, so it reads as an invalid key here
     await tryKey("OTHER-product-01");
-    await p.waitForFunction(() => /not for QuickBill/.test(document.querySelector("#lic-msg").textContent));
+    await p.waitForFunction(() => /Invalid/.test(document.querySelector("#lic-msg").textContent));
     await p.click("#dlg button[value=cancel]");
 
     await tryKey("good-key-0001");
     await p.waitForFunction(() => document.querySelector("#plan").textContent === "Pro");
     const rec = await p.evaluate(() => JSON.parse(localStorage.getItem("qb.licsrv")));
-    assert.equal(rec.key, "good-key-0001"); assert.ok(rec.instance);
+    assert.equal(rec.key, "good-key-0001"); assert.equal(rec.instance, ""); // Gumroad has no activation step
 
     // survives a reload without asking again
     await p.reload();

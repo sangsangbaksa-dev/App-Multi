@@ -377,7 +377,7 @@ $("#logo-file").onchange = async (e) => {
 };
 $("#btn-logo-rm").onclick = () => { logo = ""; store.del("qb.logo"); renderPreview(); };
 
-const licFail = { network: "licNetwork", revoked: "licRevoked", product: "licProduct", limit: "licLimit", unknown: "badKey" };
+const licFail = { network: "licNetwork", revoked: "licRevoked", unknown: "badKey" };
 $("#dlg").addEventListener("close", async () => {
   if ($("#dlg").returnValue !== "ok") return;
   const k = $("#lic").value.trim();
