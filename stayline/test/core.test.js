@@ -272,3 +272,26 @@ test('monthlyUsage: days per month, across a year boundary', () => {
   const m = C.monthlyUsage(tr([['2025-12-30', '2026-01-02']]), '2026-02-10', 3);
   assert.deepEqual(m, [{ month: '2025-12', days: 2 }, { month: '2026-01', days: 2 }, { month: '2026-02', days: 0 }]);
 });
+
+test('arrivalWindows: ranges of arrival dates that fit', () => {
+  const t = tr([['2026-01-01', '2026-03-31']]); // 90 used; room opens day by day from Jun 30
+  const w = C.arrivalWindows(t, 5, '2026-06-01', '2026-06-01', 120);
+  assert.equal(w.length, 1); assert.ok(w[0].from > '2026-06-01');
+  assert.equal(C.maxStay(t, w[0].from, '2026-06-01') >= 5, true);
+  assert.equal(C.maxStay(t, C.addDays(w[0].from, -1), '2026-06-01') >= 5, false);
+  assert.deepEqual(C.arrivalWindows(tr([]), 30, '2026-06-01', '2026-06-01', 10), [{ from: '2026-06-01', to: '2026-06-11' }]);
+  assert.deepEqual(C.arrivalWindows(tr([]), 91, '2026-06-01'), []);
+});
+test('arrivalWindows: a blocked stretch splits the windows', () => {
+  const t = tr([['2026-07-01', '2026-07-20']]); // 20 days
+  const w = C.arrivalWindows(t, 80, '2026-06-01', '2026-06-01', 60);
+  assert.ok(w.length >= 1); assert.ok(w.every(x => x.from <= x.to));
+});
+test('parseTrips: lines with 1 or 2 dates, place text, bad lines reported', () => {
+  const r = C.parseTrips('2026-03-01 to 2026-03-10 Paris\n2026/4/5 - 2026.4.9, Rome, Italy\n\n2026-05-02\nnothing here\n2026-06-10 2026-06-01\n');
+  assert.equal(r.trips.length, 3); assert.deepEqual(r.bad, [5, 6]);
+  assert.deepEqual(r.trips[0], { place: 'Paris', from: '2026-03-01', to: '2026-03-10' });
+  assert.deepEqual(r.trips[1], { place: 'Rome Italy', from: '2026-04-05', to: '2026-04-09' });
+  assert.deepEqual(r.trips[2], { place: '', from: '2026-05-02', to: '2026-05-02' });
+  assert.deepEqual(C.parseTrips('').trips, []);
+});

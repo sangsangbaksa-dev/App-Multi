@@ -191,6 +191,36 @@
     return null;
   }
 
+  /* contiguous ranges of arrival dates (within `horizon` days after `from`) from which a stay of `nights` days fits */
+  function arrivalWindows(tr, nights, from, today, horizon) {
+    var rule = cleanRule(tr.rule), out = [];
+    nights = Math.floor(nights);
+    if (!(nights >= 1) || nights > rule.limit) return out;
+    var base = stayDays(tr.trips, today || todayStr()), f = dn(from), cur = null;
+    for (var e = f; e <= f + (horizon || 365); e++) {
+      if (fitsRun(base, rule, e, nights)) { if (cur) cur.to = str(e); else { cur = { from: str(e), to: str(e) }; out.push(cur); } }
+      else cur = null;
+    }
+    return out;
+  }
+
+  /* pasted text -> trips. One trip per line: two dates (YYYY-MM-DD, YYYY/M/D or YYYY.M.D) plus an optional place;
+     one date = a single day. Lines that do not parse are returned in `bad` (1-based line numbers). */
+  function parseTrips(text) {
+    var trips = [], bad = [], DATE = /(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/g;
+    String(text || '').split(/\r?\n/).slice(0, 500).forEach(function (line, i) {
+      if (!line.trim()) return;
+      var ds = [], m, rest = line;
+      DATE.lastIndex = 0;
+      while ((m = DATE.exec(line))) ds.push(m[1] + '-' + (m[2].length < 2 ? '0' : '') + m[2] + '-' + (m[3].length < 2 ? '0' : '') + m[3]);
+      rest = line.replace(DATE, ' ').replace(/[,;→>\t]|\bto\b|(^|\s)[-~–—](\s|$)/gi, ' ').replace(/\s+/g, ' ').trim();
+      var t = ds.length === 1 ? { from: ds[0], to: ds[0] } : ds.length === 2 ? { from: ds[0], to: ds[1] } : null;
+      if (!t || !validTrip(t)) { bad.push(i + 1); return; }
+      trips.push({ place: rest.slice(0, 60), from: t.from, to: t.to });
+    });
+    return { trips: trips, bad: bad };
+  }
+
   /* days spent inside per calendar month, oldest first, ending with the month of `today` */
   function monthlyUsage(tr, today, months) {
     today = today || todayStr();
@@ -366,7 +396,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
-    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, alerts: alerts, alertsIcs: alertsIcs,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

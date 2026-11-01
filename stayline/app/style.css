@@ -63,3 +63,7 @@ dialog{background:var(--card);color:var(--ink);border:1px solid var(--line);bord
 
 .fc.months i{background:var(--good)}.fc.months{height:56px}
 @media print{.card:has(#g-arrive),.months{display:none}}
+
+textarea{font:inherit;color:var(--ink);background:#101315;border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;resize:vertical}
+.wins{margin-top:8px}
+@media print{.wins{display:none}}

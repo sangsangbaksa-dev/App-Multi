@@ -2,7 +2,7 @@
   'use strict';
   var C = window.SL, I = window.I18N, CFG = window.SL_CONFIG;
   var KEY = 'stayline.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, upsell = false;
+  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, upsell = false, pasting = false;
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.trackers)) { s.trackers = C.sanitize(s.trackers); return s; } } catch (e) {}
@@ -108,7 +108,7 @@
 
   function planner(tr) {
     var start = plan.arrive || C.addDays(C.todayStr(), 1), n = plan.nights || 14, rule = C.cleanRule(tr.rule);
-    var out = h('p', { class: 'plan-out', id: 'plan-out', role: 'status' });
+    var out = h('p', { class: 'plan-out', id: 'plan-out', role: 'status' }), win = h('div', { class: 'wins' });
     function calc() {
       var a = document.getElementById('p-arrive').value, d = +document.getElementById('p-days').value;
       plan = { arrive: a, nights: d };
@@ -123,13 +123,19 @@
         if (tr.expires && max > 0 && C.addDays(a, d - 1) > tr.expires) msg += ' ' + T('planPast', { date: fmt(tr.expires) });
       }
       out.textContent = msg;
+      var wins = d <= rule.limit ? C.arrivalWindows(tr, d, C.todayStr() > a ? C.todayStr() : a, C.todayStr(), 365) : [];
+      win.replaceChildren();
+      if (d <= rule.limit) {
+        win.appendChild(h('div', null, wins.length ? T('winH', { n: d }) : T('winNone', { n: d })));
+        wins.slice(0, 4).forEach(function (w) { win.appendChild(h('div', { class: 'dates' }, T('winRange', { a: fmt(w.from), b: fmt(w.to) }))); });
+      }
     }
     var wrap = h('section', { class: 'card' }, [
       h('h2', null, T('planH')),
       h('div', { class: 'grid2' }, [
         h('label', null, [T('arrive'), h('input', { type: 'date', id: 'p-arrive', value: start, oninput: calc })]),
         h('label', null, [T('nights'), h('input', { type: 'number', id: 'p-days', min: 1, max: 366, value: n, inputmode: 'numeric', oninput: calc })])
-      ]), out]);
+      ]), out, win]);
     setTimeout(calc, 0);
     return wrap;
   }
@@ -227,7 +233,7 @@
       ]);
     })) : h('p', { class: 'muted' }, T('noTrips'));
     return h('section', { class: 'card' }, [
-      h('div', { class: 'rowhead' }, [h('h2', null, T('trips')), h('button', { class: 'pri small', onclick: function () { adding = true; render(); } }, '+ ' + T('addTrip'))]),
+      h('div', { class: 'rowhead' }, [h('h2', null, T('trips')), h('span', { class: 'rowbtns' }, [h('button', { class: 'ghost small', onclick: function () { pasting = true; render(); } }, T('pasteBtn')), h('button', { class: 'pri small', onclick: function () { adding = true; render(); } }, '+ ' + T('addTrip'))])]),
       list]);
   }
 
@@ -255,6 +261,21 @@
     return dlg;
   }
 
+  function pasteDialog(tr) {
+    var dlg = h('dialog', { 'aria-labelledby': 'dlg-h' }), info = h('p', { class: 'muted', role: 'status' }), parsed = { trips: [], bad: [] };
+    var ta = h('textarea', { id: 'f-paste', rows: 6, spellcheck: 'false', oninput: function () {
+      parsed = C.parseTrips(ta.value);
+      info.textContent = ta.value.trim() ? T('pasteFound', { n: parsed.trips.length }) + (parsed.bad.length ? ' ' + T('pasteBad', { lines: parsed.bad.slice(0, 8).join(', ') }) : '') : '';
+      go.disabled = !parsed.trips.length;
+    } });
+    var go = h('button', { type: 'button', class: 'pri', disabled: '', onclick: function () {
+      var n = 0; parsed.trips.forEach(function (t) { if (C.addTrip(tr, t)) n++; });
+      pasting = false; save(); render(); toast(T('pasteDone', { n: n }));
+    } }, T('pasteAdd'));
+    dlg.appendChild(h('div', null, [h('h2', { id: 'dlg-h' }, T('pasteH')), h('p', { class: 'muted' }, T('pasteHint')), ta, info,
+      h('div', { class: 'row' }, [h('button', { type: 'button', class: 'ghost', onclick: function () { pasting = false; render(); } }, T('cancel')), go])]));
+    return dlg;
+  }
   function trackerDialog() {
     var dlg = h('dialog', { 'aria-labelledby': 'dlg-h' });
     var sel = h('select', { id: 'f-rule', onchange: sync }, [['schengen', 'r_schengen'], ['tax183', 'r_tax183'], ['custom', 'r_custom'], ['customYear', 'r_customYear']]
@@ -377,11 +398,12 @@
     kids.push(footer(tr));
     root.replaceChildren.apply(root, kids);
     if ((adding || editing) && tr) { var d = tripDialog(tr); root.appendChild(d); d.showModal(); }
+    if (pasting && tr) { var d5 = pasteDialog(tr); root.appendChild(d5); d5.showModal(); }
     if (editCounter && tr) { var d3 = counterDialog(tr); root.appendChild(d3); d3.showModal(); }
     if (upsell) { var d4 = upsellDialog(); root.appendChild(d4); d4.showModal(); }
     if (creating) { var d2 = trackerDialog(); root.appendChild(d2); d2.showModal(); }
   }
-  document.addEventListener('cancel', function () { adding = creating = editCounter = upsell = false; editing = ''; setTimeout(render, 0); }, true);
+  document.addEventListener('cancel', function () { adding = creating = editCounter = upsell = pasting = false; editing = ''; setTimeout(render, 0); }, true);
   render();
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
