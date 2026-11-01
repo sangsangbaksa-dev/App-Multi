@@ -7,6 +7,7 @@ import { ensureSchema } from "./storage.js";
 import { createAuth, localBackend } from "./auth.js";
 import { initAccount } from "./account.js";
 import { safeLink, shareUrl } from "./share.js";
+import * as FX from "./fx.js";
 
 // The account layer is wired here only; swap localBackend for a Supabase backend without changing account.js.
 const auth = createAuth(localBackend(localStorage));
@@ -68,11 +69,45 @@ function renderDash() {
     <p>${I.t("dashOutstanding")}: <b>${money(x.outstanding, x.currency)}</b></p>
     <p class="${x.overdue ? "late" : ""}">${I.t("dashOverdue")}: ${money(x.overdue, x.currency)}</p>
     <p>${I.t("dashCollected")}: ${money(x.collected, x.currency)}</p></div>`).join("");
+  renderFx(sums);
   const rows = L.byClient(invoices);
   $("#clientsum").innerHTML = !rows.length ? "" : isPro()
     ? `<details open><summary>${I.t("byClient")}</summary><table class="mini">${rows.map((r) =>
         `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td></tr>`).join("")}</table></details>`
     : `<p class="muted">${I.t("byClientPro")}</p>`;
+}
+
+// Combined total across currencies, using rates typed in here. The inputs are only rebuilt when the set of
+// currencies or the base changes, so typing a rate never loses focus.
+let fx = FX.cleanRates(store.get("qb.fx", null));
+function renderFx(sums) {
+  const box = $("#fx");
+  if (sums.length < 2 || !isPro()) { box.innerHTML = ""; box.dataset.sig = ""; return; }
+  const curs = [...new Set(sums.map((s) => s.currency).concat(fx.base))].sort();
+  const sig = curs.join() + "|" + fx.base + "|" + I.getLang();
+  if (box.dataset.sig !== sig) {
+    box.dataset.sig = sig;
+    box.innerHTML = `<details open><summary>${I.t("fxHead")}</summary>
+      <p class="muted">${I.t("fxNote")}</p>
+      <label class="inline"><span>${I.t("fxBase")}</span><select id="fx-base">${curs.map((c) => `<option${c === fx.base ? " selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
+      <div class="fxrates">${curs.filter((c) => c !== fx.base).map((c) => `<label class="inline"><span>${esc(I.t("fxRate", { cur: c }))}</span>
+        <input data-fx="${esc(c)}" inputmode="decimal" value="${esc(fx.rates[c] ?? "")}" aria-label="${esc(I.t("fxRate", { cur: c }))} ${esc(fx.base)}"> ${esc(fx.base)}</label>`).join("")}</div>
+      <div id="fx-out" class="pc" aria-live="polite"></div></details>`;
+    $("#fx-base").onchange = (e) => { fx = FX.cleanRates({ base: e.target.value, rates: fx.rates }); store.set("qb.fx", fx); renderFx(L.summarize(invoices, today())); };
+    box.querySelectorAll("[data-fx]").forEach((el) => (el.oninput = () => {
+      const r = { ...fx.rates };
+      const v = FX.parseRate(el.value);
+      if (v) r[el.dataset.fx] = v; else delete r[el.dataset.fx];
+      fx = FX.cleanRates({ base: fx.base, rates: r });
+      store.set("qb.fx", fx);
+      renderFx(L.summarize(invoices, today()));
+    }));
+  }
+  const c = FX.combine(sums, fx);
+  $("#fx-out").innerHTML = `<p>${I.t("dashOutstanding")}: <b>${money(c.outstanding, c.currency)}</b></p>
+    <p class="${c.overdue ? "late" : ""}">${I.t("dashOverdue")}: ${money(c.overdue, c.currency)}</p>
+    <p>${I.t("dashCollected")}: ${money(c.collected, c.currency)}</p>
+    ${c.missing.length ? `<p class="muted">${esc(I.t("fxMissing", { list: c.missing.join(", ") }))}</p>` : ""}`;
 }
 
 function renderAgeing() {

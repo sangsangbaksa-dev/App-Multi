@@ -188,3 +188,7 @@ dialog form input{flex:1 1 100%}
 .vw-main .row{margin:.8rem 0}
 .vw-foot{margin-top:1.5rem;font-size:.85rem}
 @media print{.vw .bar,.vw-foot{display:none}.vw .sheet-paper{border:0;box-shadow:none;margin:0;padding:0}}
+
+.fxrates{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;margin:.5rem 0}
+.fxrates input,#fx-base{width:7rem}
+#fx{margin-bottom:1rem}
