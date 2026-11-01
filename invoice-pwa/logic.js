@@ -379,3 +379,30 @@ export function receivedByMonth(invoices, today, months = 6, currency = "USD") {
   }
   return keys.map((month) => ({ month, received: sums[month] }));
 }
+
+// ---- upcoming recurring invoices ----
+// Projects each recurring invoice forward from its nextRun, so the owner can see what will be billed.
+// Capped per invoice; the amount is the template's current total.
+export function upcomingRecurring(invoices, today, months = 3, cap = 24) {
+  const end = addMonthsIso(today, months);
+  const rows = [];
+  for (const inv of invoices) {
+    if (isQuote(inv) || !inv.recur || !inv.nextRun) continue;
+    let run = inv.nextRun, n = 0;
+    while (run <= end && n++ < cap) {
+      if (run >= today) rows.push({ date: run, client: inv.client, number: inv.number, currency: inv.currency, amount: totalOf(inv), freq: inv.recur });
+      run = addPeriod(run, inv.recur);
+    }
+  }
+  return rows.sort((a, b) => a.date.localeCompare(b.date) || a.client.localeCompare(b.client));
+}
+function addMonthsIso(date, n) {
+  let d = date;
+  for (let k = 0; k < n; k++) d = addPeriod(d, "monthly");
+  return d;
+}
+export function upcomingTotals(rows) {
+  const out = {};
+  for (const r of rows) out[r.currency] = round2((out[r.currency] || 0) + r.amount);
+  return out;
+}

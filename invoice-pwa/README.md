@@ -20,6 +20,7 @@ billing, CSV export, client ledger and overdue ageing.
 - Dated payments: record each payment with its date in the invoice editor (`recordPayment` in `logic.js`; `paid` stays the number the rest of the app reads). Insights then shows average days to be paid, share paid on time, cash received this month and the slowest-paying clients.
 - Client memory (Pro): saving an invoice remembers that client's email, currency, tax, payment terms (days), payment info and pay link (`clients.js`). Picking the client on a new invoice fills them in. "Email client" opens your mail app with a ready message (invoice, quote or overdue reminder, plus the client link). Profiles are part of the JSON backup.
 - Saved items (Pro): descriptions you bill are remembered with their last price (`catalog.js`, most used first, capped at 200). Typing a known description in a new line offers it and fills the price if it is still 0. Part of the JSON backup.
+- Upcoming recurring invoices: Insights lists the next 3 months of scheduled repeat invoices with an expected total per currency (`upcomingRecurring` in `logic.js`).
 - English, Korean, Japanese, Chinese, Spanish with local currency/date formats.
 
 ## Selling it

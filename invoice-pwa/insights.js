@@ -59,6 +59,15 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
     ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
   }
 
+  function renderUpcoming() {
+    const rows = L.upcomingRecurring(getInvoices(), today(), 3);
+    $("#up-empty").hidden = rows.length > 0;
+    $("#up-table").hidden = !rows.length;
+    $("#up-table").innerHTML = rows.slice(0, 30).map((r) => `<tr><td>${esc(I.formatDate(r.date))}</td><td>${esc(r.client)}</td><td>${esc(I.t(r.freq === "weekly" ? "upWeekly" : "upMonthly"))}</td><td class="r">${esc(money(r.amount, r.currency))}</td></tr>`).join("");
+    const totals = Object.entries(L.upcomingTotals(rows)).map(([c, v]) => money(v, c)).join(" · ");
+    $("#up-total").textContent = rows.length ? I.t("upTotal", { list: totals }) : "";
+  }
+
   // Needs dated payments (recorded in the invoice editor); older invoices without a log are left out.
   function renderPaySpeed() {
     const invoices = getInvoices();
@@ -176,6 +185,7 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
     render() {
       renderInsights();
       renderPaySpeed();
+      renderUpcoming();
       renderExpenses();
       renderReminders();
       calcRate();

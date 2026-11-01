@@ -221,3 +221,19 @@ test("recurring and quote conversion start with an empty payment log", () => {
   assert.deepEqual(r.invoices[0].payments, []);
   assert.deepEqual(L.settle({ ...base(), type: "quote", payments: [{ date: "2026-10-02", amount: 5 }] }).payments, []);
 });
+
+test("upcomingRecurring projects runs inside the window, sorted", () => {
+  const w = { ...base(), id: "w", client: "Weekly Co", recur: "weekly", nextRun: "2026-11-03" };
+  const m = { ...base(), id: "m", client: "Monthly Co", currency: "EUR", recur: "monthly", nextRun: "2026-11-30" };
+  const none = { ...base(), id: "n" };
+  const rows = L.upcomingRecurring([w, m, none, { ...w, id: "q", type: "quote" }], "2026-11-01", 1);
+  assert.deepEqual(rows.filter((r) => r.client === "Weekly Co").map((r) => r.date), ["2026-11-03", "2026-11-10", "2026-11-17", "2026-11-24", "2026-12-01"]);
+  assert.deepEqual(rows.filter((r) => r.client === "Monthly Co").map((r) => r.date), ["2026-11-30"]);
+  assert.deepEqual(rows.map((r) => r.date), [...rows.map((r) => r.date)].sort());
+  assert.deepEqual(L.upcomingTotals(rows), { USD: 500, EUR: 100 });
+});
+test("upcomingRecurring skips runs before today and respects the cap", () => {
+  const w = { ...base(), recur: "weekly", nextRun: "2026-10-01" };
+  assert.equal(L.upcomingRecurring([w], "2026-11-01", 1)[0].date >= "2026-11-01", true);
+  assert.ok(L.upcomingRecurring([{ ...w, nextRun: "2026-11-01" }], "2026-11-01", 24, 3).length <= 3);
+});
