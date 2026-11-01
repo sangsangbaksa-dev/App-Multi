@@ -4,10 +4,21 @@ import { AuthError } from "./auth.js";
 
 const $ = (s) => document.querySelector(s);
 
-export function initAccount({ auth }) {
+export function initAccount({ auth, cloud = null, cloudPanel = null }) {
   let mode = "in"; // "in" = sign in, "up" = sign up
   const dlg = $("#acct");
   const msg = $("#acct-msg");
+
+  // With cloud sync configured, the cloud panel replaces the device-only account form.
+  if (cloudPanel) {
+    $("#acct-form").hidden = true; $("#acct-out").hidden = true; $("#acct-note").hidden = true; $("#acct-title").hidden = true;
+    $("#acct").insertBefore(cloudPanel.el, $("#acct-close").parentElement);
+    $("#btn-account").onclick = () => { cloudPanel.render(); dlg.showModal(); };
+    $("#acct-close").onclick = () => dlg.close();
+    const paintCloud = () => { $("#btn-account").textContent = cloud.user()?.email ?? I.t("acctBtn"); };
+    cloud.onChange(paintCloud);
+    return { paint: paintCloud };
+  }
 
   function paint() {
     const u = auth.user;

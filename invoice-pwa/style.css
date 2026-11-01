@@ -177,3 +177,4 @@ dialog form input{flex:1 1 100%}
 .tip.locked button{margin-top:.3rem}
 /* phone width: five workspace tabs wrap onto their own row and scroll sideways instead of pushing the page wider */
 @media (max-width:600px){.tabs{order:3;flex:1 1 100%;width:100%;overflow-x:auto;margin-right:0}.tabs button{flex:0 0 auto}}
+.cloud-panel h3{margin:0 0 6px;font-size:1rem}.cloud-form{display:grid;gap:8px}.cloud-form input{width:100%}.cloud-msg{min-height:1.2em;margin:8px 0 0}

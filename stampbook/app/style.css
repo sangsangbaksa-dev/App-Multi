@@ -62,3 +62,4 @@ button.sm{min-height:32px;padding:0 10px;font-size:12px}
 .btnlink{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:8px;background:var(--ink);color:var(--paper);font-weight:700;text-decoration:none}
 input[type=search]{-webkit-appearance:none}
 .slot:focus-visible{outline-offset:3px}
+.cloud-panel h3{margin:0 0 6px;font-size:1rem}.cloud-form{display:grid;gap:8px}.cloud-form input{width:100%}.cloud-msg{min-height:1.2em;margin:8px 0 0}.cloud-panel .muted{color:var(--mute,#666)}

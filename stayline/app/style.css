@@ -54,3 +54,4 @@ dialog{background:var(--card);color:var(--ink);border:1px solid var(--line);bord
 .ov ul{list-style:none;margin:0;padding:0}.ovrow{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;text-align:left;border:0;border-top:1px solid var(--line);border-radius:0;padding:10px 4px}
 .ov li:first-child .ovrow{border-top:0}.ovrow.on strong{color:var(--amber)}.ovrow .chip.st-ok{color:var(--good);border-color:var(--good)}.ovrow .chip.st-tight{color:var(--warn);border-color:var(--warn)}.ovrow .chip.st-over{color:var(--bad);border-color:var(--bad)}
 .fine a{color:var(--mute)}
+.cloud-panel h3{margin:0 0 6px;font-size:1rem}.cloud-form{display:grid;gap:8px}.cloud-form input{width:100%}.cloud-msg{min-height:1.2em;margin:8px 0 0}.cloud-panel .muted{color:var(--mute,#666)}

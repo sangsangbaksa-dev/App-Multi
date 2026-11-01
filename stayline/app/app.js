@@ -8,7 +8,23 @@
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.trackers)) { s.trackers = C.sanitize(s.trackers); return s; } } catch (e) {}
     return { v: 1, trackers: [], active: '', pro: false, lang: '' };
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} if (cloud) cloud.changed(); }
+
+  /* Optional cloud sync (Supabase). Off unless config.js has a project URL and key. Licence fields stay on this device. */
+  var LOCAL_ONLY = ['pro', 'key', 'licMode', 'instanceId', 'licChecked', 'lang'];
+  var cloud = window.CloudSync && window.SL_CONFIG ? window.CloudSync.create({
+    url: window.SL_CONFIG.supabaseUrl, anonKey: window.SL_CONFIG.supabaseKey, app: 'stayline', storage: window.localStorage, device: (navigator.platform || 'web').slice(0, 60),
+    snapshot: function () { var o = JSON.parse(JSON.stringify(state)); LOCAL_ONLY.forEach(function (k) { delete o[k]; }); return o; },
+    isEmpty: function (snap) { return !snap.trackers || !snap.trackers.length; },
+    apply: function (snap) {
+      if (!snap || !Array.isArray(snap.trackers)) return;
+      var keep = {}; LOCAL_ONLY.forEach(function (k) { keep[k] = state[k]; });
+      try { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, snap, keep))); } catch (e) { return; }
+      location.reload();
+    },
+    onResult: function (r) { if (r.status === 'pushed') toast(window.CloudI18n.t(lang, 'pushed')); }
+  }) : null;
+  if (cloud && !cloud.enabled()) cloud = null;
   function T(k, v) { return I.t(lang, k, v); }
   function h(tag, attrs, kids) {
     var e = document.createElement(tag);
@@ -252,6 +268,7 @@
       r.readAsText(f);
     } });
     var lic = h('input', { id: 'lic', placeholder: T('licPh'), autocomplete: 'off', spellcheck: 'false' });
+    var cloudPanel = cloud && window.CloudPanel ? window.CloudPanel.build({ cloud: cloud, lang: function () { return lang; } }) : null;
     return h('footer', { class: 'foot' }, [
       h('div', { class: 'row wrap' }, [
         h('button', { class: 'ghost', onclick: function () { download('stayline-backup.json', JSON.stringify({ v: 1, trackers: state.trackers, active: state.active }), 'application/json'); toast(T('backupDone')); } }, T('exp')),
@@ -259,6 +276,7 @@
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; download('stayline.csv', C.toCsv(state.trackers, C.todayStr()), 'text/csv'); } }, T('csv')),
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; window.print(); } }, T('print'))
       ]),
+      cloudPanel ? h('div', { style: 'margin:14px 0' }, [cloudPanel.el]) : null,
       h('div', { class: 'settings' }, state.pro ? h('span', { class: 'chip' }, T('pro') + ' ✓') : [
         h('label', null, [T('lic'), lic]),
         h('button', { class: 'pri', onclick: function () {
@@ -299,5 +317,6 @@
   }
   document.addEventListener('cancel', function () { adding = creating = editCounter = upsell = false; editing = ''; setTimeout(render, 0); }, true);
   render();
+  if (cloud && cloud.user()) cloud.sync().then(function (r) { if (r.status === 'pulled') toast(window.CloudI18n.t(lang, 'pulled')); });
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
