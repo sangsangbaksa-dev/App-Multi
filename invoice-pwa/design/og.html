@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>QuickBill OG image source</title>
+<style>
+@font-face{font-family:Newsreader;font-weight:600;src:url(../fonts/newsreader-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:400;src:url(../fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:500;src:url(../fonts/inter-latin-500-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(../fonts/inter-latin-600-normal.woff2)}
+*{margin:0;box-sizing:border-box}
+body{width:1200px;height:630px;position:relative;overflow:hidden;background:#f3eee4 repeating-linear-gradient(#f3eee4 0 47px,#d6cdb9 47px 48px);background-position:0 48px;color:#211e18;font-family:Inter}
+.brand{position:absolute;left:48px;top:44px}
+.brand img{height:92px;display:block}
+h1{position:absolute;left:72px;top:170px;width:600px;font:600 68px/1.08 Newsreader;letter-spacing:-.03em}
+p{position:absolute;left:72px;top:452px;width:560px;font-size:24px;line-height:1.4;color:#6f675a}
+.card{position:absolute;left:700px;top:70px;width:420px;height:500px;background:#fffdf8;border:1px solid #bfb49b;box-shadow:0 12px 28px rgba(34,30,24,.14);padding:32px}
+.k{font-size:13px;letter-spacing:.12em;font-weight:500;color:#6f675a}
+.no{font:600 32px/1.2 Newsreader;margin-top:4px}
+.who{margin-top:34px;font-size:16px}.due{font-size:14px;color:#6f675a;margin-top:4px}
+.rows{margin-top:36px}
+.r{display:flex;justify-content:space-between;border-top:1px solid #d6cdb9;padding:12px 0;font-size:16px;height:48px}
+.tot{border-top:2px solid #211e18;margin-top:0;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:Newsreader;font-weight:600}
+.tot span{font-size:22px}.tot b{font-size:30px;color:#a4401a}
+.stamp{position:absolute;right:32px;bottom:28px;width:120px;height:40px;border:2px solid #a4401a;border-radius:4px;color:#a4401a;font-weight:600;font-size:18px;letter-spacing:.1em;display:flex;align-items:center;justify-content:center;transform:rotate(-6deg)}
+</style>
+<div class="brand"><img src="../logo.svg" alt="QuickBill"></div>
+<h1>The invoicing desk that stays on your computer.</h1>
+<p>Quotes, invoices, sheets and docs. No account, no server, no tracking.</p>
+<div class="card">
+  <div class="k">INVOICE</div><div class="no">No. 0042</div>
+  <div class="who">Studio Hana</div><div class="due">Due 14 Nov</div>
+  <div class="rows">
+    <div class="r"><span>Brand identity</span><span>$1,800.00</span></div>
+    <div class="r"><span>Landing page</span><span>$2,400.00</span></div>
+    <div class="r"><span>Revisions (6h)</span><span>$620.00</span></div>
+    <div class="tot"><span>Total</span><b>$4,820.00</b></div>
+  </div>
+  <div class="stamp">PAID</div>
+</div>

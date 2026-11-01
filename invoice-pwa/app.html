@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuickBill</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#f3eee4">
+<link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/newsreader-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="bar noprint">
+  <h1><a class="brand" href="/">QuickBill</a></h1>
+  <nav class="tabs" aria-label="Workspace">
+    <button type="button" data-tab="invoices" data-i18n="tabInvoices"></button>
+    <button type="button" data-tab="sheets" data-i18n="tabSheets"></button>
+    <button type="button" data-tab="docs" data-i18n="tabDocs"></button>
+    <button type="button" data-tab="insights" data-i18n="tabInsights"></button>
+    <button type="button" data-tab="tips" data-i18n="tabTips"></button>
+  </nav>
+  <select id="lang" class="lang" aria-label="Language"></select>
+  <span id="plan" class="badge"></span>
+  <button id="btn-account" type="button"></button>
+  <button id="btn-upgrade" class="accent" data-i18n="goPro"></button>
+</header>
+<main>
+<p id="store-warn" class="warn noprint" role="alert" hidden data-i18n="storeWarn"></p>
+<div id="tab-invoices">
+  <div class="row noprint" id="new-row">
+    <button id="btn-new" class="primary" data-i18n="newInvoice"></button>
+    <button id="btn-new-quote" data-i18n="newQuote"></button>
+  </div>
+  <section id="list-view" class="noprint">
+    <p class="muted" data-i18n="privacy"></p>
+    <div id="dash" class="cards"></div>
+    <div id="clientsum"></div>
+    <div id="ageing"></div>
+    <div id="filters" class="row filters" hidden>
+      <input id="q" type="search" class="auto" data-i18n-ph="searchInv" data-i18n-aria="searchInv" autocomplete="off">
+      <select id="f" class="auto" data-i18n-aria="filterLbl">
+        <option value="all" data-i18n="fAll"></option><option value="unpaid" data-i18n="fUnpaid"></option>
+        <option value="overdue" data-i18n="fOverdue"></option><option value="paid" data-i18n="fPaid"></option>
+        <option value="quotes" data-i18n="fQuotes"></option>
+      </select>
+    </div>
+    <div id="list"></div>
+    <p class="muted" id="nomatch" data-i18n="noMatch" hidden></p>
+    <p class="muted" id="empty" data-i18n="empty"></p>
+    <details id="time" class="timebox">
+      <summary data-i18n="timeTitle"></summary>
+      <div class="timerow">
+        <input id="t-client" list="clients" data-i18n-ph="timeClient">
+        <input id="t-desc" data-i18n-ph="timeWhat">
+        <button id="t-toggle" type="button"></button>
+        <span id="t-clock" class="muted"></span>
+      </div>
+      <label class="inline"><span data-i18n="hourly"></span><input id="t-rate" type="number" min="0" step="0.01" value="0"></label>
+      <div id="t-list"></div>
+    </details>
+    <div class="row">
+      <button id="btn-csv" data-pro data-i18n="exportCsv"></button>
+      <button id="btn-backup" data-i18n="backup"></button>
+      <button id="btn-restore" data-i18n="restore"></button>
+      <input type="file" id="file-restore" accept="application/json" hidden>
+    </div>
+  </section>
+
+  <section id="edit-view" hidden>
+    <form id="form" class="noprint">
+      <div class="grid">
+        <label><span data-i18n="from"></span><input name="from" required></label>
+        <label><span data-i18n="client"></span><input name="client" list="clients" required></label>
+        <datalist id="clients"></datalist>
+        <label><span data-i18n="number"></span><input name="number" required></label>
+        <label><span data-i18n="currency"></span>
+          <select name="currency"><option>USD</option><option>EUR</option><option>GBP</option><option>KRW</option><option>JPY</option><option>CNY</option><option>CAD</option><option>AUD</option></select></label>
+        <label><span data-i18n="issue"></span><input type="date" name="issueDate" required></label>
+        <label><span id="due-lbl" data-i18n="due"></span><input type="date" name="dueDate" required></label>
+        <label><span data-i18n="tax"></span><input type="number" step="0.01" min="0" name="taxRate" value="0"></label>
+        <label><span data-i18n="discount"></span><input type="number" step="0.01" min="0" name="discount" value="0"></label>
+        <label><span data-i18n="status"></span>
+          <select name="status"><option value="draft" data-i18n="draft"></option><option value="sent" data-i18n="sent"></option><option value="paid" data-i18n="paid"></option><option value="accepted" data-i18n="accepted"></option></select></label>
+        <label id="paid-wrap"><span data-i18n="paidAmt"></span><input type="number" step="0.01" min="0" name="paid" value="0"></label>
+        <label data-pro><span data-i18n="recurring"></span>
+          <select name="recur"><option value="" data-i18n="none"></option><option value="weekly" data-i18n="weekly"></option><option value="monthly" data-i18n="monthly"></option></select></label>
+        <label data-pro><span data-i18n="logo"></span><input type="file" id="logo-file" accept="image/*"></label>
+      </div>
+      <h2 class="h" data-i18n="items"></h2>
+      <div id="items"></div>
+      <button type="button" id="btn-add" data-i18n="addItem"></button>
+      <label class="inline"><span data-i18n="lateFeePct"></span><input type="number" step="0.1" min="0" name="lateFeePct" value="0"></label>
+      <label><span data-i18n="notes"></span><textarea name="notes" rows="2"></textarea></label>
+      <label><span data-i18n="payinfo"></span><textarea name="payinfo" rows="2"></textarea></label>
+      <div class="row">
+        <button type="submit" class="primary" data-i18n="save"></button>
+        <button type="button" id="btn-convert" class="accent" data-i18n="convert"></button>
+        <button type="button" id="btn-latefee" data-i18n="lateFee"></button>
+        <button type="button" id="btn-remind" data-i18n="reminder"></button>
+        <button type="button" id="btn-dup" data-i18n="duplicate"></button>
+        <button type="button" id="btn-print" data-i18n="print"></button>
+        <button type="button" id="btn-logo-rm" data-i18n="logoRemove"></button>
+        <button type="button" id="btn-delete" class="danger" data-i18n="del"></button>
+        <button type="button" id="btn-back" data-i18n="back"></button>
+      </div>
+    </form>
+    <article id="preview"></article>
+  </section>
+</div>
+
+<div id="tab-sheets" class="noprint" hidden>
+  <p id="sh-empty" class="muted" data-i18n="sheetsEmpty"></p>
+  <div class="row">
+    <select id="sh-select" class="auto" aria-label="Sheet"></select>
+    <button id="sh-new" class="primary" data-i18n="newSheet"></button>
+    <button id="sh-fill" data-i18n="fillInvoices"></button>
+    <input type="file" id="sh-file" accept=".csv,text/csv" hidden>
+  </div>
+  <div id="sh-body">
+    <div class="row">
+      <input id="sh-name" class="auto" aria-label="Sheet name">
+      <button id="sh-row" data-i18n="rowAdd"></button>
+      <button id="sh-col" data-i18n="colAdd"></button>
+      <button id="sh-import" data-pro data-i18n="importCsv"></button>
+      <button id="sh-export" data-pro data-i18n="exportSheet"></button>
+      <button id="sh-invoice" data-pro data-i18n="sheetToInvoice"></button>
+      <button id="sh-del" class="danger" data-i18n="del"></button>
+    </div>
+    <p class="muted" data-i18n="sheetHint"></p>
+    <div id="sh-grid" class="gridwrap"></div>
+  </div>
+</div>
+
+<div id="tab-docs" hidden>
+  <section id="doc-list-view" class="noprint">
+    <div class="row"><button id="doc-new" class="primary" data-i18n="newDocument"></button></div>
+    <p id="doc-empty" class="muted" data-i18n="docsEmpty"></p>
+    <div id="doc-list"></div>
+  </section>
+  <section id="doc-edit" hidden>
+    <div class="noprint">
+      <div class="grid">
+        <label><span data-i18n="docTitle"></span><input id="doc-title"></label>
+        <label><span data-i18n="docClient"></span><input id="doc-client" list="clients"></label>
+        <label><span data-i18n="fieldFrom"></span><input id="doc-from"></label>
+        <label><span data-i18n="docTemplate"></span><select id="doc-template"></select></label>
+      </div>
+      <label><span data-i18n="docBody"></span><textarea id="doc-body" rows="14" spellcheck="false"></textarea></label>
+      <p class="muted" data-i18n="docHint"></p>
+      <p id="doc-missing" class="late"></p>
+      <div class="row">
+        <button id="doc-save" class="primary" data-i18n="save"></button>
+        <button id="doc-print" data-i18n="print"></button>
+        <button id="doc-as-template" data-pro data-i18n="saveTemplate"></button>
+        <button id="doc-delete" class="danger" data-i18n="del"></button>
+        <button id="doc-back" data-i18n="back"></button>
+      </div>
+    </div>
+    <article id="doc-preview" class="sheet-paper"></article>
+  </section>
+</div>
+<div id="tab-insights" class="noprint" hidden>
+  <section aria-labelledby="ins-h">
+    <h2 class="h" id="ins-h" data-i18n="insHead"></h2>
+    <p class="muted" data-i18n="insNote"></p>
+    <p id="ins-empty" class="muted" data-i18n="insNoData" hidden></p>
+    <figure id="ins-fig" class="chartfig" hidden>
+      <svg id="ins-chart" viewBox="0 0 600 220" role="img" aria-labelledby="ins-chart-t"><title id="ins-chart-t" data-i18n="insChartLabel"></title></svg>
+      <figcaption class="legend muted"><span class="sw sw-b"></span><span data-i18n="insBilled"></span> <span class="sw sw-c"></span><span data-i18n="insCollected"></span></figcaption>
+    </figure>
+    <table class="mini" id="ins-table" hidden></table>
+    <p id="ins-other" class="muted" hidden></p>
+    <div id="ins-cards" class="cards" hidden></div>
+  </section>
+  <section aria-labelledby="calc-h">
+    <h2 class="h" id="calc-h" data-i18n="calcHead"></h2>
+    <form id="calc-rate" class="calc" aria-labelledby="calc-rate-h">
+      <h3 class="h" id="calc-rate-h" data-i18n="calcRateHead"></h3>
+      <label><span data-i18n="calcTarget"></span><input id="cr-net" type="number" min="0" step="any" inputmode="decimal" value="60000"></label>
+      <label><span data-i18n="calcTaxPct"></span><input id="cr-tax" type="number" min="0" max="99" step="any" inputmode="decimal" value="20"></label>
+      <label><span data-i18n="calcHours"></span><input id="cr-hours" type="number" min="0" step="any" inputmode="decimal" value="1200"></label>
+      <p id="cr-out" class="calc-out" aria-live="polite"></p>
+    </form>
+    <form id="calc-net" class="calc" aria-labelledby="calc-net-h">
+      <h3 class="h" id="calc-net-h" data-i18n="calcNetHead"></h3>
+      <label><span data-i18n="calcGross"></span><input id="cn-gross" type="number" min="0" step="any" inputmode="decimal" value="1000"></label>
+      <label><span data-i18n="calcTaxPct"></span><input id="cn-tax" type="number" min="0" max="99" step="any" inputmode="decimal" value="10"></label>
+      <label><span data-i18n="calcFeePct"></span><input id="cn-fee" type="number" min="0" max="99" step="any" inputmode="decimal" value="5"></label>
+      <p id="cn-out" class="calc-out" aria-live="polite"></p>
+    </form>
+  </section>
+  <section aria-labelledby="exp-h">
+    <h2 class="h" id="exp-h" data-i18n="expHead"></h2>
+    <p class="muted" data-i18n="expNote"></p>
+    <div id="exp-locked" class="tip locked" hidden><p class="muted" data-i18n="expLocked"></p><button type="button" class="accent" id="exp-up" data-i18n="goPro"></button></div>
+    <div id="exp-body" hidden>
+      <form id="exp-form" class="calc">
+        <label><span data-i18n="expDate"></span><input id="exp-date" type="date" required></label>
+        <label><span data-i18n="expDesc"></span><input id="exp-desc" maxlength="120" required autocomplete="off"></label>
+        <label><span data-i18n="expAmount"></span><input id="exp-amount" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <div class="row"><button class="primary" type="submit" data-i18n="expAdd"></button></div>
+        <p id="exp-err" class="late" role="alert"></p>
+      </form>
+      <p id="exp-empty" class="muted" data-i18n="expEmpty" hidden></p>
+      <table class="mini" id="exp-table" hidden></table>
+      <p id="exp-sum" class="calc-out" aria-live="polite"></p>
+      <label class="inline calc"><span data-i18n="taxRateLabel"></span><input id="tax-pct" type="number" min="0" max="99" step="any" inputmode="decimal" value="15"></label>
+      <p id="tax-out" class="calc-out" aria-live="polite"></p>
+      <p class="muted" data-i18n="taxNote"></p>
+    </div>
+  </section>
+  <section aria-labelledby="rem-h">
+    <h2 class="h" id="rem-h" data-i18n="remHead"></h2>
+    <p class="muted" data-i18n="remNote"></p>
+    <p id="rem-empty" class="muted" data-i18n="remEmpty" hidden></p>
+    <div id="rem-list"></div>
+  </section>
+</div>
+<div id="tab-tips" class="noprint" hidden>
+  <section aria-labelledby="tips-h">
+    <h2 class="h" id="tips-h" data-i18n="tipsHead"></h2>
+    <p class="muted" data-i18n="tipsNote"></p>
+    <div id="tips-list"></div>
+  </section>
+</div>
+<p id="toast" class="toast noprint" hidden></p>
+</main>
+
+<dialog id="acct" aria-labelledby="acct-title">
+  <h2 id="acct-title"></h2>
+  <p class="muted" id="acct-note"></p>
+  <form id="acct-form" class="calc">
+    <label><span data-i18n="acctEmail"></span><input id="acct-email" type="email" required autocomplete="username" maxlength="120"></label>
+    <label><span data-i18n="acctPassword"></span><input id="acct-pass" type="password" required autocomplete="current-password" maxlength="200"></label>
+    <p id="acct-msg" class="late" role="alert"></p>
+    <div class="row"><button id="acct-submit" class="primary" type="submit"></button><button id="acct-switch" type="button"></button></div>
+  </form>
+  <div id="acct-out" hidden><button id="acct-signout" type="button" class="danger"></button></div>
+  <div class="row"><button id="acct-close" type="button" data-i18n="close"></button></div>
+</dialog>
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <h2 id="dlg-title" data-i18n="proTitle"></h2>
+  <p id="lic-msg" class="reason" role="status"></p>
+  <h3 class="h" data-i18n="proHead"></h3>
+  <ul class="ticks proList">
+    <li data-i18n="proL1"></li><li data-i18n="proL2"></li><li data-i18n="proL3"></li><li data-i18n="proL4"></li>
+  </ul>
+  <p class="muted" data-i18n="proL5"></p>
+  <p class="buyrow"><b id="price"></b> <a id="buy" class="btn accent" target="_blank" rel="noopener" data-i18n="buy"></a></p>
+  <p id="buy-soon" class="muted" hidden data-i18n="proSoon"></p>
+  <form method="dialog" id="lic-form">
+    <input id="lic" data-i18n-ph="licKey" data-i18n-aria="licKey" aria-label="License key" autocomplete="off">
+    <button value="ok" class="primary" data-i18n="activate"></button>
+    <button value="cancel" data-i18n="close"></button>
+  </form>
+</dialog>
+<script type="module" src="app.js"></script>
+</body>
+</html>

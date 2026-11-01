@@ -1,0 +1,8 @@
+.legal main{padding-top:2.5rem;padding-bottom:3rem}
+.legal h1{font-size:2.2rem;margin:0 0 .3rem}
+.legal h2{font-size:1.25rem;margin:2rem 0 .5rem}
+.legal p,.legal li{line-height:1.65;max-width:68ch}
+.legal ul{padding-left:1.2rem}
+.legal code{font-size:.92em}
+#swlang{margin-left:auto}
+.legal .foot a{margin-right:1.2rem}
