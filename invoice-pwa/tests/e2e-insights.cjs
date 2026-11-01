@@ -29,6 +29,8 @@ const URL = "http://localhost:8123/app";
   assert.equal(await free.isVisible("#exp-body"), false);
   assert.equal(await free.$$eval("#rem-list article", (r) => r.length), 1);
   await free.click("#rem-list [data-rem]");
+  // The copy is asynchronous, so wait for the label instead of reading it straight after the click.
+  await free.waitForFunction(() => document.querySelector("#rem-list [data-rem]").textContent === "Copied", null, { timeout: 5000 });
   assert.equal(await free.textContent("#rem-list [data-rem]"), "Copied");
   await free.close();
 
