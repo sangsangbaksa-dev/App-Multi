@@ -75,6 +75,7 @@
       <div class="grid">
         <label><span data-i18n="from"></span><input name="from" required></label>
         <label><span data-i18n="client"></span><input name="client" list="clients" required></label>
+        <label data-pro><span data-i18n="clientEmail"></span><input type="email" name="clientEmail" maxlength="190" autocomplete="off"></label>
         <datalist id="clients"></datalist>
         <label><span data-i18n="number"></span><input name="number" required></label>
         <label><span data-i18n="currency"></span>
@@ -113,6 +114,7 @@
         <button type="button" id="btn-latefee" data-i18n="lateFee"></button>
         <button type="button" id="btn-remind" data-i18n="reminder"></button>
         <button type="button" id="btn-share" data-pro data-i18n="shareLink"></button>
+        <button type="button" id="btn-email" data-pro data-i18n="emailBtn"></button>
         <button type="button" id="btn-dup" data-i18n="duplicate"></button>
         <button type="button" id="btn-print" data-i18n="print"></button>
         <button type="button" id="btn-logo-rm" data-i18n="logoRemove"></button>

@@ -8,6 +8,7 @@ import { createAuth, localBackend } from "./auth.js";
 import { initAccount } from "./account.js";
 import { safeLink, shareUrl } from "./share.js";
 import * as FX from "./fx.js";
+import * as CL from "./clients.js";
 
 // The account layer is wired here only; swap localBackend for a Supabase backend without changing account.js.
 const auth = createAuth(localBackend(localStorage));
@@ -79,6 +80,7 @@ function renderDash() {
 
 // Combined total across currencies, using rates typed in here. The inputs are only rebuilt when the set of
 // currencies or the base changes, so typing a rate never loses focus.
+let profiles = store.get("qb.clients", {}); // remembered terms per client, learned when an invoice is saved
 let fx = FX.cleanRates(store.get("qb.fx", null));
 function renderFx(sums) {
   const box = $("#fx");
@@ -205,6 +207,7 @@ function renderPreview() {
   $("#btn-latefee").hidden = !late;
   $("#btn-remind").hidden = !late;
   $("#btn-share").hidden = !i.number;
+  $("#btn-email").hidden = !CL.validEmail(i.clientEmail);
   const showLogo = logo && isPro();
   $("#btn-logo-rm").hidden = !logo;
   $("#preview").innerHTML = `${showLogo ? `<img class="logo" alt="" src="${esc(logo)}">` : ""}<h2>${I.t(L.isQuote(i) ? "quote" : "invoice")} ${esc(i.number)}</h2>
@@ -315,7 +318,7 @@ function newDoc(type, extra = {}) {
   const doc = {
     id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
     currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
-    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", recur: "", nextRun: "",
+    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", clientEmail: "", recur: "", nextRun: "",
     items: [{ desc: "", qty: 1, price: 0 }], lateFeePct: last?.lateFeePct ?? 0, ...extra,
   };
   openEditor(doc);
@@ -355,6 +358,26 @@ $("#btn-share").onclick = async () => {
   try { await navigator.clipboard.writeText(link.url); toast(I.t(link.long ? "shareLong" : "shareCopied", { n: link.length })); }
   catch { window.prompt(I.t("shareLink"), link.url); }
 };
+$("#btn-email").onclick = () => {
+  if (!isPro()) return openUpgrade(I.t("sharePro"));
+  const inv = L.settle(readForm());
+  const quote = L.isQuote(inv);
+  const vars = { client: inv.client, number: inv.number, amount: money(L.balanceOf(inv) || L.totalOf(inv), inv.currency), date: I.formatDate(inv.dueDate), from: inv.from };
+  let body = I.t(quote ? "emailQuoteBody" : L.overdue(inv, today()) ? "reminderText" : "emailBody", vars);
+  const link = !inv.payLink || safeLink(inv.payLink) ? clientLink() : null;
+  if (link && !link.long) body += `\n\n${I.t("reminderLink", { url: link.url })}`;
+  const url = CL.mailtoUrl(inv.clientEmail, I.t(quote ? "quoteSubject" : "emailSubject", vars), body);
+  if (url) location.href = url;
+};
+$("#form").elements.client.addEventListener("change", () => {
+  // Only for a brand-new invoice: a saved one keeps the terms it was written with.
+  const p = profiles[CL.keyOf($("#form").elements.client.value)];
+  if (!p || !editing || invoices.some((x) => x.id === editing.id) || !isPro()) return;
+  const next = CL.applyDefaults(readForm(), p);
+  for (const k of ["currency", "taxRate", "dueDate", "clientEmail", "payinfo", "payLink"]) $("#form").elements[k].value = next[k] ?? "";
+  renderPreview();
+  toast(I.t("clientApplied", { client: next.client }));
+});
 $("#btn-remind").onclick = async () => {
   const inv = readForm();
   let text = I.t("reminderText", { client: inv.client, number: inv.number, amount: money(L.balanceOf(inv), inv.currency), date: I.formatDate(inv.dueDate), from: inv.from });
@@ -372,6 +395,8 @@ $("#form").onsubmit = (e) => {
   if (inv.payLink) inv.payLink = safeLink(inv.payLink);
   if (inv.recur && !isPro()) { $("#form").elements.recur.value = ""; renderPreview(); return openUpgrade(I.t("recurPro")); }
   if (!L.canSave(invoices, isPro(), inv.id)) return openUpgrade(limitMsg());
+  if (isPro() && inv.clientEmail && !CL.validEmail(inv.clientEmail)) inv.clientEmail = "";
+  if (isPro()) { profiles = CL.learn(profiles, inv); store.set("qb.clients", profiles); }
   const prev = invoices.find((x) => x.id === inv.id);
   if (!inv.recur) inv.nextRun = "";
   else if (!inv.nextRun || prev?.recur !== inv.recur) inv.nextRun = L.addPeriod(inv.issueDate, inv.recur);
@@ -401,7 +426,7 @@ $("#btn-dup").onclick = () => {
   const src = readForm();
   const copy = newDoc(src.type, {
     from: src.from, client: src.client, currency: src.currency, taxRate: src.taxRate, discount: src.discount,
-    notes: src.notes, payinfo: src.payinfo, payLink: src.payLink, lateFeePct: src.lateFeePct,
+    notes: src.notes, payinfo: src.payinfo, payLink: src.payLink, clientEmail: src.clientEmail, lateFeePct: src.lateFeePct,
     items: src.items.filter((x) => !x.lateFee).map((x) => ({ ...x })),
   });
   if (copy) toast(I.t("dupNote"));
@@ -419,7 +444,7 @@ $("#btn-csv").onclick = () => {
   if (!isPro()) return openUpgrade(I.t("csvPro"));
   download("invoices.csv", "text/csv", L.toCSV(invoices));
 };
-$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo, expenses: store.get("qb.expenses", []) }));
+$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo, expenses: store.get("qb.expenses", []), clients: profiles }));
 $("#btn-restore").onclick = () => $("#file-restore").click();
 $("#file-restore").onchange = async (e) => {
   const file = e.target.files[0];
@@ -434,6 +459,10 @@ $("#file-restore").onchange = async (e) => {
     if (hasExpenses && (!Array.isArray(data.expenses) || !data.expenses.every(L.validExpense))) throw 0;
     try { localStorage.setItem("qb.invoices.bak-restore", JSON.stringify(invoices)); } catch {}
     invoices = data.invoices;
+    if (data.clients && typeof data.clients === "object" && !Array.isArray(data.clients)) {
+      profiles = Object.fromEntries(Object.entries(data.clients).map(([k, v]) => [CL.keyOf(k), CL.cleanProfile(v)]).filter(([k]) => k));
+      store.set("qb.clients", profiles);
+    }
     if (hasExpenses) store.set("qb.expenses", data.expenses);
     if (typeof data.logo === "string" && data.logo.startsWith("data:image/")) { logo = data.logo; store.set("qb.logo", logo); }
     persist();
