@@ -9,6 +9,7 @@ import { initAccount } from "./account.js";
 import { safeLink, shareUrl } from "./share.js";
 import * as FX from "./fx.js";
 import * as CL from "./clients.js";
+import * as CAT from "./catalog.js";
 
 // The account layer is wired here only; swap localBackend for a Supabase backend without changing account.js.
 const auth = createAuth(localBackend(localStorage));
@@ -80,6 +81,7 @@ function renderDash() {
 
 // Combined total across currencies, using rates typed in here. The inputs are only rebuilt when the set of
 // currencies or the base changes, so typing a rate never loses focus.
+let catalog = CAT.cleanCatalog(store.get("qb.catalog", {})); // items billed before, offered while typing a description
 let profiles = store.get("qb.clients", {}); // remembered terms per client, learned when an invoice is saved
 let fx = FX.cleanRates(store.get("qb.fx", null));
 function renderFx(sums) {
@@ -172,11 +174,16 @@ function itemRow(it = { desc: "", qty: 1, price: 0 }) {
   const d = document.createElement("div");
   d.className = "item";
   if (it.lateFee) d.dataset.fee = "1";
-  d.innerHTML = `<input placeholder="${esc(I.t("desc"))}" value="${esc(it.desc)}" data-k="desc">
+  d.innerHTML = `<input placeholder="${esc(I.t("desc"))}" value="${esc(it.desc)}" data-k="desc" list="catalog" autocomplete="off">
     <input type="number" min="0" step="any" value="${esc(it.qty)}" data-k="qty" aria-label="${esc(I.t("qty"))}">
     <input type="number" min="0" step="any" value="${esc(it.price)}" data-k="price" aria-label="${esc(I.t("price"))}">
     <button type="button" class="danger" aria-label="Remove item">×</button>`;
   d.querySelector("button").onclick = () => { d.remove(); renderPreview(); };
+  d.querySelector('[data-k="desc"]').addEventListener("change", (e) => {
+    const price = d.querySelector('[data-k="price"]');
+    const known = isPro() ? CAT.priceFor(catalog, e.target.value) : null;
+    if (known != null && !Number(price.value)) { price.value = known; renderPreview(); }
+  });
   return d;
 }
 
@@ -253,6 +260,7 @@ $("#pay-list").onclick = (e) => {
 
 function openEditor(inv) {
   editing = inv;
+  $("#catalog").innerHTML = CAT.suggestions(catalog).map((x) => `<option value="${esc(x.desc)}"></option>`).join("");
   for (const el of $("#form").elements) if (el.name) el.value = inv[el.name] ?? "";
   $("#items").replaceChildren(...inv.items.map(itemRow));
   const q = L.isQuote(inv), saved = invoices.some((x) => x.id === inv.id);
@@ -396,7 +404,10 @@ $("#form").onsubmit = (e) => {
   if (inv.recur && !isPro()) { $("#form").elements.recur.value = ""; renderPreview(); return openUpgrade(I.t("recurPro")); }
   if (!L.canSave(invoices, isPro(), inv.id)) return openUpgrade(limitMsg());
   if (isPro() && inv.clientEmail && !CL.validEmail(inv.clientEmail)) inv.clientEmail = "";
-  if (isPro()) { profiles = CL.learn(profiles, inv); store.set("qb.clients", profiles); }
+  if (isPro()) {
+    profiles = CL.learn(profiles, inv); store.set("qb.clients", profiles);
+    if (!L.isQuote(inv)) { catalog = CAT.learnItems(catalog, inv.items); store.set("qb.catalog", catalog); }
+  }
   const prev = invoices.find((x) => x.id === inv.id);
   if (!inv.recur) inv.nextRun = "";
   else if (!inv.nextRun || prev?.recur !== inv.recur) inv.nextRun = L.addPeriod(inv.issueDate, inv.recur);
@@ -444,7 +455,7 @@ $("#btn-csv").onclick = () => {
   if (!isPro()) return openUpgrade(I.t("csvPro"));
   download("invoices.csv", "text/csv", L.toCSV(invoices));
 };
-$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo, expenses: store.get("qb.expenses", []), clients: profiles }));
+$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo, expenses: store.get("qb.expenses", []), clients: profiles, catalog }));
 $("#btn-restore").onclick = () => $("#file-restore").click();
 $("#file-restore").onchange = async (e) => {
   const file = e.target.files[0];
@@ -463,6 +474,7 @@ $("#file-restore").onchange = async (e) => {
       profiles = Object.fromEntries(Object.entries(data.clients).map(([k, v]) => [CL.keyOf(k), CL.cleanProfile(v)]).filter(([k]) => k));
       store.set("qb.clients", profiles);
     }
+    if (data.catalog !== undefined) { catalog = CAT.cleanCatalog(data.catalog); store.set("qb.catalog", catalog); }
     if (hasExpenses) store.set("qb.expenses", data.expenses);
     if (typeof data.logo === "string" && data.logo.startsWith("data:image/")) { logo = data.logo; store.set("qb.logo", logo); }
     persist();
