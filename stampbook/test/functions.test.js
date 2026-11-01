@@ -11,11 +11,11 @@ test.before(async () => {
 const req = (body, method = 'POST') => new Request('https://x.test/api/license', { method, body: method === 'POST' ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined, headers: { 'content-type': 'application/json' } });
 const run = async (r, env) => { const res = await onRequest({ request: r, env }); return { status: res.status, body: await res.json(), headers: res.headers }; };
 const ls = (json, status = 200) => { global.fetch = async () => ({ status, json: async () => json }); };
-const ENV = { GUMROAD_PRODUCT_ID: 'prod-1' };
+const ENV = { LEMONSQUEEZY_PRODUCT_ID: 'prod-1' };
 
 test('unconfigured: {configured:false} and no outbound call', async () => {
   global.fetch = async () => { throw new Error('no call'); };
-  assert.deepEqual((await run(req({ key: 'ABCD-1234-EFGH' }), {})).body, { configured: false });
+  assert.deepEqual((await run(req({ key: 'ABCD-1234-EFGH' }), { LEMONSQUEEZY_DISABLED: '1' })).body, { configured: false });
 });
 test('GET is 405 with Allow: POST', async () => { const r = await run(req(null, 'GET'), ENV); assert.equal(r.status, 405); assert.equal(r.headers.get('allow'), 'POST'); });
 test('malformed JSON and oversized bodies are 400', async () => {
@@ -23,15 +23,16 @@ test('malformed JSON and oversized bodies are 400', async () => {
   assert.equal((await run(req('{not json'), ENV)).status, 400); assert.equal((await run(req(JSON.stringify({ key: 'A'.repeat(5000) })), ENV)).status, 400);
 });
 test('activates a key for our product, refuses another product', async () => {
-  ls({ success: true, purchase: { refunded: false, chargebacked: false } });
+  ls({ valid: true, license_key: { status: 'active' }, meta: { product_id: 'prod-1' } });
   const ok = await run(req({ action: 'activate', key: 'ABCD-1234-EFGH' }), ENV); assert.deepEqual(ok.body, { configured: true, ok: true, instanceId: '' }); assert.equal(ok.headers.get('cache-control'), 'no-store');
-  ls({ success: true, purchase: { refunded: true } }); assert.equal((await run(req({ key: 'ABCD-1234-EFGH' }), ENV)).body.reason, 'refunded');
+  ls({ valid: true, license_key: { status: 'disabled' }, meta: { product_id: 'prod-1' } }); assert.equal((await run(req({ key: 'ABCD-1234-EFGH' }), ENV)).body.reason, 'refunded');
+  ls({ valid: true, license_key: { status: 'active' }, meta: { product_id: 'other' } }); assert.equal((await run(req({ key: 'ABCD-1234-EFGH' }), ENV)).body.ok, false);
 });
 test('provider outage is 502 unreachable', async () => { global.fetch = async () => { throw new Error('down'); }; const r = await run(req({ key: 'ABCD-1234-EFGH' }), ENV); assert.equal(r.status, 502); assert.equal(r.body.reason, 'unreachable'); });
-test('validate checks the key with Gumroad', async () => {
-  let seen; global.fetch = async (u, o) => { seen = { u, b: o.body.toString() }; return { status: 200, json: async () => ({ success: true, purchase: {} }) }; };
+test('validate checks the key with Lemon Squeezy', async () => {
+  let seen; global.fetch = async (u, o) => { seen = { u, b: o.body.toString() }; return { status: 200, json: async () => ({ valid: true, license_key: { status: 'inactive' }, meta: { product_id: 'prod-1' } }) }; };
   const r = await run(req({ action: 'validate', key: 'ABCD-1234-EFGH' }), ENV);
-  assert.equal(r.body.ok, true); assert.equal(seen.u, 'https://api.gumroad.com/v2/licenses/verify'); assert.ok(seen.b.includes('product_id=prod-1'));
+  assert.equal(r.body.ok, true); assert.equal(seen.u, 'https://api.lemonsqueezy.com/v1/licenses/validate'); assert.equal(seen.b, 'license_key=ABCD-1234-EFGH');
 });
 test('--dist publishes only public files and carries _headers/_redirects', () => {
   execFileSync('node', [path.join(root, 'scripts/build.js'), '--dist']);

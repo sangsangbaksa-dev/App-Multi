@@ -1,6 +1,6 @@
 // Cloudflare Pages Function for /api/license. Same behaviour as api/license.js (the Vercel version): both call the
-// shared check() so the Gumroad rules live in one place. Environment variable from context.env:
-// GUMROAD_PRODUCT_ID (Pages project settings -> Variables and Secrets).
+// shared check() so the Lemon Squeezy rules live in one place. Optional context.env:
+// LEMONSQUEEZY_PRODUCT_ID (Pages project settings -> Variables and Secrets).
 import { check, configured } from "../../api/license.js";
 
 const headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };

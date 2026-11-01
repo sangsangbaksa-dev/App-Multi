@@ -5,16 +5,15 @@ export const CONFIG = {
   appName: "QuickBill",
   // Public address of the site, no trailing slash. Also used by `node design/seo.cjs` for canonical links and the sitemap.
   siteUrl: "https://quickbill-app.pages.dev",
-  // Gumroad checkout link of the product (https://<you>.gumroad.com/l/<permalink>).
-  checkoutUrl: "https://example.com/buy-quickbill-pro",
+  // Lemon Squeezy checkout link of the product.
+  checkoutUrl: "https://quickbillapp.lemonsqueezy.com/checkout/buy/4dd416db-616b-49ee-8092-dd861e74ebec",
   price: "$19 one-time",
   priceShort: "$19", // shown on the landing page and in the comparison table
   // After changing the price, run `node design/seo.cjs` so the static pages and the structured data follow.
   // Where buyers write for help and refunds.
-  supportEmail: "support@example.com",
+  supportEmail: "sangsangbaksa@gmail.com",
   refundDays: 14,
-  // Serverless function that checks license keys with Gumroad. It reports "not configured" until the
-  // GUMROAD_PRODUCT_ID environment variable is set; the app then keeps using offline keys.
+  // Serverless function that checks license keys with the Lemon Squeezy License API (no secret needed).
   licenseApi: "/api/license",
 };
 

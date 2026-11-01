@@ -1,5 +1,5 @@
 /* Cloudflare Pages Function: POST /api/license  (same contract as api/license.js on Vercel).
-   Set GUMROAD_PRODUCT_ID as an environment variable (Pages > Settings > Variables and Secrets). */
+   Optional env LEMONSQUEEZY_PRODUCT_ID (Pages > Settings > Variables and Secrets). */
 import licenseCore from '../../lib/license-core.js';
 
 const json = (status, body, extra) => new Response(JSON.stringify(body), { status, headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store' }, extra) });

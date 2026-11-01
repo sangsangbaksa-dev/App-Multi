@@ -5,30 +5,30 @@ import * as LS from "../license.js";
 import { makeLicense as makeKey } from "../logic.js";
 
 test.beforeEach(_clearCache);
-const env = { GUMROAD_PRODUCT_ID: "prod-1" };
-// Fake Gumroad: returns whatever `reply` says (with an HTTP status), and records what was sent (form body).
+const env = { LEMONSQUEEZY_PRODUCT_ID: "prod-1" };
+// Fake Lemon Squeezy: returns whatever `reply` says (with an HTTP status), and records what was sent (form body).
 const fake = (reply, status = 200) => { const calls = []; const f = async (url, init) => { calls.push({ url, body: Object.fromEntries(new URLSearchParams(init.body)) }); return { status, json: async () => reply }; }; f.calls = calls; return f; };
-const ok = (purchase = {}) => ({ success: true, uses: 1, purchase: { product_id: "prod-1", refunded: false, chargebacked: false, ...purchase } });
+const ok = (purchase = {}) => ({ valid: true, license_key: { status: purchase.status || 'active' }, meta: { product_id: 'prod-1' } });
 
-test("without the product id the function reports not configured and never calls out", async () => {
+test("when disabled the function reports not configured and never calls out", async () => {
   const f = fake({});
-  assert.deepEqual((await check({ action: "activate", key: "good-key-0001" }, {}, f)).body, { configured: false });
+  assert.deepEqual((await check({ action: "activate", key: "good-key-0001" }, { LEMONSQUEEZY_DISABLED: "1" }, f)).body, { configured: false });
   assert.equal(f.calls.length, 0);
-  assert.equal(configured({}), false);
+  assert.equal(configured({ LEMONSQUEEZY_DISABLED: "1" }), false);
 });
 
-test("a valid key activates and the server sends only the product and the key", async () => {
+test("a valid key activates and the server sends only the key", async () => {
   const f = fake(ok());
   const r = await check({ action: "activate", key: "good-key-0001", name: "QuickBill" }, env, f);
   assert.deepEqual(r.body, { configured: true, valid: true, instance: "" });
-  assert.equal(f.calls[0].url, "https://api.gumroad.com/v2/licenses/verify");
-  assert.deepEqual(f.calls[0].body, { product_id: "prod-1", license_key: "good-key-0001", increment_uses_count: "false" });
+  assert.equal(f.calls[0].url, "https://api.lemonsqueezy.com/v1/licenses/validate");
+  assert.deepEqual(f.calls[0].body, { license_key: "good-key-0001" });
 });
 
 test("unknown keys are refused; refunded and charged-back purchases are refused with a reason", async () => {
-  const u = await check({ action: "activate", key: "good-key-0001" }, env, fake({ success: false, message: "That license does not exist for the provided product." }, 404));
+  const u = await check({ action: "activate", key: "good-key-0001" }, env, fake({ valid: false, error: 'license_key not found' }, 404));
   assert.equal(u.body.valid, false); assert.equal(u.body.reason, "unknown");
-  for (const p of [{ refunded: true }, { chargebacked: true }]) {
+  for (const p of [{ status: 'disabled' }, { status: 'expired' }]) {
     const r = await check({ action: "validate", key: "good-key-0001" }, env, fake(ok(p)));
     assert.equal(r.body.valid, false); assert.equal(r.body.reason, "revoked");
   }

@@ -3,7 +3,7 @@
 A day counter for stay limits: Schengen 90/180, the 183-day tax rule, or a custom limit. Shows days left, a 180-day strip, and plans a trip (longest stay from an arrival date, or the earliest arrival for N days). Static site, no server, no account, no location access; data in localStorage. 5 languages (en, ko, ja, zh, es). Per-counter permit/visa expiry warning, trip editing, restore from backup is sanitised. Free: 1 counter. Pro: unlimited counters, CSV, printable summary.
 
 - `config.js` the one place for checkout link, support email, price, site URL (read by the app and by the site generator)
-- `app/` the app; `api/license.js` serverless licence check (Gumroad; env `GUMROAD_PRODUCT_ID`; without them the app falls back to the offline placeholder key check)
+- `app/` the app; `api/license.js` serverless licence check (Lemon Squeezy; env `LEMONSQUEEZY_PRODUCT_ID (optional)`; without them the app falls back to the offline placeholder key check)
 - `scripts/build-site.js` generates the landing, privacy and terms pages for 5 languages, `sitemap.xml`, `robots.txt` from `scripts/landing-strings.json` and `scripts/site-i18n.js`. Run it after editing `config.js` or any string.
 - `functions/api/license.js`, `_headers`, `scripts/build-pages.js`: Cloudflare Pages version of the same site (see `docs/cloudflare-pages.md`)
 - `docs/` launch checklist, copy and post drafts, outreach plan, calculation verification

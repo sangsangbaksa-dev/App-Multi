@@ -1,8 +1,8 @@
 /* Vercel/Node adapter for the Stampbook Pro licence check (logic in lib/license-core.js; Cloudflare Pages version: functions/api/license.js).
    Environment variable:
-     GUMROAD_PRODUCT_ID     the Gumroad product id of Stampbook Pro (license keys enabled on that product)
-   If it is missing the function answers {configured:false} and the app keeps its built-in offline check.
-   Gumroad's licence API needs no secret key. The product id makes sure a key bought for another product is refused.
+     LEMONSQUEEZY_PRODUCT_ID  optional: Lemon Squeezy product id of Stampbook Pro, so a key for another product is refused
+     LEMONSQUEEZY_DISABLED    optional: set to answer {configured:false} (app keeps its built-in offline check)
+   The Lemon Squeezy License API needs no secret key.
    Request:  POST {action:'activate'|'validate', key, instanceId?}   Response: {configured, ok, instanceId?, reason?} */
 const { check } = require('../lib/license-core.js');
 

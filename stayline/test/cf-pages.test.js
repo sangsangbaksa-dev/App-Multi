@@ -1,20 +1,20 @@
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), os = require('os'), path = require('path'), cp = require('child_process');
-const ENV = { GUMROAD_PRODUCT_ID: 'prod-1' };
+const ENV = { LEMONSQUEEZY_PRODUCT_ID: 'prod-1' };
 const post = (body, raw) => new Request('https://x.test/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: raw || JSON.stringify(body) });
 
 test('Pages Function mirrors the Vercel one', async () => {
   const { onRequest } = await import('../functions/api/license.js');
   let r = await onRequest({ request: new Request('https://x.test/api/license'), env: ENV });
   assert.equal(r.status, 405); assert.equal(r.headers.get('allow'), 'POST');
-  r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: {} });
+  r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: { LEMONSQUEEZY_DISABLED: '1' } });
   assert.deepEqual(await r.json(), { configured: false }); assert.equal(r.headers.get('cache-control'), 'no-store');
   r = await onRequest({ request: post({ key: 'bad key!' }), env: ENV }); assert.equal(r.status, 400);
   r = await onRequest({ request: post(null, '{nope'), env: ENV }); assert.equal(r.status, 400);
   const real = globalThis.fetch;
   try {
-    globalThis.fetch = async (url, o) => { assert.equal(url, 'https://api.gumroad.com/v2/licenses/verify'); assert.ok(o.body.includes('license_key=ABCD-EFGH-1234')); return { json: async () => ({ success: true, purchase: { refunded: false, chargebacked: false } }) }; };
+    globalThis.fetch = async (url, o) => { assert.equal(url, 'https://api.lemonsqueezy.com/v1/licenses/validate'); assert.ok(o.body.includes('license_key=ABCD-EFGH-1234')); return { json: async () => ({ valid: true, license_key: { status: 'active' }, meta: { product_id: 'prod-1' } }) }; };
     r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: ENV }); assert.deepEqual(await r.json(), { configured: true, valid: true });
-    globalThis.fetch = async () => ({ json: async () => ({ success: true, purchase: { refunded: true } }) });
+    globalThis.fetch = async () => ({ json: async () => ({ valid: true, license_key: { status: 'disabled' }, meta: { product_id: 'prod-1' } }) });
     r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: ENV }); assert.equal((await r.json()).valid, false);
     globalThis.fetch = async () => { throw new Error('down'); };
     r = await onRequest({ request: post({ key: 'ABCD-EFGH-1234' }), env: ENV }); assert.equal(r.status, 502);

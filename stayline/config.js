@@ -4,8 +4,8 @@
 (function (root) {
   var CFG = {
     siteUrl: 'https://stayline-family.pages.dev',
-    checkoutUrl: 'https://example.com/PLACEHOLDER-checkout',
-    supportEmail: 'support@example.com',
+    checkoutUrl: 'https://quickbillapp.lemonsqueezy.com/checkout/buy/77e23ea2-67e5-42cf-aa37-640751e9e71d',
+    supportEmail: 'sangsangbaksa@gmail.com',
     price: '$19',
     priceAmount: '19',
     priceCurrency: 'USD',
