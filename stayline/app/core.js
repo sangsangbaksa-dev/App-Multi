@@ -105,6 +105,18 @@
     return null;
   }
 
+  /* If you are inside today and keep staying, the last day that still fits the rule (null if not inside,
+     already over, or the limit is not reached within 800 days). */
+  function lastDay(tr, today) {
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today);
+    if (!set[t] || usedOn(set, rule, t) > rule.limit) return null;
+    for (var d = t + 1; d <= t + 800; d++) {
+      set[d] = true;
+      if (usedOn(set, rule, d) > rule.limit) return str(d - 1);
+    }
+    return null;
+  }
+
   /* cells for the strip: every day of the current window, marked in/out/today */
   function strip(tr, today) {
     var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today), a = windowStart(rule, t), out = [];
@@ -168,6 +180,25 @@
     return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
   }
 
+  /* iCalendar export: one all-day event per trip (DTEND is exclusive, so the day after the last day).
+     An ongoing trip ends today. */
+  function icsEsc(v) { return String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+  function toIcs(trackers, today) {
+    var t0 = today || todayStr(), stamp = t0.replace(/-/g, '') + 'T000000Z';
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Stayline//EN', 'CALSCALE:GREGORIAN'];
+    trackers.forEach(function (tr) {
+      tr.trips.forEach(function (t) {
+        var end = t.to || t0;
+        lines.push('BEGIN:VEVENT', 'UID:' + String(t.id).replace(/[^A-Za-z0-9_-]/g, '') + '@stayline',
+          'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + t.from.replace(/-/g, ''),
+          'DTEND;VALUE=DATE:' + addDays(end, 1).replace(/-/g, ''),
+          'SUMMARY:' + icsEsc((tr.name ? tr.name + ': ' : '') + (t.place || 'Stay')), 'END:VEVENT');
+      });
+    });
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n') + '\r\n';
+  }
+
   /* ---- offline licence check. Placeholder scheme: anyone reading this file can mint a key.
      Replace with a vendor-issued key + server check before charging real money. ---- */
   function keySum(body) {
@@ -186,8 +217,8 @@
 
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
-    stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, earliestEntry: earliestEntry, strip: strip,
-    validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
+    stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
+    validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;
 })(typeof window !== 'undefined' ? window : globalThis);

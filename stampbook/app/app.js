@@ -237,7 +237,7 @@
 
   /* ---------- settings: teacher name, backup, csv, licence ---------- */
   function download(name, text, type) {
-    var a = h('a', { href: URL.createObjectURL(new Blob([text], { type: type })), download: name });
+    var a = h('a', { href: URL.createObjectURL(new Blob([type === 'text/csv' ? '\uFEFF' + text : text], { type: type })), download: name });
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function settings() {
@@ -258,7 +258,8 @@
       h('div', { class: 'row', style: 'margin:14px 0' }, [
         h('button', { class: 'ghost', onclick: function () { download('stampbook-' + C.todayStr() + '.json', JSON.stringify(state), 'application/json'); toast(T('backupDone')); } }, T('exp')),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
-        h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv'))
+        h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv')),
+        h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); var ym = C.todayStr().slice(0, 7); download('stampbook-' + ym + '.csv', C.monthReport(state.packs, ym), 'text/csv'); } }, T('monthCsv'))
       ]),
       state.pro ? null : h('div', {}, [
         h('label', { for: 'lic' }, T('lic')),

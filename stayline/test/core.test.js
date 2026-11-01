@@ -142,3 +142,25 @@ test('EC manual example B: visa holder with three stays in 2015', () => {
   assert.equal(C.maxStay(t, '2015-08-08', '2015-08-08'), 50);
   assert.equal(C.maxStay(t, '2015-09-08', '2015-09-08'), 90);
 });
+
+test('toIcs: one all-day event per trip, end is exclusive, ongoing ends today, text escaped', () => {
+  const t = tr([['2026-06-01', '2026-06-10'], ['2026-07-01', '']]);
+  t.trips[0].place = 'Paris, FR';
+  const ics = C.toIcs([t], '2026-07-05');
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n/); assert.match(ics, /END:VCALENDAR\r\n$/);
+  assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 2);
+  assert.match(ics, /DTSTART;VALUE=DATE:20260601\r\nDTEND;VALUE=DATE:20260611/);
+  assert.match(ics, /DTSTART;VALUE=DATE:20260701\r\nDTEND;VALUE=DATE:20260706/);
+  assert.match(ics, /SUMMARY:Me: Paris\\, FR/);
+});
+
+test('lastDay: last stay-day that fits when you keep staying; null when not inside or already over', () => {
+  // 80 days used up to today (ongoing since 2026-04-12 => 2026-04-12..2026-06-30 = 80 days), limit 90 => 10 more days
+  const t = tr([['2026-04-12', '']]);
+  assert.equal(C.summary(t, '2026-06-30').used, 80);
+  assert.equal(C.lastDay(t, '2026-06-30'), '2026-07-10');
+  assert.equal(C.lastDay(tr([['2026-04-12', '2026-05-01']]), '2026-06-30'), null, 'not inside today');
+  assert.equal(C.lastDay(tr([['2026-03-01', '']]), '2026-06-30'), null, 'already over');
+  const y = tr([['2026-12-20', '']], { kind: 'year', limit: 183 });
+  assert.equal(C.lastDay(y, '2026-12-25'), '2027-07-02', 'calendar-year rule resets on 1 Jan: day 183 of 2027');
+});

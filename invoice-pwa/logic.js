@@ -271,6 +271,20 @@ export function monthlyFlow(invoices, today, months = 12, currency = "USD") {
   }
   return keys.map((k) => rows[k]);
 }
+// Clients ranked by what was billed in the last `months` months (single currency), with their share of the total.
+export function topClients(invoices, today, currency = "USD", n = 5, months = 12) {
+  const keys = new Set(monthsBack(today, months));
+  const m = new Map();
+  let total = 0;
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency || !keys.has(monthKey(i.issueDate))) continue;
+    const t = totalOf(i);
+    m.set(i.client, round2((m.get(i.client) || 0) + t));
+    total = round2(total + t);
+  }
+  return [...m.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]))).slice(0, n)
+    .map(([client, billed]) => ({ client, billed, share: total > 0 ? Math.round((billed / total) * 100) : 0 }));
+}
 // Average monthly collection over the last six months (empty months count as zero), and what is due in the next 30 days.
 export function forecast(invoices, today, currency = "USD") {
   const flow = monthlyFlow(invoices, today, 6, currency);

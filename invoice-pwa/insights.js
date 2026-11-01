@@ -37,6 +37,13 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
       `<tr><td>${esc(r.month)}</td><td class="r">${esc(money(r.billed, cur))}</td><td class="r">${esc(money(r.collected, cur))}</td></tr>`).join("")}</tbody>`;
   }
 
+  function renderTop(rows, cur) {
+    const t = $("#ins-top");
+    t.hidden = !rows.length;
+    t.innerHTML = `<caption>${esc(I.t("insTop"))}</caption><thead><tr><th>${esc(I.t("insClient"))}</th><th class="r">${esc(I.t("insBilled"))}</th><th class="r">${esc(I.t("insShare"))}</th></tr></thead><tbody>${rows.map((r) =>
+      `<tr><td>${esc(r.client)}</td><td class="r">${esc(money(r.billed, cur))}</td><td class="r">${r.share}%</td></tr>`).join("")}</tbody>`;
+  }
+
   function renderInsights() {
     const invoices = getInvoices();
     const hasAny = invoices.some((i) => !L.isQuote(i));
@@ -46,10 +53,12 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) 
     $("#ins-table").hidden = !hasAny;
     $("#ins-cards").hidden = !hasAny;
     $("#ins-other").hidden = !others.length;
+    $("#ins-top").hidden = !hasAny;
     if (!hasAny) return;
     const flow = L.monthlyFlow(invoices, today(), 12, currency);
     renderChart(flow, currency);
     renderTable(flow, currency);
+    renderTop(L.topClients(invoices, today(), currency), currency);
     $("#ins-other").textContent = fill(I.raw("insOther"), { list: others.join(", ") });
     const f = L.forecast(invoices, today(), currency);
     $("#ins-cards").innerHTML = [
