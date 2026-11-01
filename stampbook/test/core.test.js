@@ -194,3 +194,29 @@ test('backupDue only when there is data worth saving', () => {
   C.addStamp(few, '2026-10-05'); assert.equal(C.backupDue([few], 0, now), true);
   assert.equal(C.backupDue([few], now - 13 * 86400000, now), false); assert.equal(C.backupDue([few], now - 14 * 86400000, now), true);
 });
+
+/* ---- payments, note search, forecast ---- */
+test('unpaid packs and outstanding amount', () => {
+  const a = mk({ id: 'a', price: 300 }), b = mk({ id: 'b', price: 120.5 }), c = mk({ id: 'c' });
+  assert.equal(C.setPaid(a, false), false); C.setPaid(b, false);
+  assert.deepEqual(C.unpaid([a, b, c]).map(p => p.id), ['a', 'b']); assert.equal(C.outstanding([a, b, c]), 420.5);
+  C.setPaid(a, true); assert.equal(C.outstanding([a, b, c]), 120.5);
+  assert.equal(C.outstanding([mk({ paid: undefined })]), 0, 'legacy packs without the flag count as paid');
+});
+test('unpaid packs are left out of cash collected', () => {
+  const p = mk({ start: '2026-10-03' }); assert.equal(C.monthStats([p], '2026-10').cash, 500);
+  C.setPaid(p, false); assert.equal(C.monthStats([p], '2026-10').cash, 0);
+});
+test('searchNotes is case-insensitive, newest first, ignores short queries', () => {
+  const p = mk(); C.addStamp(p, '2026-10-01', 'Scales and Arpeggios'); C.addStamp(p, '2026-10-08', 'homework: scales'); C.addStamp(p, '2026-10-15', 'sight reading');
+  assert.deepEqual(C.searchNotes([p], ' SCALES ').map(e => e.date), ['2026-10-08', '2026-10-01']);
+  assert.deepEqual(C.searchNotes([p], 's'), []); assert.deepEqual(C.searchNotes([p], ''), []); assert.deepEqual(C.searchNotes([p], 'zzz'), []);
+  assert.equal(C.searchNotes([p], 'sc', 1).length, 1);
+  assert.equal(C.searchNotes([p], 'scales')[0].student, 'Mina');
+});
+test('forecast values planned lessons at the per-lesson price', () => {
+  const p = sched({ price: 300 }); // 3 lessons, 100 each, Mon/Wed
+  assert.deepEqual(C.forecast([p], '2026-11-01', 14), { lessons: 3, value: 300 });
+  assert.deepEqual(C.forecast([p], '2026-11-01', 4), { lessons: 2, value: 200 });
+  assert.deepEqual(C.forecast([mk()], '2026-11-01', 30), { lessons: 0, value: 0 });
+});

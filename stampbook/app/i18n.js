@@ -93,7 +93,15 @@
       icsBtn: 'Calendar file',
       icsEmpty: 'Set a weekly schedule on a pack first.',
       backupNudge: 'No backup in the last 2 weeks. Your data lives only in this browser.',
-      backupNow: 'Back up now'
+      backupNow: 'Back up now',
+      unpaid: 'Unpaid',
+      markPaid: 'Mark paid',
+      markUnpaid: 'Mark unpaid',
+      owedH: 'Awaiting payment',
+      fcH: 'Next 30 days',
+      fcB: '{n} planned lesson(s), worth about {v}',
+      noteSearch: 'Search lesson notes',
+      noteNone: 'No notes match.'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -187,7 +195,15 @@
       icsBtn: '캘린더 파일',
       icsEmpty: '먼저 수강권에 주간 일정을 설정하세요.',
       backupNudge: '2주 넘게 백업하지 않았습니다. 데이터는 이 브라우저에만 있습니다.',
-      backupNow: '지금 백업'
+      backupNow: '지금 백업',
+      unpaid: '미결제',
+      markPaid: '결제 완료로 표시',
+      markUnpaid: '미결제로 표시',
+      owedH: '결제 대기',
+      fcH: '향후 30일',
+      fcB: '예정 수업 {n}회, 약 {v}',
+      noteSearch: '수업 메모 검색',
+      noteNone: '일치하는 메모가 없습니다.'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -281,7 +297,15 @@
       icsBtn: 'カレンダーファイル',
       icsEmpty: '先にレッスン券へ週間スケジュールを設定してください。',
       backupNudge: '2週間以上バックアップしていません。データはこのブラウザにのみあります。',
-      backupNow: '今すぐバックアップ'
+      backupNow: '今すぐバックアップ',
+      unpaid: '未払い',
+      markPaid: '支払い済みにする',
+      markUnpaid: '未払いにする',
+      owedH: '入金待ち',
+      fcH: '今後30日',
+      fcB: '予定レッスン{n}回、約{v}',
+      noteSearch: 'レッスンメモを検索',
+      noteNone: '一致するメモはありません。'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -375,7 +399,15 @@
       icsBtn: '日历文件',
       icsEmpty: '请先为课时卡设置每周课表。',
       backupNudge: '已超过2周没有备份。数据只保存在此浏览器中。',
-      backupNow: '立即备份'
+      backupNow: '立即备份',
+      unpaid: '未付款',
+      markPaid: '标记为已付',
+      markUnpaid: '标记为未付',
+      owedH: '待付款',
+      fcH: '未来30天',
+      fcB: '已安排 {n} 节课,约 {v}',
+      noteSearch: '搜索课程备注',
+      noteNone: '没有匹配的备注。'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -469,7 +501,15 @@
       icsBtn: 'Archivo de calendario',
       icsEmpty: 'Primero define un horario semanal en un bono.',
       backupNudge: 'Sin copia de seguridad en las últimas 2 semanas. Tus datos solo están en este navegador.',
-      backupNow: 'Copiar ahora'
+      backupNow: 'Copiar ahora',
+      unpaid: 'Sin pagar',
+      markPaid: 'Marcar pagado',
+      markUnpaid: 'Marcar sin pagar',
+      owedH: 'Pendiente de pago',
+      fcH: 'Próximos 30 días',
+      fcB: '{n} clase(s) prevista(s), unos {v}',
+      noteSearch: 'Buscar en las notas',
+      noteNone: 'Ninguna nota coincide.'
     }
   };
   function pick(pref) {

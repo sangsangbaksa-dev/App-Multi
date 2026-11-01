@@ -170,6 +170,10 @@
         h('i', { style: 'height:' + (max ? Math.max(it.v ? 4 : 0, Math.round(it.v / max * 100)) : 0) + '%', title: it.l + ': ' + it.v }), h('span', { class: 'bl' }, it.l)]);
     }));
   }
+  function sumByCur(fn) {
+    var curs = state.packs.map(function (p) { return p.currency || 'USD'; }).filter(function (c, i, x) { return x.indexOf(c) === i; });
+    return curs.map(function (c) { return money(fn(state.packs.filter(function (p) { return (p.currency || 'USD') === c; })), c); }).join(' + ');
+  }
   function insightsView(today) {
     var ov = C.overview(state.packs, today), box = h('div', { class: 'ins' });
     if (!ov.lessons) { box.appendChild(h('div', { class: 'empty' }, [h('p', {}, T('insNoData'))])); return box; }
@@ -188,6 +192,18 @@
       qs.length ? h('ul', { class: 'evs' }, qs.map(function (r) {
         return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('left', { n: r.left }) + ' · ' + (r.sinceLast === null ? T('stNever') : T('stAgo', { d: r.sinceLast })))]); }))
         : h('p', { class: 'note' }, T('insQuietNone'))]));
+    var fc = C.forecast(state.packs, today, 30);
+    if (fc.lessons) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('fcH')), h('p', {}, T('fcB', { n: fc.lessons, v: sumByCur(function (ps) { return C.forecast(ps, today, 30).value; }) }))]));
+    var up = C.unpaid(state.packs);
+    if (up.length) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('owedH') + ' · ' + sumByCur(C.outstanding)), h('ul', { class: 'evs' }, up.map(function (p) {
+      return h('li', {}, [h('b', {}, p.student), h('span', { class: 'ln' }, money(p.price, p.currency) + ' · ' + (p.start || ''))]); }))]));
+    var res = h('ul', { class: 'evs', 'aria-live': 'polite' });
+    var qin = h('input', { type: 'search', placeholder: T('noteSearch'), 'aria-label': T('noteSearch'), oninput: function (e) {
+      res.textContent = ''; var hits = C.searchNotes(state.packs, e.target.value, 30);
+      hits.forEach(function (x) { res.appendChild(h('li', {}, [h('span', { class: 'ld' }, x.date), h('b', {}, x.student), h('span', { class: 'ln' }, x.note)])); });
+      if (!hits.length && e.target.value.trim().length >= 2) res.appendChild(h('li', { class: 'note' }, T('noteNone')));
+    } });
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('noteSearch')), qin, res]));
     var rows = C.studentStats(state.packs, today);
     box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insStudents')), h('ul', { class: 'evs' }, rows.map(function (r) {
       var bits = [T('stLessons', { n: r.lessons })];
@@ -249,6 +265,7 @@
     var foot = [];
     if (st === 'low' || st === 'expired' || st === 'done') foot.push(h('button', { class: 'pri', onclick: function () { renewPack(p); } }, T('renewPack')));
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
       h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del')));
@@ -260,7 +277,7 @@
       })) : h('p', { class: 'note' }, T('histEmpty'))]);
     var sch = scheduleEditor(p);
     return h('section', { class: 'card ' + st, 'aria-label': p.student }, [
-      h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', { class: 'chip c-' + st }, T('s_' + st))]),
+      h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', {}, [p.paid === false ? h('span', { class: 'chip c-expired', style: 'margin-right:6px' }, T('unpaid')) : null, h('span', { class: 'chip c-' + st }, T('s_' + st))])]),
       h('div', { class: 'meta' }, [T('left', { n: rem }), h('span', { class: soon ? 'soon' : '' }, exp + (soon ? ' · ' + T('soon') : '')), money(p.price, p.currency)].reduce(function (a, x, i) { if (i) a.push(' · '); a.push(x); return a; }, [])),
       grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
       h('div', { class: 'foot' }, foot)

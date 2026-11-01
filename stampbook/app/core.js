@@ -227,6 +227,28 @@
     return !lastBackup || nowMs - lastBackup >= 14 * DAY;
   }
 
+  /* ---- payments, note search, forecast ---- */
+  function setPaid(p, paid) { p.paid = !!paid; return p.paid; }
+  /* packs not yet paid for, with the amount owed to the teacher */
+  function unpaid(packs) { return packs.filter(function (p) { return p.paid === false; }); }
+  function outstanding(packs) {
+    var sum = 0; unpaid(packs).forEach(function (p) { sum += p.price; });
+    return Math.round(sum * 100) / 100;
+  }
+  /* stamps whose note contains q (case-insensitive), newest first. A query under 2 characters matches nothing. */
+  function searchNotes(packs, q, limit) {
+    q = String(q || '').trim().toLowerCase();
+    if (q.length < 2) return [];
+    var hits = events(packs).filter(function (e) { return e.note && e.note.toLowerCase().indexOf(q) !== -1; }).reverse();
+    return hits.slice(0, limit || 50);
+  }
+  /* planned lessons in the next n days and the value they represent (per-lesson price) */
+  function forecast(packs, today, n) {
+    var lessons = 0, value = 0;
+    packs.forEach(function (p) { var k = upcoming(p, today, n).length; lessons += k; value += k * perLesson(p); });
+    return { lessons: lessons, value: Math.round(value * 100) / 100 };
+  }
+
   /* ---- balance card: a read-only snapshot packed into a URL hash, no server ---- */
   function b64e(str) {
     var bytes = new TextEncoder().encode(str), bin = '';
@@ -296,7 +318,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
-    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue,
+    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;
