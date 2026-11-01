@@ -4,48 +4,37 @@ import { check, configured } from "../api/license.js";
 import * as LS from "../license.js";
 import { makeLicense as makeKey } from "../logic.js";
 
-const env = { POLAR_ORGANIZATION_ID: "org-1", POLAR_BENEFIT_ID: "ben-1" };
-const lk = (status, extra = {}) => ({ status, benefit_id: "ben-1", ...extra });
-// Fake Polar: returns whatever `reply` says (with an HTTP status), and records what was sent.
-const fake = (reply, status = 200) => { const calls = []; const f = async (url, init) => { calls.push({ url, body: JSON.parse(init.body) }); return { status, json: async () => reply }; }; f.calls = calls; return f; };
+const env = { GUMROAD_PRODUCT_ID: "prod-1" };
+// Fake Gumroad: returns whatever `reply` says (with an HTTP status), and records what was sent (form body).
+const fake = (reply, status = 200) => { const calls = []; const f = async (url, init) => { calls.push({ url, body: Object.fromEntries(new URLSearchParams(init.body)) }); return { status, json: async () => reply }; }; f.calls = calls; return f; };
+const ok = (purchase = {}) => ({ success: true, uses: 1, purchase: { product_id: "prod-1", refunded: false, chargebacked: false, ...purchase } });
 
-test("without env vars the function reports not configured and never calls out", async () => {
+test("without the product id the function reports not configured and never calls out", async () => {
   const f = fake({});
   assert.deepEqual((await check({ action: "activate", key: "good-key-0001" }, {}, f)).body, { configured: false });
   assert.equal(f.calls.length, 0);
-  assert.equal(configured({ POLAR_ORGANIZATION_ID: "1" }), false);
+  assert.equal(configured({}), false);
 });
 
-test("a key for our organization and product activates and returns only the instance id", async () => {
-  const f = fake({ id: "inst-123456", license_key: { ...lk("granted"), key: "good-key-0001" }, customer: { email: "a@b.c" } });
+test("a valid key activates and the server sends only the product and the key", async () => {
+  const f = fake(ok());
   const r = await check({ action: "activate", key: "good-key-0001", name: "QuickBill" }, env, f);
-  assert.deepEqual(r.body, { configured: true, valid: true, instance: "inst-123456" });
-  assert.equal(f.calls[0].url, "https://api.polar.sh/v1/customer-portal/license-keys/activate");
-  assert.deepEqual(f.calls[0].body, { key: "good-key-0001", organization_id: "org-1", label: "QuickBill" });
+  assert.deepEqual(r.body, { configured: true, valid: true, instance: "" });
+  assert.equal(f.calls[0].url, "https://api.gumroad.com/v2/licenses/verify");
+  assert.deepEqual(f.calls[0].body, { product_id: "prod-1", license_key: "good-key-0001", increment_uses_count: "false" });
 });
 
-test("a key bought for another product is refused", async () => {
-  const f = fake({ id: "x", license_key: { status: "granted", benefit_id: "other" } });
-  const r = await check({ action: "activate", key: "good-key-0001" }, env, f);
-  assert.equal(r.body.valid, false);
-  assert.equal(r.body.reason, "product");
-});
-
-test("disabled, expired and unknown keys are refused with a reason", async () => {
-  for (const [status, reason] of [["disabled", "revoked"], ["revoked", "revoked"]]) {
-    const r = await check({ action: "activate", key: "good-key-0001" }, env, fake({ id: "x", license_key: lk(status) }));
-    assert.equal(r.body.valid, false); assert.equal(r.body.reason, reason);
+test("unknown keys are refused; refunded and charged-back purchases are refused with a reason", async () => {
+  const u = await check({ action: "activate", key: "good-key-0001" }, env, fake({ success: false, message: "That license does not exist for the provided product." }, 404));
+  assert.equal(u.body.valid, false); assert.equal(u.body.reason, "unknown");
+  for (const p of [{ refunded: true }, { chargebacked: true }]) {
+    const r = await check({ action: "validate", key: "good-key-0001" }, env, fake(ok(p)));
+    assert.equal(r.body.valid, false); assert.equal(r.body.reason, "revoked");
   }
-  const u = await check({ action: "activate", key: "good-key-0001" }, env, fake({ detail: "Not found" }, 404));
-  assert.equal(u.body.reason, "unknown");
-  const l = await check({ action: "activate", key: "good-key-0001" }, env, fake({ detail: "Activation limit reached" }, 403));
-  assert.equal(l.body.reason, "limit");
 });
 
-test("validate confirms a stored key; a refund turns it off", async () => {
-  assert.equal((await check({ action: "validate", key: "good-key-0001", instance: "inst-123456" }, env, fake(lk("granted", { activation: { id: "inst-123456" } })))).body.valid, true);
-  const r = await check({ action: "validate", key: "good-key-0001" }, env, fake(lk("revoked")));
-  assert.equal(r.body.valid, false); assert.equal(r.body.reason, "revoked");
+test("validate confirms a stored key", async () => {
+  assert.equal((await check({ action: "validate", key: "good-key-0001", instance: "" }, env, fake(ok()))).body.valid, true);
 });
 
 test("malformed input is rejected before any call; upstream failures are 502", async () => {
@@ -56,6 +45,7 @@ test("malformed input is rejected before any call; upstream failures are 502", a
   assert.equal((await check({ action: "nope", key: "good-key-0001" }, env, f)).code, 400);
   const boom = async () => { throw new Error("down"); };
   assert.equal((await check({ action: "activate", key: "good-key-0001" }, env, boom)).code, 502);
+  assert.equal((await check({ action: "activate", key: "good-key-0001" }, env, fake({}, 503))).code, 502);
 });
 
 // ---- browser side ----

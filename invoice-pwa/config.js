@@ -5,7 +5,7 @@ export const CONFIG = {
   appName: "QuickBill",
   // Public address of the site, no trailing slash. Also used by `node design/seo.cjs` for canonical links and the sitemap.
   siteUrl: "https://quickbill-app.pages.dev",
-  // Checkout link of the payment platform (a Polar checkout link, Stripe Payment Link ...).
+  // Gumroad checkout link of the product (https://<you>.gumroad.com/l/<permalink>).
   checkoutUrl: "https://example.com/buy-quickbill-pro",
   price: "$19 one-time",
   priceShort: "$19", // shown on the landing page and in the comparison table
@@ -13,8 +13,8 @@ export const CONFIG = {
   // Where buyers write for help and refunds.
   supportEmail: "support@example.com",
   refundDays: 14,
-  // Serverless function that checks license keys with Polar. It reports "not configured" until the
-  // POLAR_ORGANIZATION_ID and POLAR_BENEFIT_ID environment variables are set; the app then keeps using offline keys.
+  // Serverless function that checks license keys with Gumroad. It reports "not configured" until the
+  // GUMROAD_PRODUCT_ID environment variable is set; the app then keeps using offline keys.
   licenseApi: "/api/license",
 };
 

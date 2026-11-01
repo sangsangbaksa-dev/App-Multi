@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { handle } from "../functions/api/license.js";
 
-const env = { POLAR_ORGANIZATION_ID: "org-1", POLAR_BENEFIT_ID: "ben-1" };
+const env = { GUMROAD_PRODUCT_ID: "prod-1" };
 const ls = (reply) => async () => ({ status: 200, json: async () => reply });
 const post = (body) => new Request("https://example.test/api/license", { method: "POST", body: JSON.stringify(body) });
 
@@ -13,11 +13,11 @@ test("Pages Function: GET reports whether the license check is configured", asyn
   assert.equal(r.headers.get("Cache-Control"), "no-store");
 });
 
-test("Pages Function: activate accepts our product and refuses another", async () => {
-  const ok = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ id: "inst-123456", license_key: { status: "granted", benefit_id: "ben-1" } }));
-  assert.deepEqual(await ok.json(), { configured: true, valid: true, instance: "inst-123456" });
-  const other = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ id: "x", license_key: { status: "granted", benefit_id: "other" } }));
-  assert.equal((await other.json()).reason, "product");
+test("Pages Function: activate accepts a paid key and refuses a refunded one", async () => {
+  const ok = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ success: true, purchase: { refunded: false, chargebacked: false } }));
+  assert.deepEqual(await ok.json(), { configured: true, valid: true, instance: "" });
+  const refunded = await handle(post({ action: "activate", key: "good-key-0001" }), env, ls({ success: true, purchase: { refunded: true } }));
+  assert.equal((await refunded.json()).reason, "revoked");
 });
 
 test("Pages Function: bad method, bad body, no env", async () => {

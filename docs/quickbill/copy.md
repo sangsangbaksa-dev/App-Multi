@@ -86,4 +86,4 @@ I'm giving Pro to 10 people who invoice clients at least once a month. In return
 
 Email {support email} with your line of work and the tool you use now. First 10 get a license key. Your invoice data never reaches me, so don't send client details; your words are enough.
 
-> 운영 메모: 파일럿용 키는 Polar에서 100% 할인 코드를 만들어 발급하면 서버 검증과 같은 경로로 동작합니다(코드 생성 방법은 Polar 문서에서 확인). 파일럿 사용자가 낸 의견을 공개 후기로 쓰려면 사용 전에 동의를 받으세요.
+> 운영 메모: 파일럿용 키는 Gumroad에서 100% 할인 코드를 만들어 발급하면 서버 검증과 같은 경로로 동작합니다(코드 생성 방법은 Gumroad 문서에서 확인). 파일럿 사용자가 낸 의견을 공개 후기로 쓰려면 사용 전에 동의를 받으세요.
