@@ -266,6 +266,7 @@
     if (st === 'low' || st === 'expired' || st === 'done') foot.push(h('button', { class: 'pri', onclick: function () { renewPack(p); } }, T('renewPack')));
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
       h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del')));
@@ -297,6 +298,14 @@
         h('button', { class: 'pri', onclick: function () { C.setSchedule(p, sel, time.value); save(); render(); toast(T('schedSaved')); } }, T('schedSave'))])]);
   }
   function doBackup() { download('stampbook-' + C.todayStr() + '.json', JSON.stringify(Object.assign({}, state, { lastBackup: Date.now() })), 'application/json'); state.lastBackup = Date.now(); save(); toast(T('backupDone')); render(); }
+  function reportText(p, ym) {
+    var r = C.report(p, ym, C.todayStr()), out = [T('reportHead', { name: p.student, month: fmt({ year: 'numeric', month: 'long' }, ym + '-01') })];
+    if (!r.rows.length) out.push(T('reportNone'));
+    r.rows.forEach(function (x) { out.push(x.date.slice(5).replace('-', '/') + (x.kind ? ' [' + T(x.kind === 'noshow' ? 'kNoshow' : 'kExcused') + ']' : '') + (x.note ? ' ' + x.note : '')); });
+    out.push(T('reportLine', { n: r.lessons, a: r.noshow, b: r.excused, left: r.left, total: r.total }));
+    if (r.expires) out.push(T('reportExp', { date: r.expires }));
+    return out.join('\n');
+  }
   function renewPack(p) {
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'low') return showUpgrade();
@@ -329,6 +338,9 @@
       valid: h('input', { id: 'f-valid', type: 'number', min: 0, max: 60, value: 3, inputmode: 'numeric' })
     };
     function lab(id, key, el) { return [h('label', { for: id }, T(key)), el]; }
+    var pre = C.presets(state.packs, 3), preRow = pre.length ? [h('div', { class: 'row presets', role: 'group', 'aria-label': T('presetH') }, pre.map(function (x) {
+      return h('button', { type: 'button', class: 'ghost sm', onclick: function () { f.total.value = x.total; f.price.value = x.price; f.cur.value = x.currency || f.cur.value; f.valid.value = x.months; } },
+        T('presetFmt', { n: x.total, price: money(x.price, x.currency), m: x.months })); }))] : [];
     var form = h('form', { method: 'dialog', onsubmit: function (e) {
       e.preventDefault();
       if (!state.pro && activeCount() >= CFG.freeLimit) { document.getElementById('dlg').close(); showUpgrade(); return; }
@@ -337,7 +349,7 @@
       state.packs.unshift({ id: uid(), student: f.name.value.trim(), total: total, price: price, currency: (f.cur.value || 'USD').toUpperCase().slice(0, 3),
         start: f.start.value, months: months, expires: months > 0 ? C.addMonths(f.start.value, months) : '', stamps: [], paid: true });
       save(); render();
-    } }, [].concat(lab('f-name', 'student', f.name),
+    } }, [].concat(preRow, lab('f-name', 'student', f.name),
       [h('div', { class: 'two' }, [h('div', {}, lab('f-total', 'lessons', f.total)), h('div', {}, lab('f-price', 'price', f.price))])],
       [h('div', { class: 'two' }, [h('div', {}, lab('f-cur', 'currency', f.cur)), h('div', {}, lab('f-start', 'start', f.start))])],
       lab('f-valid', 'valid', f.valid),

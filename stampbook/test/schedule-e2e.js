@@ -41,6 +41,13 @@ const srv = http.createServer((q, r) => {
   await pg.click('.tabs button >> nth=0'); await pg.waitForSelector('.card');
   const [dl] = await Promise.all([pg.waitForEvent('download'), pg.locator('.settings button', { hasText: '.ics' }).click()]);
   const ics = fs.readFileSync(await dl.path(), 'utf8'); assert.ok(ics.includes('SUMMARY:Mina') && ics.includes('T183000'));
+  // month report copies a recap; preset chip prefills the new-pack form
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+  await pg.locator('.foot button', { hasText: 'Month report' }).click(); await pg.waitForSelector('.toast');
+  const rep = await pg.evaluate(() => navigator.clipboard.readText()); assert.ok(rep.startsWith('Mina · ') && rep.includes('left'), rep);
+  await pg.click('.row .pri'); await pg.waitForSelector('dialog[open] .presets button');
+  await pg.click('dialog .presets button >> nth=0'); assert.equal(await pg.inputValue('#f-total'), '10'); assert.equal(await pg.inputValue('#f-price'), '500');
+  await pg.locator('#dlg button', { hasText: 'Cancel' }).click();
   // backup clears the nudge
   await pg.locator('.warnbar button').click(); await pg.waitForFunction(() => !document.querySelector('.warnbar'));
   assert.ok(await pg.evaluate(() => JSON.parse(localStorage['stampbook.v1']).lastBackup > 0));

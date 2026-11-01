@@ -86,3 +86,4 @@ u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{wid
 .todaybox h3{font:700 16px var(--serif);margin:0 0 8px}.todaybox li{align-items:center}.todaybox .stampbtn{min-height:36px}
 .sched .row button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .sched{margin-top:10px;font-size:14px}.sched summary{cursor:pointer;color:var(--mute);min-height:32px;display:flex;align-items:center}
+.presets{margin-top:4px}

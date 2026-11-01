@@ -249,6 +249,30 @@
     return { lessons: lessons, value: Math.round(value * 100) / 100 };
   }
 
+  /* ---- presets and monthly report ---- */
+  /* most reused pack terms (lessons, price, currency, months), so a new pack is one tap. packs[] is newest first, so ties go to the newer one. */
+  function presets(packs, n) {
+    var map = {}, order = [];
+    packs.forEach(function (p) {
+      var m = monthsOf(p), k = [p.total, p.price, p.currency || '', m].join('|');
+      if (!map[k]) { map[k] = { total: p.total, price: p.price, currency: p.currency || '', months: m, count: 0 }; order.push(k); }
+      map[k].count++;
+    });
+    return order.map(function (k, i) { return { r: map[k], i: i }; })
+      .sort(function (a, b) { return b.r.count - a.r.count || a.i - b.i; })
+      .slice(0, n || 3).map(function (x) { return x.r; });
+  }
+  /* what happened on one pack in month ym: for sending a student or parent a recap */
+  function report(p, ym, today) {
+    var rows = p.stamps.filter(function (s) { return s.date.slice(0, 7) === ym; })
+      .map(function (s) { return { date: s.date, kind: s.kind || '', note: s.note || '' }; });
+    return { student: p.student, ym: ym, rows: rows,
+      lessons: rows.filter(function (r) { return r.kind !== 'excused'; }).length,
+      noshow: rows.filter(function (r) { return r.kind === 'noshow'; }).length,
+      excused: rows.filter(function (r) { return r.kind === 'excused'; }).length,
+      left: remaining(p), total: p.total, expires: p.expires || '', status: status(p, today) };
+  }
+
   /* ---- balance card: a read-only snapshot packed into a URL hash, no server ---- */
   function b64e(str) {
     var bytes = new TextEncoder().encode(str), bin = '';
@@ -318,7 +342,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
-    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast,
+    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, presets: presets, report: report,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;

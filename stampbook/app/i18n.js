@@ -101,7 +101,15 @@
       fcH: 'Next 30 days',
       fcB: '{n} planned lesson(s), worth about {v}',
       noteSearch: 'Search lesson notes',
-      noteNone: 'No notes match.'
+      noteNone: 'No notes match.',
+      presetH: 'Same as before',
+      presetFmt: '{n} lessons · {price} · {m} mo',
+      reportBtn: 'Month report',
+      reportHead: '{name} · {month}',
+      reportLine: 'Lessons {n} (no-show {a}, excused {b}) · {left} of {total} left',
+      reportNone: 'No lessons this month.',
+      reportExp: 'Valid until {date}',
+      reportCopied: 'Report copied. Send it to the student.'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -203,7 +211,15 @@
       fcH: '향후 30일',
       fcB: '예정 수업 {n}회, 약 {v}',
       noteSearch: '수업 메모 검색',
-      noteNone: '일치하는 메모가 없습니다.'
+      noteNone: '일치하는 메모가 없습니다.',
+      presetH: '이전과 동일',
+      presetFmt: '{n}회 · {price} · {m}개월',
+      reportBtn: '월간 리포트',
+      reportHead: '{name} · {month}',
+      reportLine: '수업 {n}회 (노쇼 {a}, 사전 취소 {b}) · 남은 횟수 {left}/{total}',
+      reportNone: '이번 달 수업이 없습니다.',
+      reportExp: '유효기간 {date}까지',
+      reportCopied: '리포트를 복사했습니다. 수강생에게 보내세요.'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -305,7 +321,15 @@
       fcH: '今後30日',
       fcB: '予定レッスン{n}回、約{v}',
       noteSearch: 'レッスンメモを検索',
-      noteNone: '一致するメモはありません。'
+      noteNone: '一致するメモはありません。',
+      presetH: '前回と同じ',
+      presetFmt: '{n}回 · {price} · {m}か月',
+      reportBtn: '月次レポート',
+      reportHead: '{name} · {month}',
+      reportLine: 'レッスン{n}回(無断欠席{a}、事前キャンセル{b}) · 残り{left}/{total}',
+      reportNone: '今月のレッスンはありません。',
+      reportExp: '{date}まで有効',
+      reportCopied: 'レポートをコピーしました。生徒に送ってください。'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -407,7 +431,15 @@
       fcH: '未来30天',
       fcB: '已安排 {n} 节课,约 {v}',
       noteSearch: '搜索课程备注',
-      noteNone: '没有匹配的备注。'
+      noteNone: '没有匹配的备注。',
+      presetH: '与上次相同',
+      presetFmt: '{n} 节 · {price} · {m} 个月',
+      reportBtn: '月度报告',
+      reportHead: '{name} · {month}',
+      reportLine: '上课 {n} 节(缺席 {a},提前请假 {b}) · 剩余 {left}/{total}',
+      reportNone: '本月没有课。',
+      reportExp: '有效期至 {date}',
+      reportCopied: '报告已复制,发给学员吧。'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -509,7 +541,15 @@
       fcH: 'Próximos 30 días',
       fcB: '{n} clase(s) prevista(s), unos {v}',
       noteSearch: 'Buscar en las notas',
-      noteNone: 'Ninguna nota coincide.'
+      noteNone: 'Ninguna nota coincide.',
+      presetH: 'Igual que antes',
+      presetFmt: '{n} clases · {price} · {m} m',
+      reportBtn: 'Informe del mes',
+      reportHead: '{name} · {month}',
+      reportLine: 'Clases {n} (ausencias {a}, canceladas {b}) · quedan {left} de {total}',
+      reportNone: 'Sin clases este mes.',
+      reportExp: 'Válido hasta el {date}',
+      reportCopied: 'Informe copiado. Envíaselo al alumno.'
     }
   };
   function pick(pref) {

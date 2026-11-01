@@ -220,3 +220,22 @@ test('forecast values planned lessons at the per-lesson price', () => {
   assert.deepEqual(C.forecast([p], '2026-11-01', 4), { lessons: 2, value: 200 });
   assert.deepEqual(C.forecast([mk()], '2026-11-01', 30), { lessons: 0, value: 0 });
 });
+
+/* ---- presets and monthly report ---- */
+test('presets ranks reused terms, ties go to the newer pack', () => {
+  const ps = [mk({ id: '1', total: 8, price: 400 }), mk({ id: '2', total: 10, price: 500 }), mk({ id: '3', total: 10, price: 500 }), mk({ id: '4', total: 5, price: 250 })];
+  const r = C.presets(ps, 2); assert.equal(r.length, 2); assert.deepEqual([r[0].total, r[0].price, r[0].count], [10, 500, 2]); assert.equal(r[1].total, 8, 'newest of the singles');
+  assert.deepEqual(C.presets([], 3), []);
+  assert.equal(C.presets(ps).length, 3, 'default is three');
+});
+test('presets keeps currency and validity apart', () => {
+  const r = C.presets([mk({ id: '1', currency: 'KRW', months: 1, start: '', expires: '' }), mk({ id: '2', currency: 'USD', months: 3 })], 5);
+  assert.equal(r.length, 2); assert.equal(r[0].currency, 'KRW'); assert.equal(r[0].months, 1); assert.equal(r[1].months, 3);
+});
+test('report summarises one month of a pack', () => {
+  const p = mk({ total: 5 }); C.addStamp(p, '2026-09-30'); C.addStamp(p, '2026-10-05', 'scales'); C.addStamp(p, '2026-10-12', '', 'noshow'); C.addStamp(p, '2026-10-19', '', 'excused');
+  const r = C.report(p, '2026-10', '2026-11-01');
+  assert.deepEqual(r.rows.map(x => x.date), ['2026-10-05', '2026-10-12', '2026-10-19']);
+  assert.deepEqual([r.lessons, r.noshow, r.excused, r.left, r.total, r.status], [2, 1, 1, 2, 5, 'active']);
+  assert.equal(r.rows[0].note, 'scales'); assert.deepEqual(C.report(p, '2026-08', '2026-11-01').rows, []);
+});
