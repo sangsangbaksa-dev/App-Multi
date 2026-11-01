@@ -1,9 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { check, configured } from "../api/license.js";
+import { check, configured, _clearCache } from "../api/license.js";
 import * as LS from "../license.js";
 import { makeLicense as makeKey } from "../logic.js";
 
+test.beforeEach(_clearCache);
 const env = { GUMROAD_PRODUCT_ID: "prod-1" };
 // Fake Gumroad: returns whatever `reply` says (with an HTTP status), and records what was sent (form body).
 const fake = (reply, status = 200) => { const calls = []; const f = async (url, init) => { calls.push({ url, body: Object.fromEntries(new URLSearchParams(init.body)) }); return { status, json: async () => reply }; }; f.calls = calls; return f; };
@@ -93,4 +94,16 @@ test("recheck: only a clear refusal removes Pro", async () => {
   assert.equal((await LS.recheck(rec, opts(reply({}, false)))).keep, true);
   assert.equal((await LS.recheck(rec, opts(reply({ configured: false })))).keep, true);
   assert.equal((await LS.recheck(rec, opts(reply({ valid: false, reason: "format" })))).keep, true);
+});
+
+test("rate limit: one retry after Retry-After, then a 429 (never 'invalid'); verdicts are cached", async () => {
+  const mk = (statuses) => { let i = 0; const f = async () => { const st = statuses[Math.min(i++, statuses.length - 1)]; f.n = i; return st === 429 ? { status: 429, headers: { get: () => "0" }, json: async () => ({}) } : { status: 200, headers: { get: () => null }, json: async () => ok() }; }; return f; };
+  const a = mk([429, 200]);
+  assert.equal((await check({ action: "validate", key: "good-key-0001" }, env, a)).body.valid, true);
+  assert.equal(a.n, 2);
+  const b = mk([429]);
+  const r = await check({ action: "validate", key: "good-key-0002" }, env, b);
+  assert.equal(r.code, 429); assert.equal(r.body.error, "rate_limited"); assert.equal(b.n, 2);
+  const again = await check({ action: "validate", key: "good-key-0001" }, env, a);
+  assert.equal(again.body.valid, true); assert.equal(a.n, 2); // served from cache
 });
