@@ -20,7 +20,7 @@ export function initWorkspace(ctx) {
   const id = () => crypto.randomUUID();
   const sheet = () => sheets.find((x) => x.id === sheetId) ?? sheets[0] ?? null;
 
-  const insights = initInsights({ getInvoices: ctx.getInvoices, isPro, openUpgrade, today: () => new Date().toISOString().slice(0, 10) });
+  const insights = initInsights({ getInvoices: ctx.getInvoices, isPro, openUpgrade, store, today: () => new Date().toISOString().slice(0, 10) });
 
   // ---------- tabs ----------
   function showTab(name) {

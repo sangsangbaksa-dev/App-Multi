@@ -296,3 +296,32 @@ export function netAfter({ gross, taxPct, feePct }) {
   const tax = round2((g * t) / 100), fee = round2((g * f) / 100);
   return { tax, fee, net: round2(g - tax - fee) };
 }
+
+// ---------- expenses, profit and a rough tax estimate ----------
+export const EXPENSE_LIMIT = 2000;
+export function validExpense(e) {
+  return !!e && typeof e.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date || ""))
+    && typeof e.desc === "string" && e.desc.length <= 120
+    && Number(e.amount) >= 0 && Number.isFinite(Number(e.amount)) && typeof e.currency === "string";
+}
+// Income is what has been paid on invoices issued in `year`; expenses are dated expenses in `year`. Both in one currency.
+export function yearSummary(invoices, expenses, year, currency = "USD") {
+  const y = String(year);
+  let income = 0, spent = 0;
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency || !String(i.issueDate).startsWith(y)) continue;
+    income = round2(income + Math.min(totalOf(i), Number(i.paid) || 0));
+  }
+  for (const e of expenses) {
+    if ((e.currency || "USD") !== currency || !String(e.date).startsWith(y)) continue;
+    spent = round2(spent + Number(e.amount));
+  }
+  const profit = round2(income - spent);
+  return { income, expenses: spent, profit };
+}
+// A rough estimate only: a percentage of profit, never below zero. The user sets the percentage and checks it with an adviser.
+export function taxEstimate(profit, pct) {
+  const p = Number(pct);
+  if (!(p >= 0) || p >= 100) return null;
+  return round2(Math.max(0, Number(profit) || 0) * (p / 100));
+}

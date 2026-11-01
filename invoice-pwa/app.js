@@ -4,6 +4,11 @@ import { CONFIG, checkoutLive } from "./config.js";
 import * as LS from "./license.js";
 import { initWorkspace } from "./workspace.js";
 import { ensureSchema } from "./storage.js";
+import { createAuth, localBackend } from "./auth.js";
+import { initAccount } from "./account.js";
+
+// The account layer is wired here only; swap localBackend for a Supabase backend without changing account.js.
+const auth = createAuth(localBackend(localStorage));
 
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -325,7 +330,7 @@ $("#btn-csv").onclick = () => {
   if (!isPro()) return openUpgrade(I.t("csvPro"));
   download("invoices.csv", "text/csv", L.toCSV(invoices));
 };
-$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo }));
+$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo, expenses: store.get("qb.expenses", []) }));
 $("#btn-restore").onclick = () => $("#file-restore").click();
 $("#file-restore").onchange = async (e) => {
   const file = e.target.files[0];
@@ -335,8 +340,12 @@ $("#file-restore").onchange = async (e) => {
     const data = JSON.parse(await file.text());
     if (data.app !== "quickbill" || !Array.isArray(data.invoices) || !data.invoices.every(L.validInvoice)) throw 0;
     if (!isPro() && data.invoices.length > L.FREE_LIMIT) return openUpgrade(limitMsg());
+    // Backups from before expenses existed have no "expenses" key; those leave the current expenses alone.
+    const hasExpenses = data.expenses !== undefined;
+    if (hasExpenses && (!Array.isArray(data.expenses) || !data.expenses.every(L.validExpense))) throw 0;
     try { localStorage.setItem("qb.invoices.bak-restore", JSON.stringify(invoices)); } catch {}
     invoices = data.invoices;
+    if (hasExpenses) store.set("qb.expenses", data.expenses);
     if (typeof data.logo === "string" && data.logo.startsWith("data:image/")) { logo = data.logo; store.set("qb.logo", logo); }
     persist();
     renderList();
@@ -410,4 +419,6 @@ const ws = initWorkspace({
 });
 fullRender();
 renderTime();
+const account = initAccount({ auth });
+auth.init().then(() => account.paint()).catch(() => account.paint());
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});

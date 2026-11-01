@@ -8,7 +8,9 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fill = (tpl, vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), tpl);
 
-export function initInsights({ getInvoices, isPro, openUpgrade, today }) {
+export function initInsights({ getInvoices, isPro, openUpgrade, today, store }) {
+  const getExpenses = () => store.get("qb.expenses", []).filter(L.validExpense);
+  const saveExpenses = (list) => store.set("qb.expenses", list);
   const money = (n, cur) => L.formatMoney(n, cur, I.locale());
 
   function renderChart(flow, cur) {
@@ -88,9 +90,75 @@ export function initInsights({ getInvoices, isPro, openUpgrade, today }) {
     document.querySelectorAll("[data-tip-up]").forEach((b) => (b.onclick = () => openUpgrade(I.t("tipsLocked"))));
   }
 
+  // ---------- expenses, profit and tax estimate (Pro) ----------
+  function renderExpenses() {
+    const pro = isPro();
+    $("#exp-locked").hidden = pro;
+    $("#exp-body").hidden = !pro;
+    if (!pro) return;
+    const invoices = getInvoices();
+    const { currency } = L.currencyOf(invoices);
+    const year = today().slice(0, 4);
+    const list = getExpenses().filter((e) => e.date.startsWith(year)).sort((a, b) => (a.date < b.date ? 1 : -1));
+    $("#exp-empty").hidden = list.length > 0;
+    const table = $("#exp-table");
+    table.hidden = !list.length;
+    table.innerHTML = list.length ? `<tbody>${list.map((e) => `<tr><td>${esc(e.date)}</td><td>${esc(e.desc)}</td><td class="r">${esc(money(e.amount, e.currency))}</td><td class="r"><button type="button" data-exp-del="${esc(e.id)}" aria-label="${esc(I.t("expDelete"))}: ${esc(e.desc)}">${esc(I.t("expDelete"))}</button></td></tr>`).join("")}</tbody>` : "";
+    const sum = L.yearSummary(invoices, getExpenses(), year, currency);
+    $("#exp-sum").textContent = fill(I.raw("expSummary"), { year, income: money(sum.income, currency), expenses: money(sum.expenses, currency), profit: money(sum.profit, currency) });
+    const tax = L.taxEstimate(sum.profit, $("#tax-pct").value);
+    $("#tax-out").textContent = tax === null ? I.t("calcInvalid") : fill(I.raw("taxOut"), { tax: money(tax, currency) });
+  }
+
+  $("#exp-up").onclick = () => openUpgrade(I.t("expLocked"));
+  $("#exp-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!isPro()) return openUpgrade(I.t("expLocked"));
+    const date = $("#exp-date").value, desc = $("#exp-desc").value.trim(), amount = Number($("#exp-amount").value);
+    const expense = { id: crypto.randomUUID(), date, desc, amount, currency: L.currencyOf(getInvoices()).currency };
+    if (!L.validExpense(expense) || !date) { $("#exp-err").textContent = I.t("expErr"); return; }
+    if (getExpenses().length >= L.EXPENSE_LIMIT) { $("#exp-err").textContent = I.t("expErr"); return; }
+    $("#exp-err").textContent = "";
+    saveExpenses([...getExpenses(), expense]);
+    e.target.reset();
+    renderExpenses();
+  });
+  $("#exp-table").addEventListener("click", (e) => {
+    const id = e.target.dataset?.expDel;
+    if (!id) return;
+    saveExpenses(getExpenses().filter((x) => x.id !== id));
+    renderExpenses();
+  });
+  $("#tax-pct").addEventListener("input", renderExpenses);
+
+  // ---------- payment reminders (free) ----------
+  function renderReminders() {
+    const invoices = getInvoices();
+    const open = invoices
+      .filter((i) => !L.isQuote(i) && i.status !== "draft" && L.balanceOf(i) > 0)
+      .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""));
+    $("#rem-empty").hidden = open.length > 0;
+    $("#rem-list").innerHTML = open.map((i) => `<article class="tip">
+      <h3 class="h tip-h">${esc(i.number)} · ${esc(i.client || "")}</h3>
+      <p class="muted">${esc(money(L.balanceOf(i), i.currency))} · ${esc(I.formatDate(i.dueDate))}</p>
+      <button type="button" data-rem="${esc(i.id)}">${esc(I.t("remCopy"))}</button></article>`).join("");
+  }
+  $("#rem-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-rem]");
+    if (!btn) return;
+    const i = getInvoices().find((x) => x.id === btn.dataset.rem);
+    if (!i) return;
+    const text = fill(I.raw("remTpl"), { client: i.client || "", number: i.number || "", amount: money(L.balanceOf(i), i.currency), due: I.formatDate(i.dueDate) });
+    try { await navigator.clipboard.writeText(text); } catch { window.prompt(I.t("remCopy"), text); }
+    btn.textContent = I.t("remCopied");
+    setTimeout(() => (btn.textContent = I.t("remCopy")), 1600);
+  });
+
   return {
     render() {
       renderInsights();
+      renderExpenses();
+      renderReminders();
       calcRate();
       calcNet();
       renderTips();

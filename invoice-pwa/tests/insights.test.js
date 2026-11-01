@@ -61,3 +61,34 @@ test("netAfter takes tax and fees off a gross amount and refuses impossible rate
   assert.equal(L.netAfter({ gross: 100, taxPct: 60, feePct: 40 }), null);
   assert.equal(L.netAfter({ gross: -1, taxPct: 0, feePct: 0 }), null);
 });
+
+test("validExpense accepts a dated, described, non-negative expense only", () => {
+  const ok = { id: "e1", date: "2026-03-04", desc: "Laptop stand", amount: 45, currency: "USD" };
+  assert.equal(L.validExpense(ok), true);
+  assert.equal(L.validExpense({ ...ok, date: "04/03/2026" }), false);
+  assert.equal(L.validExpense({ ...ok, amount: -1 }), false);
+  assert.equal(L.validExpense({ ...ok, desc: "x".repeat(121) }), false);
+  assert.equal(L.validExpense(null), false);
+});
+
+test("yearSummary counts paid income and dated expenses for one year and currency", () => {
+  const list = [
+    inv({ issueDate: "2026-02-01", items: [{ qty: 1, price: 1000 }], paid: 1000 }),
+    inv({ issueDate: "2026-05-01", items: [{ qty: 1, price: 500 }], paid: 200 }),
+    inv({ issueDate: "2025-12-01", items: [{ qty: 1, price: 900 }], paid: 900 }),
+    inv({ issueDate: "2026-05-01", items: [{ qty: 1, price: 300 }], paid: 300, currency: "EUR" }),
+  ];
+  const ex = [
+    { id: "a", date: "2026-03-01", desc: "x", amount: 150, currency: "USD" },
+    { id: "b", date: "2025-03-01", desc: "x", amount: 999, currency: "USD" },
+  ];
+  assert.deepEqual(L.yearSummary(list, ex, 2026, "USD"), { income: 1200, expenses: 150, profit: 1050 });
+  assert.equal(L.yearSummary([], [], 2026).profit, 0);
+});
+
+test("taxEstimate is a percentage of positive profit and refuses nonsense rates", () => {
+  assert.equal(L.taxEstimate(1000, 15), 150);
+  assert.equal(L.taxEstimate(-400, 15), 0);
+  assert.equal(L.taxEstimate(1000, 100), null);
+  assert.equal(L.taxEstimate(1000, -1), null);
+});

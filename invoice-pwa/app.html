@@ -24,6 +24,7 @@
   </nav>
   <select id="lang" class="lang" aria-label="Language"></select>
   <span id="plan" class="badge"></span>
+  <button id="btn-account" type="button"></button>
   <button id="btn-upgrade" class="accent" data-i18n="goPro"></button>
 </header>
 <main>
@@ -191,6 +192,32 @@
       <p id="cn-out" class="calc-out" aria-live="polite"></p>
     </form>
   </section>
+  <section aria-labelledby="exp-h">
+    <h2 class="h" id="exp-h" data-i18n="expHead"></h2>
+    <p class="muted" data-i18n="expNote"></p>
+    <div id="exp-locked" class="tip locked" hidden><p class="muted" data-i18n="expLocked"></p><button type="button" class="accent" id="exp-up" data-i18n="goPro"></button></div>
+    <div id="exp-body" hidden>
+      <form id="exp-form" class="calc">
+        <label><span data-i18n="expDate"></span><input id="exp-date" type="date" required></label>
+        <label><span data-i18n="expDesc"></span><input id="exp-desc" maxlength="120" required autocomplete="off"></label>
+        <label><span data-i18n="expAmount"></span><input id="exp-amount" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <div class="row"><button class="primary" type="submit" data-i18n="expAdd"></button></div>
+        <p id="exp-err" class="late" role="alert"></p>
+      </form>
+      <p id="exp-empty" class="muted" data-i18n="expEmpty" hidden></p>
+      <table class="mini" id="exp-table" hidden></table>
+      <p id="exp-sum" class="calc-out" aria-live="polite"></p>
+      <label class="inline calc"><span data-i18n="taxRateLabel"></span><input id="tax-pct" type="number" min="0" max="99" step="any" inputmode="decimal" value="15"></label>
+      <p id="tax-out" class="calc-out" aria-live="polite"></p>
+      <p class="muted" data-i18n="taxNote"></p>
+    </div>
+  </section>
+  <section aria-labelledby="rem-h">
+    <h2 class="h" id="rem-h" data-i18n="remHead"></h2>
+    <p class="muted" data-i18n="remNote"></p>
+    <p id="rem-empty" class="muted" data-i18n="remEmpty" hidden></p>
+    <div id="rem-list"></div>
+  </section>
 </div>
 <div id="tab-tips" class="noprint" hidden>
   <section aria-labelledby="tips-h">
@@ -202,6 +229,18 @@
 <p id="toast" class="toast noprint" hidden></p>
 </main>
 
+<dialog id="acct" aria-labelledby="acct-title">
+  <h2 id="acct-title"></h2>
+  <p class="muted" id="acct-note"></p>
+  <form id="acct-form" class="calc">
+    <label><span data-i18n="acctEmail"></span><input id="acct-email" type="email" required autocomplete="username" maxlength="120"></label>
+    <label><span data-i18n="acctPassword"></span><input id="acct-pass" type="password" required autocomplete="current-password" maxlength="200"></label>
+    <p id="acct-msg" class="late" role="alert"></p>
+    <div class="row"><button id="acct-submit" class="primary" type="submit"></button><button id="acct-switch" type="button"></button></div>
+  </form>
+  <div id="acct-out" hidden><button id="acct-signout" type="button" class="danger"></button></div>
+  <div class="row"><button id="acct-close" type="button" data-i18n="close"></button></div>
+</dialog>
 <dialog id="dlg" aria-labelledby="dlg-title">
   <h2 id="dlg-title" data-i18n="proTitle"></h2>
   <p id="lic-msg" class="reason" role="status"></p>
