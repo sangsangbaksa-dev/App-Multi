@@ -174,6 +174,59 @@
     return { students: rows.length, lessons: lessons, noshow: noshow, excused: excused, noshowRate: lessons ? Math.round(noshow / lessons * 100) : 0 };
   }
 
+  /* ---- weekly schedule: p.schedule = {days:[0-6], time:'HH:MM' or ''}. Planned lessons are derived, never stored as stamps. ---- */
+  function setSchedule(p, days, time) {
+    var d = [];
+    (days || []).forEach(function (x) { x = +x; if (x >= 0 && x <= 6 && x % 1 === 0 && d.indexOf(x) === -1) d.push(x); });
+    d.sort(function (a, b) { return a - b; });
+    if (!d.length) { delete p.schedule; return null; }
+    p.schedule = { days: d, time: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(time || '')) ? time : '' };
+    return p.schedule;
+  }
+  /* planned lessons for one pack from `from` for `n` days: only while lessons remain, inside the validity window, skipping dates already stamped */
+  function upcoming(p, from, n) {
+    var out = [], left = remaining(p);
+    if (!p.schedule || !p.schedule.days || !p.schedule.days.length || left <= 0) return out;
+    var taken = {}; p.stamps.forEach(function (s) { taken[s.date] = 1; });
+    for (var i = 0; i < n && out.length < left; i++) {
+      var d = addDays(from, i);
+      if (p.start && d < p.start) continue;
+      if (p.expires && d > p.expires) break;
+      if (taken[d] || p.schedule.days.indexOf(parse(d).getDay()) === -1) continue;
+      out.push({ date: d, time: p.schedule.time || '', packId: p.id, student: p.student });
+    }
+    return out;
+  }
+  function agenda(packs, from, n) {
+    var out = [];
+    packs.forEach(function (p) { out = out.concat(upcoming(p, from, n)); });
+    return out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.time < b.time ? -1 : a.time > b.time ? 1 : a.student < b.student ? -1 : 1; });
+  }
+  function icsText(v) { return String(v).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+  /* iCalendar file for the next n days of planned lessons. Times are floating (local), one hour long. */
+  function toIcs(packs, from, n, stampMs) {
+    var st = new Date(stampMs || 0).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Stampbook//Lessons//EN', 'CALSCALE:GREGORIAN'];
+    agenda(packs, from, n).forEach(function (e) {
+      var d = e.date.replace(/-/g, ''), uid = e.packId + '-' + d + '@stampbook';
+      lines.push('BEGIN:VEVENT', 'UID:' + uid.replace(/[^\w@.-]/g, ''), 'DTSTAMP:' + st, 'SUMMARY:' + icsText(e.student));
+      if (e.time) {
+        var h = +e.time.slice(0, 2), m = e.time.slice(3), t = d + 'T' + e.time.slice(0, 2) + m + '00';
+        var eh = (h + 1) % 24, end = (h === 23 ? addDays(e.date, 1).replace(/-/g, '') : d) + 'T' + (eh < 10 ? '0' : '') + eh + m + '00';
+        lines.push('DTSTART:' + t, 'DTEND:' + end);
+      } else lines.push('DTSTART;VALUE=DATE:' + d, 'DTEND;VALUE=DATE:' + addDays(e.date, 1).replace(/-/g, ''));
+      lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n') + '\r\n';
+  }
+  /* nudge to back up: there is something worth losing (5+ stamps) and no backup for 14+ days */
+  function backupDue(packs, lastBackup, nowMs) {
+    var n = 0; packs.forEach(function (p) { n += p.stamps.length; });
+    if (n < 5) return false;
+    return !lastBackup || nowMs - lastBackup >= 14 * DAY;
+  }
+
   /* ---- balance card: a read-only snapshot packed into a URL hash, no server ---- */
   function b64e(str) {
     var bytes = new TextEncoder().encode(str), bin = '';
@@ -243,7 +296,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
-    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview,
+    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;

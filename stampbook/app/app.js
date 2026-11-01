@@ -97,6 +97,12 @@
     root.appendChild(upgradeDialog());
   }
   function packsView(today) {
+    if (C.backupDue(state.packs, state.lastBackup, Date.now())) root.appendChild(h('div', { class: 'warnbar', role: 'status' }, [T('backupNudge') + ' ', h('button', { class: 'ghost sm', onclick: doBackup }, T('backupNow'))]));
+    var plan = C.agenda(state.packs, today, 1);
+    if (plan.length) root.appendChild(h('div', { class: 'card todaybox' }, [h('h3', {}, T('todayH')), h('ul', { class: 'evs' }, plan.map(function (e) {
+      var p = state.packs.filter(function (x) { return x.id === e.packId; })[0];
+      return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'ln' }, T('left', { n: C.remaining(p) })),
+        h('button', { class: 'stampbtn sm', onclick: function () { stamp(p, today); } }, T('stampToday'))]); }))]));
     var att = C.attention(state.packs, today);
     root.appendChild(h('div', { class: 'row', style: 'margin-bottom:16px' }, [h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack')),
       att.length ? h('span', { class: 'chip c-low' }, T('attn', { n: att.length })) : null]));
@@ -127,32 +133,34 @@
   function fmt(opts, ds) { try { return new Intl.DateTimeFormat(lang, opts).format(C.parse(ds)); } catch (e) { return ds; } }
   function weekStart() { return lang === 'es' || lang === 'zh' ? 1 : 0; }
   function calendarView(today) {
-    var ws = weekStart(), map = C.dayMap(state.packs, calYm), box = h('div', { class: 'cal' });
+    var ws = weekStart(), map = C.dayMap(state.packs, calYm), plan = {}, box = h('div', { class: 'cal' });
     var head = h('div', { class: 'calhead' }, [
       h('button', { class: 'ghost', 'aria-label': T('calPrev'), onclick: function () { calYm = C.ymAdd(calYm, -1); calDay = ''; render(); } }, '‹'),
       h('b', { 'aria-live': 'polite' }, fmt({ year: 'numeric', month: 'long' }, calYm + '-01')),
       h('button', { class: 'ghost', 'aria-label': T('calNext'), onclick: function () { calYm = C.ymAdd(calYm, 1); calDay = ''; render(); } }, '›'),
       h('button', { class: 'ghost', onclick: function () { calYm = today.slice(0, 7); calDay = today; render(); } }, T('calThisMonth'))]);
+    C.agenda(state.packs, today, 190).forEach(function (e) { if (e.date.slice(0, 7) === calYm) (plan[e.date] = plan[e.date] || []).push(e); });
     var grid = h('div', { class: 'calgrid', role: 'grid' });
     for (var i = 0; i < 7; i++) grid.appendChild(h('div', { class: 'dow', role: 'columnheader' }, fmt({ weekday: 'short' }, C.addDays('2026-11-01', (i + ws) % 7))));
     C.monthGrid(calYm, ws).forEach(function (d) {
       if (!d) return grid.appendChild(h('div', { class: 'day blank' }));
       var ev = map[d] || [], n = ev.filter(function (e) { return e.kind !== 'excused'; }).length;
-      grid.appendChild(h('button', { type: 'button', class: 'day' + (d === today ? ' today' : '') + (d === calDay ? ' sel' : '') + (ev.length ? ' has' : ''),
+      grid.appendChild(h('button', { type: 'button', class: 'day' + (d === today ? ' today' : '') + (d === calDay ? ' sel' : '') + (ev.length ? ' has' : '') + (plan[d] ? ' plan' : ''),
         'aria-pressed': String(d === calDay), 'aria-label': d + (ev.length ? ' · ' + ev.length : ''),
         onclick: function () { calDay = calDay === d ? '' : d; render(); } },
-        [h('span', {}, String(+d.slice(8))), ev.length ? h('i', { class: 'dots' }, ev.slice(0, 4).map(function (e) { return h('u', { class: 'k-' + (e.kind || 'lesson') }); })) : null,
+        [h('span', {}, String(+d.slice(8))), ev.length ? h('i', { class: 'dots' }, ev.slice(0, 4).map(function (e) { return h('u', { class: 'k-' + (e.kind || 'lesson') }); })) : (plan[d] ? h('i', { class: 'dots' }, [h('u', { class: 'k-plan' })]) : null),
          n > 4 ? h('em', {}, '+' + (n - 4)) : null]));
     });
     box.appendChild(head); box.appendChild(grid);
-    box.appendChild(h('div', { class: 'legend note' }, [['lesson', 'legendLesson'], ['noshow', 'legendNoshow'], ['excused', 'legendExcused']].map(function (k) {
+    box.appendChild(h('div', { class: 'legend note' }, [['lesson', 'legendLesson'], ['noshow', 'legendNoshow'], ['excused', 'legendExcused'], ['plan', 'planned']].map(function (k) {
       return h('span', {}, [h('u', { class: 'k-' + k[0] }), ' ' + T(k[1])]); })));
     if (calDay && calDay.slice(0, 7) === calYm) {
       var list = map[calDay] || [];
       box.appendChild(h('div', { class: 'card calday' }, [h('h3', {}, T('calDay', { date: fmt({ dateStyle: 'full' }, calDay) })),
+        (plan[calDay] || []).length ? h('ul', { class: 'evs' }, plan[calDay].map(function (e) { return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'tag t-excused' }, T('planned'))]); })) : null,
         list.length ? h('ul', { class: 'evs' }, list.map(function (e) {
           return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, h('span', { class: 'ln' }, e.note)]); }))
-          : h('p', { class: 'note' }, T('calNone'))]));
+          : ((plan[calDay] || []).length ? null : h('p', { class: 'note' }, T('calNone')))]));
     }
     return box;
   }
@@ -250,13 +258,28 @@
           h('span', { class: 'ln' }, s.note || ''),
           h('button', { class: 'ghost sm', 'aria-label': T('editNote') + ' ' + s.date, onclick: function () { var v = prompt(T('notePh'), s.note || ''); if (v !== null) { C.setNote(p, s.id, v); save(); render(); } } }, T('editNote'))]);
       })) : h('p', { class: 'note' }, T('histEmpty'))]);
+    var sch = scheduleEditor(p);
     return h('section', { class: 'card ' + st, 'aria-label': p.student }, [
       h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', { class: 'chip c-' + st }, T('s_' + st))]),
       h('div', { class: 'meta' }, [T('left', { n: rem }), h('span', { class: soon ? 'soon' : '' }, exp + (soon ? ' · ' + T('soon') : '')), money(p.price, p.currency)].reduce(function (a, x, i) { if (i) a.push(' · '); a.push(x); return a; }, [])),
-      grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, log,
+      grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
       h('div', { class: 'foot' }, foot)
     ]);
   }
+  function scheduleEditor(p) {
+    var cur = p.schedule || { days: [], time: '' }, ws = weekStart(), sel = cur.days.slice(), time = h('input', { type: 'time', value: cur.time || '', 'aria-label': T('schedTime') });
+    var btns = [0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = (i + ws) % 7;
+      var b = h('button', { type: 'button', class: 'ghost sm' + (sel.indexOf(d) !== -1 ? ' on' : ''), 'aria-pressed': String(sel.indexOf(d) !== -1), onclick: function () {
+        var k = sel.indexOf(d); if (k === -1) sel.push(d); else sel.splice(k, 1);
+        var on = k === -1; b.className = 'ghost sm' + (on ? ' on' : ''); b.setAttribute('aria-pressed', String(on)); } }, fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)));
+      return b; });
+    var names = cur.days.map(function (d) { return fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)); }).join(' ');
+    return h('details', { class: 'sched' }, [h('summary', {}, T('schedH') + (names ? ' · ' + names + (cur.time ? ' ' + cur.time : '') : '')),
+      h('p', { class: 'note' }, T('schedHint')), h('div', { class: 'row' }, btns),
+      h('div', { class: 'row', style: 'margin-top:8px' }, [h('div', { style: 'flex:1;min-width:120px' }, time),
+        h('button', { class: 'pri', onclick: function () { C.setSchedule(p, sel, time.value); save(); render(); toast(T('schedSaved')); } }, T('schedSave'))])]);
+  }
+  function doBackup() { download('stampbook-' + C.todayStr() + '.json', JSON.stringify(Object.assign({}, state, { lastBackup: Date.now() })), 'application/json'); state.lastBackup = Date.now(); save(); toast(T('backupDone')); render(); }
   function renewPack(p) {
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'low') return showUpgrade();
@@ -337,7 +360,8 @@
     return h('div', { class: 'settings' }, [
       h('label', { for: 's-t' }, T('teacher')), teacher,
       h('div', { class: 'row', style: 'margin:14px 0' }, [
-        h('button', { class: 'ghost', onclick: function () { download('stampbook-' + C.todayStr() + '.json', JSON.stringify(state), 'application/json'); toast(T('backupDone')); } }, T('exp')),
+        h('button', { class: 'ghost', onclick: doBackup }, T('exp')),
+        h('button', { class: 'ghost', onclick: function () { var ics = C.toIcs(state.packs, C.todayStr(), 120, Date.now()); if (ics.indexOf('BEGIN:VEVENT') === -1) return toast(T('icsEmpty')); download('stampbook-lessons.ics', ics, 'text/calendar'); } }, T('icsBtn') + ' (.ics)'),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
         h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv'))
       ]),

@@ -82,7 +82,18 @@
       stSpent: 'paid',
       legendLesson: 'Lesson',
       legendNoshow: 'No-show',
-      legendExcused: 'Excused'
+      legendExcused: 'Excused',
+      schedH: 'Weekly schedule',
+      schedTime: 'Time (optional)',
+      schedSave: 'Save schedule',
+      schedSaved: 'Schedule saved.',
+      schedHint: 'Pick the usual days. Planned lessons show up in Today and in the calendar.',
+      todayH: 'Today\'s lessons',
+      planned: 'Planned',
+      icsBtn: 'Calendar file',
+      icsEmpty: 'Set a weekly schedule on a pack first.',
+      backupNudge: 'No backup in the last 2 weeks. Your data lives only in this browser.',
+      backupNow: 'Back up now'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -165,7 +176,18 @@
       stSpent: '결제',
       legendLesson: '수업',
       legendNoshow: '노쇼',
-      legendExcused: '사전 취소'
+      legendExcused: '사전 취소',
+      schedH: '주간 일정',
+      schedTime: '시간(선택)',
+      schedSave: '일정 저장',
+      schedSaved: '일정을 저장했습니다.',
+      schedHint: '수업하는 요일을 고르세요. 예정된 수업은 오늘 목록과 달력에 표시됩니다.',
+      todayH: '오늘 수업',
+      planned: '예정',
+      icsBtn: '캘린더 파일',
+      icsEmpty: '먼저 수강권에 주간 일정을 설정하세요.',
+      backupNudge: '2주 넘게 백업하지 않았습니다. 데이터는 이 브라우저에만 있습니다.',
+      backupNow: '지금 백업'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -248,7 +270,18 @@
       stSpent: '支払い',
       legendLesson: 'レッスン',
       legendNoshow: '無断欠席',
-      legendExcused: '事前キャンセル'
+      legendExcused: '事前キャンセル',
+      schedH: '週間スケジュール',
+      schedTime: '時間(任意)',
+      schedSave: 'スケジュールを保存',
+      schedSaved: 'スケジュールを保存しました。',
+      schedHint: 'いつもの曜日を選んでください。予定のレッスンは「今日」とカレンダーに表示されます。',
+      todayH: '今日のレッスン',
+      planned: '予定',
+      icsBtn: 'カレンダーファイル',
+      icsEmpty: '先にレッスン券へ週間スケジュールを設定してください。',
+      backupNudge: '2週間以上バックアップしていません。データはこのブラウザにのみあります。',
+      backupNow: '今すぐバックアップ'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -331,7 +364,18 @@
       stSpent: '已付',
       legendLesson: '上课',
       legendNoshow: '缺席',
-      legendExcused: '提前请假'
+      legendExcused: '提前请假',
+      schedH: '每周课表',
+      schedTime: '时间(可选)',
+      schedSave: '保存课表',
+      schedSaved: '课表已保存。',
+      schedHint: '选择固定的上课日。预定的课会显示在“今天”和日历中。',
+      todayH: '今天的课',
+      planned: '已安排',
+      icsBtn: '日历文件',
+      icsEmpty: '请先为课时卡设置每周课表。',
+      backupNudge: '已超过2周没有备份。数据只保存在此浏览器中。',
+      backupNow: '立即备份'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -414,7 +458,18 @@
       stSpent: 'pagado',
       legendLesson: 'Clase',
       legendNoshow: 'Ausencia',
-      legendExcused: 'Cancelada a tiempo'
+      legendExcused: 'Cancelada a tiempo',
+      schedH: 'Horario semanal',
+      schedTime: 'Hora (opcional)',
+      schedSave: 'Guardar horario',
+      schedSaved: 'Horario guardado.',
+      schedHint: 'Elige los días habituales. Las clases previstas aparecen en Hoy y en el calendario.',
+      todayH: 'Clases de hoy',
+      planned: 'Previstas',
+      icsBtn: 'Archivo de calendario',
+      icsEmpty: 'Primero define un horario semanal en un bono.',
+      backupNudge: 'Sin copia de seguridad en las últimas 2 semanas. Tus datos solo están en este navegador.',
+      backupNow: 'Copiar ahora'
     }
   };
   function pick(pref) {

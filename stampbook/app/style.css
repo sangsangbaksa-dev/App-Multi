@@ -81,3 +81,8 @@ u.k-lesson{background:var(--stamp)}u.k-noshow{background:var(--warn)}u.k-excused
 .bar{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;min-width:0}
 .bar i{display:block;width:100%;max-width:44px;background:var(--line);border-radius:4px 4px 0 0}.bar.hot i{background:var(--stamp)}
 .bv{font-size:12px;font-variant-numeric:tabular-nums;font-weight:600}.bl{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{width:7px;height:7px}
+.day.plan:not(.has){border-style:dashed;border-color:var(--ink)}
+.todaybox h3{font:700 16px var(--serif);margin:0 0 8px}.todaybox li{align-items:center}.todaybox .stampbtn{min-height:36px}
+.sched .row button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sched{margin-top:10px;font-size:14px}.sched summary{cursor:pointer;color:var(--mute);min-height:32px;display:flex;align-items:center}

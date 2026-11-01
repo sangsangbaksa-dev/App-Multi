@@ -155,3 +155,42 @@ test('app i18n: every language has every key', () => {
   const I = require('../app/i18n.js'), keys = Object.keys(I.L.en);
   for (const l of I.langs) for (const k of keys) assert.ok(typeof I.L[l][k] === 'string' && I.L[l][k].trim(), `${l}.${k}`);
 });
+
+/* ---- schedule, agenda, ics, backup nudge ---- */
+const sched = (o) => { const p = mk(Object.assign({ start: '2026-11-01', expires: '2026-12-31', total: 3 }, o)); C.setSchedule(p, [1, 3], '18:30'); return p; };
+test('setSchedule normalises days and time, empty removes it', () => {
+  const p = mk(); assert.deepEqual(C.setSchedule(p, ['3', 1, 1, 9, -1, 'x', 2.5], '7:00'), { days: [1, 3], time: '' });
+  assert.equal(C.setSchedule(p, [2], '07:05').time, '07:05');
+  assert.equal(C.setSchedule(p, [], '10:00'), null); assert.equal(p.schedule, undefined);
+});
+test('upcoming respects remaining lessons, window and stamped dates', () => {
+  const p = sched(); // Mondays and Wednesdays
+  assert.deepEqual(C.upcoming(p, '2026-11-01', 14).map(e => e.date), ['2026-11-02', '2026-11-04', '2026-11-09']);
+  C.addStamp(p, '2026-11-02'); assert.deepEqual(C.upcoming(p, '2026-11-01', 14).map(e => e.date), ['2026-11-04', '2026-11-09'], 'stamped day and used lesson drop out');
+  assert.deepEqual(C.upcoming(sched({ start: '2026-11-05' }), '2026-11-01', 20).map(e => e.date), ['2026-11-09', '2026-11-11', '2026-11-16'], 'not before start');
+  assert.deepEqual(C.upcoming(sched({ expires: '2026-11-03' }), '2026-11-01', 14).map(e => e.date), ['2026-11-02'], 'not after expiry');
+  assert.deepEqual(C.upcoming(mk(), '2026-11-01', 14), [], 'no schedule');
+  const done = sched({ total: 1 }); C.addStamp(done, '2026-10-30'); assert.deepEqual(C.upcoming(done, '2026-11-01', 14), []);
+});
+test('agenda merges packs sorted by date then time', () => {
+  const a = sched({ id: 'a', student: 'A' }), b = sched({ id: 'b', student: 'B' }); C.setSchedule(b, [1], '09:00');
+  const ag = C.agenda([a, b], '2026-11-02', 3);
+  assert.deepEqual(ag.map(e => e.student + e.date.slice(8) + e.time), ['B0209:00', 'A0218:30', 'A0418:30']);
+});
+test('toIcs makes valid, escaped events', () => {
+  const p = sched({ student: 'Mi,na; Kim' }), ics = C.toIcs([p], '2026-11-02', 1, Date.UTC(2026, 10, 1, 12, 0, 0));
+  assert.ok(ics.startsWith('BEGIN:VCALENDAR\r\n') && ics.endsWith('END:VCALENDAR\r\n'));
+  assert.ok(ics.includes('SUMMARY:Mi\\,na\\; Kim')); assert.ok(ics.includes('DTSTART:20261102T183000') && ics.includes('DTEND:20261102T193000'));
+  assert.ok(ics.includes('DTSTAMP:20261101T120000Z'));
+  const late = mk({ id: 'l', start: '2026-11-01', expires: '' }); C.setSchedule(late, [1], '23:30');
+  assert.ok(C.toIcs([late], '2026-11-02', 1, 0).includes('DTEND:20261103T003000'), 'crosses midnight');
+  const allDay = mk({ id: 'd', start: '2026-11-01', expires: '' }); C.setSchedule(allDay, [1], '');
+  assert.ok(C.toIcs([allDay], '2026-11-02', 1, 0).includes('DTSTART;VALUE=DATE:20261102'));
+  assert.equal(C.toIcs([], '2026-11-02', 30, 0).includes('VEVENT'), false);
+});
+test('backupDue only when there is data worth saving', () => {
+  const few = mk(); for (let i = 1; i <= 4; i++) C.addStamp(few, '2026-10-0' + i);
+  const now = Date.UTC(2026, 10, 1); assert.equal(C.backupDue([few], 0, now), false);
+  C.addStamp(few, '2026-10-05'); assert.equal(C.backupDue([few], 0, now), true);
+  assert.equal(C.backupDue([few], now - 13 * 86400000, now), false); assert.equal(C.backupDue([few], now - 14 * 86400000, now), true);
+});
