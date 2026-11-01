@@ -3,7 +3,6 @@ import * as I from "./i18n.js";
 import { CONFIG, checkoutLive } from "./config.js";
 import * as LS from "./license.js";
 import { initWorkspace } from "./workspace.js";
-import * as V from "./video.js";
 import { ensureSchema } from "./storage.js";
 
 const $ = (s) => document.querySelector(s);
@@ -285,8 +284,6 @@ $("#form").onsubmit = (e) => {
   const idx = invoices.findIndex((x) => x.id === inv.id);
   if (idx >= 0) invoices[idx] = inv; else invoices.unshift(inv);
   persist();
-  // Invoices started from a video project count their extra rounds as billed only once they are saved.
-  if (inv.videoRef && !prev && !L.isQuote(inv)) ws.video.markBilled(inv.videoRef.id, inv.videoRef.upTo);
   runRecurring();
   closeEditor();
 };
@@ -328,7 +325,7 @@ $("#btn-csv").onclick = () => {
   if (!isPro()) return openUpgrade(I.t("csvPro"));
   download("invoices.csv", "text/csv", L.toCSV(invoices));
 };
-$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo, video: ws.video.exportProjects() }));
+$("#btn-backup").onclick = () => download("quickbill-backup.json", "application/json", JSON.stringify({ app: "quickbill", v: 2, invoices, logo }));
 $("#btn-restore").onclick = () => $("#file-restore").click();
 $("#file-restore").onchange = async (e) => {
   const file = e.target.files[0];
@@ -337,12 +334,8 @@ $("#file-restore").onchange = async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (data.app !== "quickbill" || !Array.isArray(data.invoices) || !data.invoices.every(L.validInvoice)) throw 0;
-    // Backups from before the video module have no "video" key; those leave the current video projects alone.
-    const hasVideo = data.video !== undefined;
-    if (hasVideo && (!Array.isArray(data.video) || !data.video.every(V.validProject))) throw 0;
-    if (!isPro() && (data.invoices.length > L.FREE_LIMIT || (hasVideo && data.video.length > V.FREE_VIDEO))) return openUpgrade(limitMsg());
+    if (!isPro() && data.invoices.length > L.FREE_LIMIT) return openUpgrade(limitMsg());
     try { localStorage.setItem("qb.invoices.bak-restore", JSON.stringify(invoices)); } catch {}
-    if (hasVideo) ws.video.replaceProjects(data.video);
     invoices = data.invoices;
     if (typeof data.logo === "string" && data.logo.startsWith("data:image/")) { logo = data.logo; store.set("qb.logo", logo); }
     persist();

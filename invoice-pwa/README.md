@@ -34,10 +34,9 @@ The design lives in Figma (colour variables, type styles, icon, logo lockup and 
 The Video tab tracks edit projects for clients: delivery date, project price (one click to a quote or invoice line), revision rounds included in the quote, timecoded change requests per round (editable in place), delivery links (links only, no files are stored), client approval, and a button that turns extra rounds into invoice lines. Extra rounds count as billed only when that invoice is saved. Projects can be duplicated for repeat clients, and the list sorts past-due work first. Free keeps one project; Pro keeps any number, exports the revision list as CSV and prints a client-ready revision report.
 
 Storage and safety:
-- Video data lives under its own key, `qb.video` (`{ v, projects }`). Invoices, sheets and documents are never rewritten by it.
+- The video module was removed. Any data it saved under `qb.video` stays in the browser untouched; the app no longer reads it.
 - `qb.meta` holds the app schema (now 2). On the first run after an upgrade the old keys are copied to `*.bak-v1`. Data from a newer schema is opened read-only and never overwritten.
-- Each save keeps the previous video data under `qb.video.bak`. A restore first copies the current invoices to `qb.invoices.bak-restore`.
-- Backups are `v: 2` and include `video`. Older backups without it restore the invoices and leave video projects alone.
+- Backups are `v: 2` (invoices, logo). Older backups that contain a `video` section still restore the invoices and ignore that section.
 - Delivery links must be http(s). CSV cells that start with `= + - @` are quoted so spreadsheets don't run them.
 
 Everyday details:
@@ -46,7 +45,7 @@ Everyday details:
 - If the browser refuses to save (private window, full storage), a banner says so and points to Backup.
 - While `checkoutUrl` in `config.js` is still the placeholder, the upgrade dialog hides the buy button and says purchases are not open, instead of sending people to a dead link.
 
-Tests: `npm test` (logic and storage), `node tests/e2e.cjs`, `node tests/e2e-video.cjs` and `node tests/e2e-polish.cjs` against `python3 -m http.server 8123`.
+Tests: `npm test` (logic and storage), `node tests/e2e.cjs`, `node tests/e2e-polish.cjs` against `python3 -m http.server 8123`.
 
 ## Launch setup
 

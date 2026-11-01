@@ -95,8 +95,10 @@ const URL = "http://localhost:8123/app.html";
   await q.click("button[type=submit]");
   assert.ok(await q.isVisible("#store-warn"));
   assert.equal((await q.$$("#list .card")).length, 1); // still usable in memory
-  await q.click("[data-tab=video]");
-  await q.click("#vid-new"); await q.fill("#vid-title", "P"); await q.click("#vid-text");
+  await q.click("[data-tab=insights]");
+  assert.ok(await q.isVisible("#tab-insights"));
+  await q.click("[data-tab=tips]");
+  assert.ok((await q.$$("#tips-list .tip")).length >= 17);
   await c2.close();
 
   assert.deepEqual(errs.filter((e) => !/QuotaExceeded|full/.test(e)), []);

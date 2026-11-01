@@ -241,3 +241,58 @@ export function filterInvoices(list, { q = "", f = "all" } = {}, today = new Dat
   }[f] ?? (() => true);
   return list.filter((i) => ok(i) && has(i));
 }
+
+// ---------- insights: monthly flow, forecast, calculators ----------
+// Months are counted by issue date (payments carry no date in QuickBill). Only one currency is summed at a time.
+const monthKey = (d) => String(d || "").slice(0, 7);
+export function currencyOf(invoices) {
+  const count = {};
+  for (const i of invoices) if (!isQuote(i)) count[i.currency || "USD"] = (count[i.currency || "USD"] || 0) + 1;
+  const ranked = Object.entries(count).sort((a, b) => b[1] - a[1]);
+  return { currency: ranked[0]?.[0] ?? "USD", others: ranked.slice(1).map(([c]) => c) };
+}
+export function monthsBack(today, n) {
+  const [y, m] = String(today).slice(0, 7).split("-").map(Number);
+  return Array.from({ length: n }, (_, k) => {
+    const d = new Date(Date.UTC(y, m - 1 - (n - 1 - k), 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  });
+}
+// One row per month: what was billed and what has been paid so far on invoices issued that month.
+export function monthlyFlow(invoices, today, months = 12, currency = "USD") {
+  const keys = monthsBack(today, months);
+  const rows = Object.fromEntries(keys.map((k) => [k, { month: k, billed: 0, collected: 0 }]));
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency) continue;
+    const r = rows[monthKey(i.issueDate)];
+    if (!r) continue;
+    r.billed = round2(r.billed + totalOf(i));
+    r.collected = round2(r.collected + Math.min(totalOf(i), Number(i.paid) || 0));
+  }
+  return keys.map((k) => rows[k]);
+}
+// Average monthly collection over the last six months (empty months count as zero), and what is due in the next 30 days.
+export function forecast(invoices, today, currency = "USD") {
+  const flow = monthlyFlow(invoices, today, 6, currency);
+  const avg = round2(flow.reduce((s, r) => s + r.collected, 0) / 6);
+  const end = addDays(today, 30);
+  let dueSoon = 0;
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency) continue;
+    if (i.dueDate >= today && i.dueDate <= end) dueSoon = round2(dueSoon + balanceOf(i));
+  }
+  return { avgMonthly: avg, next3: round2(avg * 3), dueSoon };
+}
+// Gross amount needed so that `netTarget` is left after tax and fees, and the hourly rate that gets there.
+export function hourlyRate({ netTarget, taxPct, hours }) {
+  const n = Number(netTarget), t = Number(taxPct) || 0, h = Number(hours);
+  if (!(n > 0) || !(h > 0) || t < 0 || t >= 100) return null;
+  const gross = round2(n / (1 - t / 100));
+  return { gross, rate: round2(gross / h) };
+}
+export function netAfter({ gross, taxPct, feePct }) {
+  const g = Number(gross), t = Number(taxPct) || 0, f = Number(feePct) || 0;
+  if (!(g >= 0) || t < 0 || f < 0 || t + f >= 100) return null;
+  const tax = round2((g * t) / 100), fee = round2((g * f) / 100);
+  return { tax, fee, net: round2(g - tax - fee) };
+}
