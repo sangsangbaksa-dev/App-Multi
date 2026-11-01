@@ -1,9 +1,8 @@
 /* Vercel/Node adapter for the Stampbook Pro licence check (logic in lib/license-core.js; Cloudflare Pages version: functions/api/license.js).
-   Environment variables:
-     POLAR_ORGANIZATION_ID  the Polar organization id (UUID)
-     POLAR_BENEFIT_ID       the id of the License Keys benefit attached to Stampbook Pro (UUID)
-   If either is missing the function answers {configured:false} and the app keeps its built-in offline check.
-   Polar's customer-portal licence-key API needs no secret key. Organization and benefit ids are checked so a key bought for another product is refused.
+   Environment variable:
+     GUMROAD_PRODUCT_ID     the Gumroad product id of Stampbook Pro (license keys enabled on that product)
+   If it is missing the function answers {configured:false} and the app keeps its built-in offline check.
+   Gumroad's licence API needs no secret key. The product id makes sure a key bought for another product is refused.
    Request:  POST {action:'activate'|'validate', key, instanceId?}   Response: {configured, ok, instanceId?, reason?} */
 const { check } = require('../lib/license-core.js');
 

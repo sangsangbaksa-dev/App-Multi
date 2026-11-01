@@ -297,7 +297,7 @@
     callLicense({ action: 'validate', key: state.key, instanceId: state.instanceId }).then(function (r) {
       if (!r.j || r.j.configured !== true || r.status === 502) return;
       if (r.j.ok) { state.licChecked = Date.now(); save(); }
-      else if (r.j.reason === 'invalid' || r.j.reason === 'wrong_product') { state.pro = false; save(); render(); toast(T('badKey')); }
+      else if (r.j.reason === 'invalid' || r.j.reason === 'refunded') { state.pro = false; save(); render(); toast(T('badKey')); }
     }, function () {});
   }
 

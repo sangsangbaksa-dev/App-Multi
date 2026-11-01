@@ -16,7 +16,7 @@ Vercel 무료(Hobby) 플랜은 약관상 상업 이용을 제한하는 것으로
 | Root directory | `stampbook` |
 | Build command | `node scripts/build.js --dist` |
 | Build output directory | `dist` |
-| 환경변수 (Production, Preview 둘 다) | `POLAR_ORGANIZATION_ID`, `POLAR_BENEFIT_ID`, 필요하면 `NODE_VERSION=22` |
+| 환경변수 (Production, Preview 둘 다) | `GUMROAD_PRODUCT_ID`, 필요하면 `NODE_VERSION=22` |
 
 Functions는 Root directory 아래 `functions/` 폴더를 자동으로 인식하므로 따로 설정할 것이 없습니다.
 
@@ -24,9 +24,9 @@ Functions는 Root directory 아래 `functions/` 폴더를 자동으로 인식하
 ```
 cd stampbook
 node scripts/build.js --dist
-npx wrangler pages dev dist -b POLAR_ORGANIZATION_ID=org-1 -b POLAR_BENEFIT_ID=ben-1
+npx wrangler pages dev dist -b GUMROAD_PRODUCT_ID=prod-1
 ```
-이 환경에서 확인한 것: workerd에서 함수가 405(GET), 400(잘못된 요청), 설정 시 외부 호출 시도를 올바르게 하고, `/`, `/ko`(308 → `/ko/`), `/privacy`, `/terms`, `/app/`, `/sitemap.xml` 응답과 CSP·nosniff·Referrer-Policy 헤더, `/index.html` → `/` 리다이렉트가 동작합니다. 성공 경로(키 활성화)는 Node에서 가짜 Polar 응답으로 테스트했고, 이 환경에서는 외부 호출이 막혀 실제 Polar 호출과 실제 Cloudflare 배포는 확인하지 못했습니다.
+이 환경에서 확인한 것: workerd에서 함수가 405(GET), 400(잘못된 요청), 설정 시 외부 호출 시도를 올바르게 하고, `/`, `/ko`(308 → `/ko/`), `/privacy`, `/terms`, `/app/`, `/sitemap.xml` 응답과 CSP·nosniff·Referrer-Policy 헤더, `/index.html` → `/` 리다이렉트가 동작합니다. 성공 경로(키 활성화)는 Node에서 가짜 Gumroad 응답으로 테스트했고, 이 환경에서는 외부 호출이 막혀 실제 Gumroad 호출과 실제 Cloudflare 배포는 확인하지 못했습니다.
 
 ## 알아둘 점
 - `config.js`의 `siteUrl`을 새 주소(`https://<프로젝트명>.pages.dev` 또는 연결한 도메인)로 바꿔야 canonical, sitemap, OG 주소가 맞습니다.
