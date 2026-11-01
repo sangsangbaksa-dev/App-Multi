@@ -164,3 +164,91 @@ test('lastDay: last stay-day that fits when you keep staying; null when not insi
   const y = tr([['2026-12-20', '']], { kind: 'year', limit: 183 });
   assert.equal(C.lastDay(y, '2026-12-25'), '2027-07-02', 'calendar-year rule resets on 1 Jan: day 183 of 2027');
 });
+
+/* ---- what-if itinerary, forecast, alerts, calendar export ---- */
+const drafts = (list) => list.map(([from, to], i) => ({ id: 'd' + i, from, to }));
+
+test('simulate: legs that fit are ok and report their peak', () => {
+  const r = C.simulate(tr([]), drafts([['2026-07-01', '2026-07-30'], ['2026-09-01', '2026-09-20']]), '2026-06-01');
+  assert.equal(r.ok, true); assert.equal(r.legs.length, 2);
+  assert.equal(r.legs[0].days, 30); assert.equal(r.legs[0].peak, 30);
+  assert.equal(r.legs[1].peak, 50); assert.equal(r.peak, 50); assert.equal(r.peakDate, '2026-09-20');
+});
+test('simulate: a leg that breaks the limit names the day, a trim and an earliest date', () => {
+  const t = tr([['2026-05-01', '2026-06-09']]); // 40 days used
+  const r = C.simulate(t, drafts([['2026-07-01', '2026-08-30']]), '2026-06-15'); // 61 more days -> 101
+  const leg = r.legs[0];
+  assert.equal(r.ok, false); assert.equal(leg.ok, false);
+  assert.equal(leg.breachDate, '2026-08-20'); // 40 + 50 = 90 on Aug 19, 91 on Aug 20
+  assert.equal(leg.fit, 50); assert.equal(leg.trimTo, '2026-08-19');
+  assert.ok(leg.earliest > '2026-07-01');
+  // the suggestion really fits
+  assert.equal(C.simulate(t, drafts([[leg.earliest, C.addDays(leg.earliest, 60)]]), '2026-06-15').ok, true);
+});
+test('simulate: drafts are replayed in date order and count against each other', () => {
+  const r = C.simulate(tr([]), drafts([['2026-03-20', '2026-04-19'], ['2026-01-10', '2026-03-10']]), '2026-01-01');
+  assert.equal(r.legs[0].from, '2026-01-10');
+  assert.equal(r.legs[1].peak, 60 + 31); assert.equal(r.legs[1].ok, false);
+});
+test('simulate: drafts never touch the real trips and overlaps count once', () => {
+  const t = tr([['2026-07-01', '2026-07-10']]);
+  const r = C.simulate(t, drafts([['2026-07-05', '2026-07-12']]), '2026-06-01');
+  assert.equal(r.legs[0].peak, 12); assert.equal(t.trips.length, 1); assert.equal(C.summary(t, '2026-07-20').used, 10);
+});
+test('simulate: ignores malformed drafts; works with the year rule', () => {
+  assert.equal(C.simulate(tr([]), [{ from: 'x', to: '2026-01-01' }, { from: '2026-02-02', to: '2026-02-01' }, null], '2026-01-01').legs.length, 0);
+  const y = tr([], C.PRESETS.tax183);
+  assert.equal(C.simulate(y, drafts([['2026-01-01', '2026-07-02']]), '2026-01-01').legs[0].ok, true);  // 183 days
+  assert.equal(C.simulate(y, drafts([['2026-01-01', '2026-07-03']]), '2026-01-01').legs[0].ok, false); // 184
+});
+test('refactored maxStay and earliestEntry keep their answers', () => {
+  assert.equal(C.earliestEntry(tr([]), 30, '2026-07-01', '2026-06-01'), '2026-07-01');
+  assert.equal(C.earliestEntry(tr([]), 91, '2026-07-01', '2026-06-01'), null);
+  const t = tr([['2026-05-01', '2026-06-09']]);
+  assert.equal(C.maxStay(t, '2026-07-01', '2026-06-15'), 50);
+  assert.equal(C.stayDays(t.trips, '2026-06-15')[C.dn('2026-07-01')], undefined); // no leaked days
+});
+test('addDraft / removeDraft / commitDrafts', () => {
+  const t = tr([]);
+  assert.equal(C.addDraft(t, { from: '2026-08-02', to: '2026-08-01' }), false);
+  assert.equal(C.addDraft(t, { from: '2026-09-01', to: '2026-09-05' }), true);
+  assert.equal(C.addDraft(t, { from: '2026-08-01', to: '2026-08-05' }), true);
+  assert.equal(t.drafts[0].from, '2026-08-01');
+  assert.equal(C.removeDraft(t, t.drafts[1].id), true); assert.equal(t.drafts.length, 1);
+  C.addDraft(t, { from: '2026-10-01', to: '2026-10-05' });
+  assert.equal(C.commitDrafts(t), 2); assert.equal(t.drafts.length, 0); assert.equal(t.trips.length, 2);
+  for (let i = 0; i < 25; i++) C.addDraft(t, { from: '2027-01-01', to: '2027-01-02' });
+  assert.equal(t.drafts.length, 20);
+});
+test('sanitize keeps valid drafts and drops bad ones', () => {
+  const out = C.sanitize([{ id: 'a', name: 'x', trips: [], drafts: [{ id: 'd', from: '2026-01-01', to: '2026-01-05' }, { from: 'bad', to: '' }, { from: '2026-02-01', to: '2026-01-01' }] }]);
+  assert.equal(out[0].drafts.length, 1); assert.equal(out[0].drafts[0].id, 'd');
+  assert.deepEqual(C.sanitize([{ id: 'b', trips: [] }])[0].drafts, []);
+});
+test('forecast: room returns as old days fall out of the window', () => {
+  const f = C.forecast(tr([['2026-01-01', '2026-03-31']]), '2026-06-29', 3);
+  assert.equal(f.length, 4); assert.equal(f[0].left, 0); assert.equal(f[1].left, 1); assert.equal(f[3].left, 3);
+});
+test('alerts: must leave by, breach ahead, frees on, permit', () => {
+  const inside = tr([['2026-06-01', '']]); inside.expires = '2026-06-20';
+  const a = C.alerts(inside, '2026-06-10');
+  const kinds = a.map(x => x.kind);
+  assert.deepEqual(kinds, ['permit_end', 'leave_by']);
+  assert.equal(a.find(x => x.kind === 'leave_by').date, '2026-08-29'); // day 90 of a stay that began Jun 1
+  assert.equal(a.find(x => x.kind === 'permit_end').in, 10);
+  const ahead = C.alerts(tr([['2026-06-01', '2026-06-30'], ['2026-08-01', '2026-10-31']]), '2026-07-05');
+  assert.equal(ahead[0].kind, 'breach_ahead'); assert.equal(ahead[0].date, '2026-09-30'); // 30 + 60 = 90 on Sep 29, 91 on Sep 30
+  const over = C.alerts(tr([['2026-01-01', '2026-04-10']]), '2026-04-10');
+  assert.equal(over[0].kind, 'over');
+  assert.deepEqual(C.alerts(tr([]), '2026-06-10'), []);
+});
+test('alertsIcs: valid all-day events, upcoming only, escaped', () => {
+  const t = tr([['2026-06-01', '']]); t.id = 'k1'; t.name = 'Ann, Bob'; t.expires = '2026-07-01';
+  const ics = C.alertsIcs([t], '2026-06-10', (k) => 'Stayline: ' + k);
+  assert.ok(ics.startsWith('BEGIN:VCALENDAR\r\n')); assert.ok(ics.endsWith('END:VCALENDAR\r\n'));
+  assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 2);
+  assert.ok(ics.includes('DTSTART;VALUE=DATE:20260701\r\nDTEND;VALUE=DATE:20260702'));
+  assert.ok(ics.includes('SUMMARY:Stayline: permit_end (Ann\\, Bob)'));
+  const gone = tr([]); gone.expires = '2026-01-01';
+  assert.equal(C.alertsIcs([gone], '2026-06-10').includes('BEGIN:VEVENT'), false);
+});

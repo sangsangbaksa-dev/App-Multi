@@ -80,29 +80,129 @@
     return { rule: rule, used: used, left: left, state: state, windowFrom: str(ws), freesOn: freesOn, inside: !!set[t], permit: permit };
   }
 
-  /* how many days in a row can I stay if I arrive on `entry`? 0 means arriving already breaks the limit */
-  function maxStay(tr, entry, today) {
-    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today || todayStr()), e = dn(entry), n = 0;
+  /* longest run of days starting on day number e that keeps `set` within the rule (set is not modified) */
+  function runFit(set, rule, e) {
+    var n = 0, added = [];
     for (var d = e; d < e + 800; d++) {
-      var had = set[d]; set[d] = true;
-      if (firstBreach(set, rule, e) !== null) { if (!had) delete set[d]; break; }
+      if (!set[d]) { set[d] = true; added.push(d); }
+      if (firstBreach(set, rule, e) !== null) { if (added[added.length - 1] === d) { delete set[d]; added.pop(); } break; }
       n++;
     }
+    added.forEach(function (x) { delete set[x]; });
     return n;
+  }
+  /* first day number >= f where a run of `nights` days breaks nothing, or null */
+  function firstFit(base, rule, nights, f) {
+    for (var e = f; e < f + 800; e++) {
+      var set = {}, k;
+      for (k in base) set[k] = true;
+      for (var i = 0; i < nights; i++) set[e + i] = true;
+      if (firstBreach(set, rule, e) === null) return e;
+    }
+    return null;
+  }
+  /* how many days in a row can I stay if I arrive on `entry`? 0 means arriving already breaks the limit */
+  function maxStay(tr, entry, today) {
+    return runFit(stayDays(tr.trips, today || todayStr()), cleanRule(tr.rule), dn(entry));
   }
   /* first arrival date >= from for which a stay of `nights` days breaks nothing; null if impossible */
   function earliestEntry(tr, nights, from, today) {
     var rule = cleanRule(tr.rule);
     nights = Math.floor(nights);
     if (!(nights >= 1) || nights > rule.limit) return null;
-    var base = stayDays(tr.trips, today || todayStr()), f = dn(from);
-    for (var e = f; e < f + 800; e++) {
-      var set = {}, k;
-      for (k in base) set[k] = true;
-      for (var i = 0; i < nights; i++) set[e + i] = true;
-      if (firstBreach(set, rule, e) === null) return str(e);
+    var e = firstFit(stayDays(tr.trips, today || todayStr()), rule, nights, dn(from));
+    return e === null ? null : str(e);
+  }
+
+  /* ---- what-if itinerary. drafts = [{ id, from, to }] (both required), never counted as real trips.
+     Drafts are replayed in date order on top of the real trips; each result says whether that leg fits. ---- */
+  function validDraft(d) { return !!d && validDate(d.from) && validDate(d.to) && dn(d.to) >= dn(d.from) && dn(d.to) - dn(d.from) <= 366; }
+  function byFrom(a, b) { return a.from < b.from ? -1 : a.from > b.from ? 1 : 0; }
+  function simulate(tr, drafts, today) {
+    today = today || todayStr();
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), res = [], peak = 0, peakDate = null, ok = true;
+    (drafts || []).filter(validDraft).sort(byFrom).forEach(function (d) {
+      var a = dn(d.from), b = dn(d.to), days = b - a + 1, fit = runFit(set, rule, a), i;
+      for (i = a; i <= b; i++) set[i] = true;
+      var breach = firstBreach(set, rule, a), p = 0, pd = null;
+      for (i = a; i <= b; i++) { var u = usedOn(set, rule, i); if (u > p) { p = u; pd = i; } }
+      if (p > peak) { peak = p; peakDate = str(pd); }
+      var fits = breach === null;
+      if (!fits) ok = false;
+      var early = null;
+      if (!fits && days <= rule.limit) {
+        var tmp = {}, k;
+        for (k in set) tmp[k] = true;
+        for (i = a; i <= b; i++) delete tmp[i];
+        /* days other drafts or real trips already hold stay in tmp, so the suggestion respects them */
+        var e = firstFit(tmp, rule, days, a); early = e === null ? null : str(e);
+      }
+      res.push({ id: d.id, from: d.from, to: d.to, days: days, ok: fits, breachDate: breach === null ? null : str(breach),
+        fit: fit, trimTo: !fits && fit > 0 ? str(a + fit - 1) : null, earliest: early, peak: p, peakDate: pd === null ? null : str(pd) });
+    });
+    return { ok: ok, legs: res, peak: peak, peakDate: peakDate, limit: rule.limit };
+  }
+  function addDraft(tr, d) {
+    if (!validDraft(d)) return false;
+    tr.drafts = tr.drafts || [];
+    if (tr.drafts.length >= 20) return false;
+    tr.drafts.push({ id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), from: d.from, to: d.to });
+    tr.drafts.sort(byFrom);
+    return true;
+  }
+  function removeDraft(tr, id) {
+    var n = (tr.drafts || []).length; tr.drafts = (tr.drafts || []).filter(function (d) { return d.id !== id; }); return tr.drafts.length !== n;
+  }
+  /* turn every draft into a real (planned) trip and empty the list; returns how many moved */
+  function commitDrafts(tr) {
+    var n = 0;
+    (tr.drafts || []).slice().forEach(function (d) { if (addTrip(tr, { place: '', from: d.from, to: d.to })) n++; });
+    tr.drafts = [];
+    return n;
+  }
+
+  /* days left on each of the next `n` days if nothing new is added (an ongoing stay is assumed to end today) */
+  function forecast(tr, today, n) {
+    today = today || todayStr();
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today), out = [];
+    for (var i = 0; i <= n; i++) out.push({ date: str(t + i), left: rule.limit - usedOn(set, rule, t + i) });
+    return out;
+  }
+
+  /* dated heads-up list for one tracker, soonest first. kind: over | leave_by | frees | breach_ahead | permit_end | permit_gone.
+     in = days from today (0 = today). */
+  function alerts(tr, today) {
+    today = today || todayStr();
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today), out = [];
+    var s = summary(tr, today);
+    function add(kind, d) { out.push({ kind: kind, date: str(d), in: d - t }); }
+    if (s.left < 0) add('over', t);
+    else if (s.inside) {
+      var ld = lastDay(tr, today);
+      if (ld) add('leave_by', dn(ld));
     }
-    return null;
+    var ahead = firstBreach(set, rule, t + 1);
+    if (ahead !== null && s.left >= 0) add('breach_ahead', ahead);
+    if (s.freesOn) add('frees', dn(s.freesOn));
+    if (s.permit) add(s.permit.state === 'gone' ? 'permit_gone' : 'permit_end', dn(tr.expires));
+    return out.sort(function (a, b) { return a.in - b.in; });
+  }
+
+  /* all-day calendar events for every upcoming key date (separate from toIcs, which exports trips). label(kind, tracker) supplies the (translated) title. */
+  function alertsIcs(trackers, today, label) {
+    today = today || todayStr();
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Stayline//EN', 'CALSCALE:GREGORIAN'], stamp = today.replace(/-/g, '') + 'T000000Z';
+    trackers.forEach(function (tr) {
+      alerts(tr, today).forEach(function (a) {
+        if (a.kind === 'over' || a.kind === 'permit_gone' || a.in < 0) return;
+        var day = a.date.replace(/-/g, ''), next = addDays(a.date, 1).replace(/-/g, '');
+        lines.push('BEGIN:VEVENT', 'UID:' + tr.id + '-' + a.kind + '-' + day + '@stayline', 'DTSTAMP:' + stamp,
+          'DTSTART;VALUE=DATE:' + day, 'DTEND;VALUE=DATE:' + next,
+          'SUMMARY:' + icsEsc((label ? label(a.kind, tr) : a.kind) + (tr.name ? ' (' + tr.name + ')' : '')), 'END:VEVENT');
+      });
+    });
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n') + '\r\n';
   }
 
   /* If you are inside today and keep staying, the last day that still fits the rule (null if not inside,
@@ -155,6 +255,11 @@
         if (x && validTrip(x)) tr.trips.push({ id: String(x.id || 't' + i).slice(0, 40), place: String(x.place || '').slice(0, 60), from: x.from, to: x.to || '' });
       });
       tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
+      tr.drafts = [];
+      (Array.isArray(t.drafts) ? t.drafts : []).slice(0, 20).forEach(function (x, i) {
+        if (validDraft(x)) tr.drafts.push({ id: String(x.id || 'd' + i).slice(0, 40), from: x.from, to: x.to });
+      });
+      tr.drafts.sort(byFrom);
       out.push(tr);
     });
     return out;
@@ -182,7 +287,7 @@
 
   /* iCalendar export: one all-day event per trip (DTEND is exclusive, so the day after the last day).
      An ongoing trip ends today. */
-  function icsEsc(v) { return String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+  function icsEsc(v) { return String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
   function toIcs(trackers, today) {
     var t0 = today || todayStr(), stamp = t0.replace(/-/g, '') + 'T000000Z';
     var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Stayline//EN', 'CALSCALE:GREGORIAN'];
@@ -218,6 +323,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

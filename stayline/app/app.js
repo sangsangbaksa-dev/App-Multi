@@ -134,6 +134,53 @@
     return wrap;
   }
 
+  function rel(n) { return n === 0 ? T('todayWord') : n === 1 ? T('inDay') : T('inDays', { n: n }); }
+  function keyDates(tr) {
+    var list = C.alerts(tr, C.todayStr());
+    return h('section', { class: 'card' }, [h('h2', null, T('alertsH')),
+      list.length ? h('ul', { class: 'alerts' }, list.map(function (a) {
+        return h('li', { class: 'al-' + a.kind }, [h('span', null, T('a_' + a.kind)),
+          h('span', { class: 'dates' }, fmt(a.date) + (a.in >= 0 ? ' · ' + rel(a.in) : ''))]);
+      })) : h('p', { class: 'muted' }, T('noAlerts'))]);
+  }
+
+  /* what-if: several future legs replayed on top of the real trips; nothing is saved until "add all" */
+  function itinerary(tr) {
+    var res = C.simulate(tr, tr.drafts || [], C.todayStr()), n = res.legs.length;
+    var from = h('input', { type: 'date', id: 'w-from', 'aria-label': T('from'), value: C.addDays(C.todayStr(), 30) });
+    var to = h('input', { type: 'date', id: 'w-to', 'aria-label': T('to'), value: C.addDays(C.todayStr(), 44) });
+    var err = h('p', { class: 'err', role: 'alert' });
+    var rows = res.legs.map(function (l) {
+      var msg = l.ok ? T('legOk', { n: l.peak, l: res.limit }) : [T('legBreach', { date: fmt(l.breachDate) }),
+        l.trimTo ? ' ' + T('legTrim', { date: fmt(l.trimTo), n: l.fit }) : ' ' + T('legNone'),
+        l.earliest && l.earliest !== l.from ? ' ' + T('legEarly', { date: fmt(l.earliest) }) : ''].join('');
+      return h('li', { class: l.ok ? 'leg-ok' : 'leg-bad' }, [
+        h('div', null, [h('strong', null, fmt(l.from) + ' → ' + fmt(l.to) + ' · ' + l.days), h('span', { class: 'dates' }, msg)]),
+        h('button', { class: 'ghost x', 'aria-label': T('removeLeg'), onclick: function () { C.removeDraft(tr, l.id); save(); render(); } }, '×')
+      ]);
+    });
+    return h('section', { class: 'card' }, [h('h2', null, T('whatH')), h('p', { class: 'muted' }, T('whatHint')),
+      h('div', { class: 'grid2' }, [h('label', null, [T('from'), from]), h('label', null, [T('to'), to])]),
+      err, h('div', { class: 'row' }, [h('button', { class: 'pri small', onclick: function () {
+        if (!C.addDraft(tr, { from: from.value, to: to.value })) { err.textContent = T('badTrip'); return; }
+        save(); render();
+      } }, '+ ' + T('addLeg'))]),
+      n ? h('ul', { class: 'trips legs' }, rows) : h('p', { class: 'muted' }, T('noLegs')),
+      n ? h('p', { class: 'verdict ' + (res.ok ? 'v-ok' : 'v-bad'), role: 'status' }, T(res.ok ? 'whatOk' : 'whatBad')) : null,
+      n ? h('div', { class: 'row' }, [
+        h('button', { class: 'ghost', onclick: function () { tr.drafts = []; save(); render(); } }, T('clearAll')),
+        h('button', { class: 'pri', onclick: function () { var k = C.commitDrafts(tr); save(); render(); toast(T('applied', { n: k })); } }, T('applyAll'))]) : null]);
+  }
+
+  function forecastCard(tr) {
+    var f = C.forecast(tr, C.todayStr(), 180), max = C.cleanRule(tr.rule).limit;
+    var bars = h('div', { class: 'fc', role: 'img', 'aria-label': T('forecastCap') }, f.map(function (x) {
+      var v = Math.max(0, Math.min(max, x.left));
+      return h('i', { title: T('forecastTip', { date: fmt(x.date), n: x.left }), class: x.left < 0 ? 'neg' : '', style: 'height:' + Math.max(2, Math.round(v / max * 100)) + '%' });
+    }));
+    return h('section', { class: 'card' }, [h('h2', null, T('forecastH')), bars, h('p', { class: 'muted small' }, T('forecastCap'))]);
+  }
+
   function tripList(tr) {
     var list = tr.trips.length ? h('ul', { class: 'trips' }, tr.trips.map(function (t) {
       var days = Object.keys(C.stayDays([t], C.todayStr())).length;
@@ -259,6 +306,10 @@
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; download('stayline.csv', C.toCsv(state.trackers, C.todayStr()), 'text/csv'); } }, T('csv')),
         h('button', { class: 'ghost', onclick: function () { download('stayline.ics', C.toIcs(state.trackers, C.todayStr()), 'text/calendar'); } }, T('ics')),
+        h('button', { class: 'ghost', onclick: function () {
+          if (needPro()) return;
+          download('stayline-key-dates.ics', C.alertsIcs(state.trackers, C.todayStr(), function (k) { return T('icsLabel_' + k); }), 'text/calendar'); toast(T('icsDone'));
+        } }, T('icsKey')),
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; window.print(); } }, T('print'))
       ]),
       h('div', { class: 'settings' }, state.pro ? h('span', { class: 'chip' }, T('pro') + ' ✓') : [
@@ -288,7 +339,7 @@
     else {
       kids.push(tabs());
       if (state.trackers.length > 1) kids.push(overview());
-      kids.push(board(tr), planner(tr), tripList(tr));
+      kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr), forecastCard(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }
