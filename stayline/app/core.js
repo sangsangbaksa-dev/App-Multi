@@ -105,6 +105,18 @@
     return null;
   }
 
+  /* If you are inside today and keep staying, the last day that still fits the rule (null if not inside,
+     already over, or the limit is not reached within 800 days). */
+  function lastDay(tr, today) {
+    var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today);
+    if (!set[t] || usedOn(set, rule, t) > rule.limit) return null;
+    for (var d = t + 1; d <= t + 800; d++) {
+      set[d] = true;
+      if (usedOn(set, rule, d) > rule.limit) return str(d - 1);
+    }
+    return null;
+  }
+
   /* cells for the strip: every day of the current window, marked in/out/today */
   function strip(tr, today) {
     var rule = cleanRule(tr.rule), set = stayDays(tr.trips, today), t = dn(today), a = windowStart(rule, t), out = [];
@@ -205,7 +217,7 @@
 
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
-    stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, earliestEntry: earliestEntry, strip: strip,
+    stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;

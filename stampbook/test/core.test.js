@@ -90,3 +90,15 @@ test('attention and search', () => {
   const t = '2026-10-30'; assert.deepEqual(C.attention([a, b, c], t).map(x => x.id), ['p1']);
   assert.equal(C.matches(b, ' jo '), true); assert.equal(C.matches(b, 'zz'), false); assert.equal(C.matches(b, ''), true);
 });
+
+test('monthReport: per-student lessons for one month, excused not counted, formulas neutralised', () => {
+  const a = mk({ student: 'Mina', total: 10, price: 500 });
+  C.addStamp(a, '2026-10-05'); C.addStamp(a, '2026-10-12', '', 'noshow'); C.addStamp(a, '2026-10-19', '', 'excused'); C.addStamp(a, '2026-11-02');
+  const b = mk({ id: 'p2', student: '=evil', total: 4, price: 200 }); C.addStamp(b, '2026-10-08');
+  const c = mk({ id: 'p3', student: 'Idle' }); C.addStamp(c, '2026-09-01');
+  const rows = C.monthReport([a, b, c], '2026-10').split('\n');
+  assert.equal(rows[0], 'month,student,lessons,no_shows,excused,earned,currency');
+  assert.equal(rows[1], '2026-10,Mina,2,1,1,100,USD');
+  assert.equal(rows[2], "2026-10,'=evil,1,0,0,50,USD");
+  assert.equal(rows.length, 3, 'students with no activity that month are left out');
+});

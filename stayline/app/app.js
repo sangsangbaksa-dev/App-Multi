@@ -85,6 +85,7 @@
       h('div', { class: 'sub' }, [
         h('span', null, T('from_win', { date: fmt(s.windowFrom) })),
         s.inside ? h('span', null, T('inside')) : null,
+        s.inside && C.lastDay(tr, C.todayStr()) ? h('span', null, T('leaveBy', { date: fmt(C.lastDay(tr, C.todayStr())) })) : null,
         s.freesOn ? h('span', { class: 'free' }, T('freeOn', { date: fmt(s.freesOn) })) : null,
         s.permit ? h('span', { class: 'permit p-' + s.permit.state }, s.permit.state === 'gone' ? T('permitGone', { date: fmt(tr.expires) }) : s.permit.days === 0 ? T('permitToday') : T('permitLeft', { n: s.permit.days })) : null
       ]),

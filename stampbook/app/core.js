@@ -132,6 +132,20 @@
   }
 
   /* ---- csv ---- */
+  /* per-student report for one month "YYYY-MM": lessons given, no-shows, excused, value of lessons given (per-lesson price) */
+  function monthReport(packs, ym) {
+    var rows = [['month', 'student', 'lessons', 'no_shows', 'excused', 'earned', 'currency']];
+    packs.forEach(function (p) {
+      var inM = function (s) { return s.date.slice(0, 7) === ym; };
+      var n = counted(p).filter(inM).length;
+      var ns = p.stamps.filter(function (s) { return s.kind === 'noshow' && inM(s); }).length;
+      var ex = p.stamps.filter(function (s) { return s.kind === 'excused' && inM(s); }).length;
+      /* no-shows are counted lessons, so they are part of n already; show them separately for information */
+      if (n || ex) rows.push([ym, p.student, n, ns, ex, Math.round(n * perLesson(p) * 100) / 100, p.currency || '']);
+    });
+    return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
+  }
+
   function csvCell(v) {
     v = String(v == null ? '' : v);
     if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; /* neutralise spreadsheet formulas */
@@ -167,7 +181,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
-    encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, csvCell: csvCell, makeKey: makeKey, validKey: validKey
+    encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, monthReport: monthReport, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;
 })(typeof window !== 'undefined' ? window : globalThis);
