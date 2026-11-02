@@ -298,3 +298,34 @@ test('incomeByMonth sums paid packs by start month and currency, skips unpaid', 
   assert.deepEqual(r[1].byCur, { EUR: 80 }); assert.equal(r[0].packs, 0);
   assert.equal(C.incomeCsv(packs, '2026-11', 3), 'month,packs,income,currency\n2026-10,1,80,EUR\n2026-11,2,150.5,USD');
 });
+
+test('make-ups: excused lessons are owed back until a make-up lesson is stamped', () => {
+  const p = { id: 'p1', student: 'Ann', total: 5, price: 50, stamps: [] };
+  C.addStamp(p, '2026-11-02', '', 'excused'); C.addStamp(p, '2026-11-03', '', 'excused');
+  assert.equal(C.makeupsOwed(p), 2); assert.equal(C.remaining(p), 5, 'excused does not use a lesson');
+  C.addStamp(p, '2026-11-09', '', '', true); assert.equal(C.makeupsOwed(p), 1); assert.equal(C.remaining(p), 4);
+  C.addStamp(p, '2026-11-10', '', '', true); C.addStamp(p, '2026-11-11', '', '', true); assert.equal(C.makeupsOwed(p), 0, 'never negative');
+  C.addStamp(p, '2026-11-12', '', 'noshow', true); assert.ok(!p.stamps.some(s => s.kind === 'noshow' && s.mk), 'a no-show is not a make-up');
+  assert.deepEqual(C.makeupList([p]), []);
+  const q = { id: 'q', student: 'Bo', total: 3, price: 30, stamps: [] }; C.addStamp(q, '2026-11-01', '', 'excused');
+  assert.equal(C.makeupList([p, q]).length, 1); assert.equal(C.makeupList([p, q])[0].student, 'Bo');
+});
+
+test('pace: warns when the remaining lessons will not fit before expiry', () => {
+  const mk = (dates, total, expires) => { const p = { id: 'x', student: 'S', total, price: 100, expires, stamps: [] }; dates.forEach(d => C.addStamp(p, d)); return p; };
+  const slow = mk(['2026-10-01', '2026-10-15', '2026-10-29'], 10, '2026-12-01');
+  const r = C.pace(slow, '2026-11-02');
+  assert.equal(r.atRisk, true); assert.ok(r.finish > '2026-12-01'); assert.ok(r.needPerWeek > 1);
+  const fast = mk(['2026-10-26', '2026-10-28', '2026-10-30', '2026-11-01'], 8, '2026-12-31');
+  assert.equal(C.pace(fast, '2026-11-02').atRisk, false);
+  assert.equal(C.pace(mk(['2026-10-01'], 5, '2026-12-01'), '2026-11-02').known, false, 'too little history to project');
+  assert.equal(C.pace(mk([], 5, ''), '2026-11-02'), null, 'no expiry, nothing to warn about');
+  assert.equal(C.pace(mk(['2026-10-01', '2026-10-08'], 2, '2026-12-01'), '2026-11-02'), null, 'pack complete');
+  assert.equal(C.pace(mk(['2026-10-01', '2026-10-08'], 5, '2026-11-01'), '2026-11-02'), null, 'already expired');
+  assert.equal(C.packsAtRisk([slow, fast], '2026-11-02').length, 1);
+});
+
+test('receipt data', () => {
+  const r = C.receipt({ student: 'Ann', total: 10, price: 250, currency: 'USD', start: '2026-11-01', expires: '2027-02-01' }, 'Prof. Park');
+  assert.equal(r.perLesson, 25); assert.equal(r.paid, true); assert.equal(r.teacher, 'Prof. Park');
+});

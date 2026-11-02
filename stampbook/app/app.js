@@ -205,6 +205,13 @@
     var wc = C.weekdayCounts(state.packs), wmax = Math.max.apply(null, wc), ws = weekStart();
     box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insWeekday')),
       bars([0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = (i + ws) % 7; return { v: wc[d], l: fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)), hot: wmax > 0 && wc[d] === wmax }; }), wmax, 'wk')]));
+    var mkl = C.makeupList(state.packs);
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('mkH')), h('p', { class: 'note' }, T('mkB')),
+      mkl.length ? h('ul', { class: 'evs' }, mkl.map(function (r) { return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('mkBtn', { n: r.owed }) + ' · ' + T('left', { n: r.remaining }))]); }))
+        : h('p', { class: 'note' }, T('mkNone'))]));
+    var risk = C.packsAtRisk(state.packs, today);
+    if (risk.length) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('paceH')), h('ul', { class: 'evs' }, risk.map(function (r) {
+      return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('paceRisk', { date: r.finish, exp: r.expires, n: Math.ceil(r.needPerWeek * 10) / 10 }))]); }))]));
     var qs = C.quiet(state.packs, today, 14);
     box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insQuiet')), h('p', { class: 'note' }, T('insQuietB', { d: 14 })),
       qs.length ? h('ul', { class: 'evs' }, qs.map(function (r) {
@@ -290,18 +297,23 @@
     var more = [];
     if (canStamp) more.push(h('button', { class: 'ghost', title: T('noshowTip'), onclick: function () { stamp(p, dateIn.value || today, 'noshow'); } }, T('kNoshow')),
       h('button', { class: 'ghost', title: T('excusedTip'), onclick: function () { stamp(p, dateIn.value || today, 'excused'); } }, T('kExcused')));
+    var owed = C.makeupsOwed(p);
+    if (canStamp && owed > 0) more.push(h('button', { class: 'ghost mk', onclick: function () { stamp(p, dateIn.value || today, '', true); } }, T('mkBtn', { n: owed })));
+    var pc = st === 'active' || st === 'low' ? C.pace(p, today) : null;
+    var paceBar = pc && pc.atRisk ? h('p', { class: 'warnbar', role: 'status' }, [h('b', {}, T('paceH') + ': '), T('paceRisk', { date: pc.finish, exp: p.expires, n: Math.ceil(pc.needPerWeek * 10) / 10 })]) : null;
     var foot = [];
     if (st === 'low' || st === 'expired' || st === 'done') foot.push(h('button', { class: 'pri', onclick: function () { renewPack(p); } }, T('renewPack')));
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { copy(receiptText(p), T('receiptCopied')); } }, T('receiptBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
-      h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del')));
+      h('button', { class: 'ghost', onclick: function () { deletePack(p); } }, T('del')));
     var log = h('details', { class: 'log' }, [h('summary', {}, T('hist') + ' (' + p.stamps.length + ')'),
       p.stamps.length ? h('ul', {}, p.stamps.slice().reverse().map(function (s) {
-        return h('li', {}, [h('span', { class: 'ld' }, s.date), s.kind ? h('span', { class: 'tag t-' + s.kind }, T(s.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null,
+        return h('li', {}, [h('span', { class: 'ld' }, s.date), s.kind ? h('span', { class: 'tag t-' + s.kind }, T(s.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, s.mk ? h('span', { class: 'tag t-mk' }, T('mkTag')) : null,
           h('span', { class: 'ln' }, s.note || ''),
           h('button', { class: 'ghost sm', 'aria-label': T('editNote') + ' ' + s.date, onclick: function () { var v = prompt(T('notePh'), s.note || ''); if (v !== null) { C.setNote(p, s.id, v); save(); render(); } } }, T('editNote'))]);
       })) : h('p', { class: 'note' }, T('histEmpty'))]);
@@ -309,7 +321,7 @@
     return h('section', { class: 'card ' + st, 'aria-label': p.student }, [
       h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', {}, [p.paid === false ? h('span', { class: 'chip c-expired', style: 'margin-right:6px' }, T('unpaid')) : null, h('span', { class: 'chip c-' + st }, T('s_' + st))])]),
       h('div', { class: 'meta' }, [T('left', { n: rem }), h('span', { class: soon ? 'soon' : '' }, exp + (soon ? ' · ' + T('soon') : '')), money(p.price, p.currency)].reduce(function (a, x, i) { if (i) a.push(' · '); a.push(x); return a; }, [])),
-      grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
+      paceBar, grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
       h('div', { class: 'foot' }, foot)
     ]);
   }
@@ -335,13 +347,23 @@
     if (r.expires) out.push(T('reportExp', { date: r.expires }));
     return out.join('\n');
   }
+  function receiptText(p) {
+    var r = C.receipt(p, state.teacher);
+    return T('receiptT', { name: r.student, total: r.total, price: money(r.price, r.currency), per: money(r.perLesson, r.currency), start: r.start, exp: r.expires || T('receiptNoExp'), from: r.teacher ? T('receiptFrom', { t: r.teacher }) : '' }).replace(/\n+$/, '');
+  }
+  /* delete is undoable for a few seconds instead of asking first: a mistaken tap loses nothing */
+  function deletePack(p) {
+    var at = state.packs.indexOf(p); if (at === -1) return;
+    state.packs.splice(at, 1); save(); render();
+    toast(T('delDone') + ': ' + p.student, T('undo'), function () { state.packs.splice(Math.min(at, state.packs.length), 0, p); save(); render(); });
+  }
   function renewPack(p) {
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'low') return showUpgrade();
     var n = C.renew(p, C.todayStr()); state.packs.unshift(n); save(); render(); toast(T('renewed', { name: p.student }));
   }
-  function stamp(p, date, kind) {
-    if (!C.addStamp(p, date, '', kind)) return;
+  function stamp(p, date, kind, makeup) {
+    if (!C.addStamp(p, date, '', kind, makeup)) return;
     var id = p.stamps.filter(function (x) { return x.date === date; }).pop().id;
     save(); render();
     toast(T('stamped', { date: date }), T('undo'), function () { C.removeStamp(p, id); save(); render(); });
@@ -430,7 +452,7 @@
       state.pro ? null : h('div', {}, [
         h('label', { for: 'lic' }, T('lic')),
         h('div', { class: 'row' }, [key,
-          h('button', { class: 'pri', onclick: function () { activate(key.value); } }, T('activate'))]),
+          h('button', { id: 'act', class: 'pri', onclick: function () { activate(key.value); } }, T('activate'))]),
         h('p', {}, [h('a', { href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))])
       ])
     ]);
@@ -439,7 +461,9 @@
   /* Licence: the server function checks the key with the payment provider when it is configured. If it answers
      {configured:false} (or is not there), the older offline checksum is used. A network failure never falls back. */
   function callLicense(body) {
-    return fetch('/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    var ctl = window.AbortController ? new AbortController() : null, timer = ctl ? setTimeout(function () { ctl.abort(); }, 10000) : 0;
+    return fetch('/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { clearTimeout(timer); return r; }, function (e) { clearTimeout(timer); throw e; })
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }, function () { return { status: r.status, j: null }; }); });
   }
   function grant(mode, key, instanceId) { state.pro = true; state.key = key; state.licMode = mode; state.instanceId = instanceId || ''; state.licChecked = Date.now(); save(); render(); toast(T('okKey')); }
@@ -452,7 +476,8 @@
         return r.j.ok ? grant('server', key, r.j.instanceId) : toast(T('badKey'));
       }
       if (C.validKey(key)) grant('offline', key.toUpperCase()); else toast(T('badKey'));
-    }, function () {
+    }, function (err) {
+      if (err && err.name === 'AbortError') return toast(T('netTimeout'));
       /* no server function reachable at all: only the offline scheme can be checked, and only when the app is served without one */
       if (!navigator.onLine) return toast(T('netErr'));
       if (C.validKey(key)) grant('offline', key.toUpperCase()); else toast(T('badKey'));
