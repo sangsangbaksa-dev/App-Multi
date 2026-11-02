@@ -195,8 +195,7 @@
     return h;
   }
   function reportTab(c) {
-    var evs = C.events(c.entries);
-    if (!evs.length) return '<div class="empty small"><h3>' + esc(t('repEmptyH')) + '</h3><p>' + esc(t('repEmptyB')) + '</p></div>';
+    if (!c.entries.some(function (e) { return e.type === 'event'; })) return '<div class="empty small"><h3>' + esc(t('repEmptyH')) + '</h3><p>' + esc(t('repEmptyB')) + '</p></div>';
     return '<div class="btns wrap"><button type="button" class="pri" data-act="copyrep">' + esc(t('copyRep')) + '</button><button type="button" class="sec" data-act="print">' + esc(t('printRep')) + '</button><button type="button" class="ghost" data-act="dlmd">' + esc(t('dlMd')) + '</button><button type="button" class="ghost" data-act="dlcsv">' + esc(t('dlCsv')) + '</button></div>' +
       '<p class="hint">' + esc(t('repHint')) + '</p><p id="chainline" class="chain" role="status">' + esc(t('verifying')) + '</p><button type="button" class="ghost" data-act="verify">' + esc(t('verifyNow')) + '</button><pre id="repview" class="rep" tabindex="0" aria-label="' + esc(t('tab_report')) + '"></pre><div id="repphotos" class="repphotos"></div>';
   }
@@ -341,6 +340,7 @@
       '<fieldset><legend>' + esc(t('quietWord')) + '</legend><label class="chk"><input type="checkbox" id="c-qon"' + (q ? ' checked' : '') + '> ' + esc(t('quietOn')) + '</label><div class="two"><div><label for="c-qa">' + esc(t('quietFrom')) + '</label><input id="c-qa" type="number" min="0" max="23" value="' + (q ? q[0] : 22) + '"></div><div><label for="c-qb">' + esc(t('quietTo')) + '</label><input id="c-qb" type="number" min="0" max="23" value="' + (q ? q[1] : 7) + '"></div></div></fieldset>' + btnRow(), function (form) {
       var name = $('#c-name', form).value.trim(); if (!name) { $('#c-name', form).focus(); return err(t('errName')); }
       if ($('#c-qon', form).checked && ($('#c-qa', form).value === '' || $('#c-qb', form).value === '')) return err(t('errQuiet'));
+      if ($('#c-qon', form).checked && $('#c-qa', form).value === $('#c-qb', form).value) return err(t('errQuiet'));
       var quiet = $('#c-qon', form).checked ? [C.clampInt($('#c-qa', form).value, 0, 23), C.clampInt($('#c-qb', form).value, 0, 23)] : null;
       var o = c || { id: C.uid(), kind: $('#c-kind', form).value, created: now(), archived: false, entries: [], steps: [], live: null };
       var snap = { n: o.name, w: o.counterpart, g: o.goal, q: o.quiet, cur: S.cur }; o.name = name; o.counterpart = $('#c-who', form).value.trim(); o.goal = $('#c-goal', form).value.trim(); o.quiet = quiet; if (!c) S.cases.push(o); S.cur = o.id; if (!c) S.tab = 'log';
@@ -431,7 +431,7 @@
     if (!c) return;
     if (act === 'tab') { S.tab = b.getAttribute('data-tab'); render(); var tb = $('#tab-' + S.tab); tb && tb.focus(); if (S.tab === 'report') fillReport(); return; }
     if (act === 'log') return entryDialog(c);
-    if (act === 'livestart') { c.live = { start: now() }; save(); render(); return; }
+    if (act === 'livestart') { c.live = { start: now() }; if (!save()) { c.live = null; return; } render(); return; }
     if (act === 'livedrop') { var lv = c.live; c.live = null; if (!save()) { c.live = lv; return; } render(); toast(t('liveDropped'), t('undo'), function () { c.live = lv; save(); render(); }); return; }
     if (act === 'livestop') { var st = new Date(c.live.start); return entryDialog(c, { at: C.toLocalStamp(st), dur: Math.max(1, Math.ceil((now() - c.live.start) / 6e4)), live: true }); }
     if (act === 'note') return noteDialog(c, id);
