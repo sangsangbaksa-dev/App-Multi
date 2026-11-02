@@ -45,7 +45,7 @@
     e.hash = await sha256Hex(payload(prev, e));
     return e;
   }
-  async function verifyChain(entries) {
+  async function verifyChain(entries, cp) {
     var prev = '';
     for (var i = 0; i < entries.length; i++) {
       var e = entries[i];
@@ -53,7 +53,11 @@
       if (await sha256Hex(payload(prev, e)) !== e.hash) return { ok: false, bad: i };
       prev = e.hash;
     }
-    return { ok: true, bad: -1, head: prev };
+    if (cp && cp.n) {
+      if (entries.length < cp.n) return { ok: false, bad: entries.length, truncated: true };
+      if (entries[cp.n - 1].hash !== cp.head) return { ok: false, bad: cp.n - 1 };
+    }
+    return { ok: true, bad: -1, head: prev, n: entries.length };
   }
   function clampInt(v, lo, hi) { v = Math.round(Number(v)); if (!isFinite(v)) v = lo; return Math.max(lo, Math.min(hi, v)); }
   function cleanTags(t) {
@@ -158,7 +162,7 @@
       if (k === 'complaint') return st.last30 >= 2 || hi >= 2 ? { key: 'complaint', kind: k } : { key: 'keep' };
       return st.last30 >= 2 ? { key: 'next', kind: k } : { key: 'keep' };
     }
-    return { key: 'keep' };
+    return order.every(function (k) { return done[k]; }) ? { key: 'exhausted' } : { key: 'keep' };
   }
 
   /* ---------- exports ---------- */
@@ -193,6 +197,7 @@
       var isV = !!vd[e.id], tags = e.tags.length ? ' [' + e.tags.join(', ') + ']' : '';
       out.push((i + 1) + '. **' + e.at.replace('T', ' ') + '**' + (e.sev ? ' · ' + L.sev + ' ' + e.sev + '/5' : '') + (e.dur ? ' · ' + e.dur + ' min' : '') + tags + (isLate(e) ? ' · ' + L.late : '') + (isV ? ' · ' + L.voidedBadge.toUpperCase() : ''));
       out.push('   ' + e.text.replace(/\n+/g, ' '));
+      out.push('   #' + e.hash.slice(0, 16));
       if (e.witness) out.push('   ' + L.witness + ': ' + e.witness);
       if (e.photos.length) out.push('   ' + L.photos + ': ' + e.photos.length);
       if (e.reported) out.push('   ' + L.reportedTo);
@@ -204,7 +209,7 @@
       c.steps.slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; }).forEach(function (s) { out.push('- ' + s.at + ' · ' + (L.stepNames[s.kind] || s.kind) + (s.note ? ': ' + s.note : '') + (s.due ? ' (' + L.due + ' ' + s.due + (s.done ? ', ' + L.answered : '') + ')' : '')); });
     }
     out.push('', '## ' + L.integrity, '');
-    out.push(chain && chain.ok ? L.chainOk.replace('{n}', c.entries.length).replace('{h}', chain.head.slice(0, 16)) : L.chainBad);
+    out.push(chain && chain.ok ? L.chainOk.replace('{n}', c.entries.length).replace('{h}', chain.head) : L.chainBad);
     return out.join('\n') + '\n';
   }
 
@@ -212,10 +217,10 @@
   function sanitizeCase(c) {
     if (!c || typeof c !== 'object') return null;
     var kind = KINDS[c.kind] ? c.kind : 'other', q = Array.isArray(c.quiet) && c.quiet.length === 2 ? [clampInt(c.quiet[0], 0, 23), clampInt(c.quiet[1], 0, 23)] : null;
-    var entries = (Array.isArray(c.entries) ? c.entries : []).filter(function (e) {
-      return e && typeof e.id === 'string' && typeof e.hash === 'string' && typeof e.prev === 'string' && ['event', 'note', 'void'].indexOf(e.type) >= 0 && parseAt(e.at) && isFinite(e.rec) && typeof e.text === 'string';
-    }).map(function (e) {
-      return { id: e.id.slice(0, 40), type: e.type, ref: String(e.ref || '').slice(0, 40), at: e.at, rec: +e.rec, text: e.text.slice(0, 4000), sev: clampInt(e.sev, 0, 5), dur: clampInt(e.dur, 0, 14400), tags: cleanTags(e.tags), witness: String(e.witness || '').slice(0, 200), photos: (Array.isArray(e.photos) ? e.photos : []).slice(0, 6).map(function (p) { return { id: String(p.id).slice(0, 40), h: String(p.h).slice(0, 64) }; }), reported: !!e.reported, prev: e.prev, hash: e.hash };
+    /* Never drop a damaged record silently: keep it (coerced) so the chain check fails visibly. */
+    var entries = (Array.isArray(c.entries) ? c.entries : []).filter(function (e) { return e && typeof e === 'object'; }).map(function (e) {
+      var okShape = typeof e.id === 'string' && typeof e.hash === 'string' && typeof e.prev === 'string' && ['event', 'note', 'void'].indexOf(e.type) >= 0 && parseAt(e.at) && isFinite(e.rec) && typeof e.text === 'string';
+      return { id: String(e.id || uid()).slice(0, 40), type: ['event', 'note', 'void'].indexOf(e.type) >= 0 ? e.type : 'event', ref: String(e.ref || '').slice(0, 40), at: parseAt(e.at) ? e.at : '1970-01-01T00:00', rec: isFinite(e.rec) ? +e.rec : 0, text: String(e.text == null ? '' : e.text).slice(0, 4000), sev: clampInt(e.sev, 0, 5), dur: clampInt(e.dur, 0, 14400), tags: cleanTags(e.tags), witness: String(e.witness || '').slice(0, 200), photos: (Array.isArray(e.photos) ? e.photos : []).slice(0, 6).filter(function (p) { return p && p.id; }).map(function (p) { return { id: String(p.id).slice(0, 40), h: String(p.h).slice(0, 64) }; }), reported: !!e.reported, prev: okShape ? e.prev : '?', hash: okShape ? e.hash : '' };
     });
     var steps = (Array.isArray(c.steps) ? c.steps : []).filter(function (s) { return s && STEP_KINDS.indexOf(s.kind) >= 0 && /^\d{4}-\d{2}-\d{2}$/.test(s.at || ''); }).map(function (s) {
       return { id: String(s.id || uid()).slice(0, 40), kind: s.kind, at: s.at, note: String(s.note || '').slice(0, 300), due: /^\d{4}-\d{2}-\d{2}$/.test(s.due || '') ? s.due : '', done: !!s.done };

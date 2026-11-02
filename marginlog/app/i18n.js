@@ -43,9 +43,9 @@
     weeksH: 'Last 8 weeks', weeksAria: 'Incidents per week, last 8 weeks', factsH: 'Facts for your report',
     fact_total: '{n} incidents between {a} and {b}.', fact_gap: 'Longest quiet stretch: {n} days.', fact_minutes: '{n} minutes disturbed in total (about {h} hours).', fact_quiet: '{n} incidents fell inside quiet hours ({a}–{b}).', fact_late: '{n} entries were recorded more than 48 hours late.',
     fact_trend_up: 'Getting worse: {a} in the last 30 days against {b} before.', fact_trend_down: 'Easing: {a} in the last 30 days against {b} before.', fact_trend_flat: 'Steady: {a} in the last 30 days, {b} before.',
-    ladderH: 'Escalation ladder', stepsH: 'What you have done', stepsEmpty: 'No steps logged. Record every talk, letter or complaint with its date.', stepKind: 'Step', stepDate: 'Date done', stepNote: 'Details (optional)', stepDue: 'Answer due by (optional)', stepDueHelp: 'If you set a date, Marginlog warns you when it passes without an answer.', stepSaved: 'Step saved.', stepRemoved: 'Step removed.', dueWord: 'answer due', answered: 'answered', overdueWord: 'overdue',
+    ladderH: 'Escalation ladder', stepsH: 'What you have done', stepsEmpty: 'No steps logged. Record every talk, letter or complaint with its date.', stepKind: 'Step', stepDate: 'Date done', stepNote: 'Details (optional)', stepDue: 'Answer due by (optional)', stepDueHelp: 'If you set a date, the step shows as overdue when you open Marginlog after it passes without an answer.', stepSaved: 'Step saved.', stepRemoved: 'Step removed.', dueWord: 'answer due', answered: 'answered', overdueWord: 'overdue',
     stepHint_talk: 'A calm word. Note the date and reply.', stepHint_written: 'A dated message or letter. Keep a copy.', stepHint_complaint: 'To the building manager, HR, platform or company.', stepHint_mediation: 'A neutral third party helps both sides.', stepHint_authority: 'Local authority or police non-emergency line.', stepHint_legal: 'Tenancy tribunal, labour board, small claims or a lawyer.',
-    repEmptyH: 'Nothing to report yet', repEmptyB: 'Log at least one incident to build a report.', generated: 'Generated', summary: 'Summary', timeline: 'Timeline', pattern: 'Pattern', repHint: 'Copy or print this report. It shows the seal check at the bottom, so the reader can see nothing was rewritten.', copyRep: 'Copy report', printRep: 'Print / save PDF', dlMd: 'Download .md', dlCsv: 'Download CSV', copied: 'Report copied.', copyFail: 'Could not copy. Text is selected, press Ctrl+C.',
+    repEmptyH: 'Nothing to report yet', repEmptyB: 'Log at least one incident to build a report.', generated: 'Generated', summary: 'Summary', timeline: 'Timeline', pattern: 'Pattern', repHint: 'Copy or print this report. The last line is the seal check, worked out on the device that holds the log; it lists the final fingerprint so you or the reader can compare it with a copy kept elsewhere.', copyRep: 'Copy report', printRep: 'Print / save PDF', dlMd: 'Download .md', dlCsv: 'Download CSV', copied: 'Report copied.', copyFail: 'Could not copy. Text is selected, press Ctrl+C.',
     integrity: 'Integrity', verifying: 'Checking the seal…', verifyNow: 'Check seal again', chainOk: 'Seal intact. Sealed records: {n}. Last fingerprint: {h}. Covers entries, notes, voids and photos; not case details or steps.', chainBad: 'Seal check failed. Records or photos differ from when they were sealed.', chainBadAt: 'Seal broken at record {n}. Data was changed outside the app.', photoHashBad: '{n} photos are missing or changed.',
     sealExplain: 'Each entry is fingerprinted together with the previous one, like a chain. Editing or deleting an old entry breaks the fingerprints after it, and the report says so. This catches after-the-fact edits to the stored data; it cannot stop someone who rebuilds the whole chain, so keep the last fingerprint (shown in the report) or a backup somewhere off this device. It is not a notarised timestamp.',
     archive: 'Archive case', unarchive: 'Unarchive case', deleteCase: 'Delete case', delConfirm: 'Delete “{name}” and all its entries?', delHint: 'You can undo for a few seconds. Back up first if this is evidence.', caseDeleted: 'Case deleted.',
@@ -57,7 +57,13 @@
     rmPhoto: 'Remove photo',
     noscript: 'Marginlog needs JavaScript.',
     corrupt: 'Saved data could not be read. A copy was kept under the key {k}.',
-    archivedMsg: 'Case archived. Pick it from the case list to unarchive.', unarchivedMsg: 'Case restored.'
+    archivedMsg: 'Case archived. Pick it from the case list to unarchive.', unarchivedMsg: 'Case restored.',
+    sg_exhausted: 'You have used every step on the ladder. Keep logging and keep your reports; a local advice service can help with what comes next.',
+    corruptBlocked: 'Saved data could not be read and no copy could be kept, so saving is switched off to protect it. Free some storage or back up, then reload.',
+    otherTab: 'Another tab changed this data. Reloaded.',
+    errQuiet: 'Enter both hours for quiet time, or turn it off.',
+    chainTrunc: 'Records are missing: this log is shorter than it was last time it was saved. Data was removed outside the app.',
+    restoredSkipped: '{n} already here, skipped.'
   };
   L.ko = {
     name: '한국어', language: '언어', dataBtn: '백업', close: '닫기', cancel: '취소', save: '저장', delete: '삭제', undo: '되돌리기',
@@ -101,9 +107,9 @@
     weeksH: '최근 8주', weeksAria: '최근 8주 주별 사건 수', factsH: '보고서용 사실',
     fact_total: '{a}부터 {b}까지 사건 {n}건.', fact_gap: '가장 길게 조용했던 기간: {n}일.', fact_minutes: '방해받은 시간 총 {n}분(약 {h}시간).', fact_quiet: '{n}건이 정숙 시간({a}–{b}) 안에 발생.', fact_late: '{n}건은 48시간 넘게 늦게 기록됨.',
     fact_trend_up: '악화: 최근 30일 {a}건, 그 전 {b}건.', fact_trend_down: '완화: 최근 30일 {a}건, 그 전 {b}건.', fact_trend_flat: '비슷함: 최근 30일 {a}건, 그 전 {b}건.',
-    ladderH: '단계별 대응', stepsH: '지금까지 한 일', stepsEmpty: '기록된 대응이 없습니다. 대화·편지·민원을 날짜와 함께 남기세요.', stepKind: '단계', stepDate: '실행일', stepNote: '내용 (선택)', stepDue: '답변 기한 (선택)', stepDueHelp: '날짜를 정하면 답이 없이 기한이 지날 때 알려 드립니다.', stepSaved: '저장했습니다.', stepRemoved: '삭제했습니다.', dueWord: '답변 기한', answered: '답변 받음', overdueWord: '기한 지남',
+    ladderH: '단계별 대응', stepsH: '지금까지 한 일', stepsEmpty: '기록된 대응이 없습니다. 대화·편지·민원을 날짜와 함께 남기세요.', stepKind: '단계', stepDate: '실행일', stepNote: '내용 (선택)', stepDue: '답변 기한 (선택)', stepDueHelp: '날짜를 정하면, 답 없이 기한이 지난 뒤 Marginlog를 열 때 기한 지남으로 표시됩니다.', stepSaved: '저장했습니다.', stepRemoved: '삭제했습니다.', dueWord: '답변 기한', answered: '답변 받음', overdueWord: '기한 지남',
     stepHint_talk: '차분한 대화. 날짜와 답을 적어 두세요.', stepHint_written: '날짜가 있는 문자·편지. 사본을 보관하세요.', stepHint_complaint: '관리사무소, 인사팀, 플랫폼, 회사에 공식 민원.', stepHint_mediation: '중립적인 제3자가 양쪽을 돕습니다.', stepHint_authority: '관할 기관이나 경찰 비긴급 전화.', stepHint_legal: '분쟁조정위, 노동청, 소액 소송, 변호사.',
-    repEmptyH: '보고할 내용이 없습니다', repEmptyB: '보고서를 만들려면 사건을 하나 이상 기록하세요.', generated: '작성 시각', summary: '요약', timeline: '타임라인', pattern: '패턴', repHint: '보고서를 복사하거나 인쇄하세요. 맨 아래에 봉인 검사 결과가 있어 읽는 사람이 기록이 바뀌지 않았음을 알 수 있습니다.', copyRep: '보고서 복사', printRep: '인쇄 / PDF 저장', dlMd: '.md 다운로드', dlCsv: 'CSV 다운로드', copied: '복사했습니다.', copyFail: '복사하지 못했습니다. 텍스트가 선택되었으니 Ctrl+C를 누르세요.',
+    repEmptyH: '보고할 내용이 없습니다', repEmptyB: '보고서를 만들려면 사건을 하나 이상 기록하세요.', generated: '작성 시각', summary: '요약', timeline: '타임라인', pattern: '패턴', repHint: '보고서를 복사하거나 인쇄하세요. 마지막 줄은 기록을 가진 기기에서 계산한 봉인 검사이며, 마지막 지문이 적혀 있어 다른 곳에 둔 사본과 비교할 수 있습니다.', copyRep: '보고서 복사', printRep: '인쇄 / PDF 저장', dlMd: '.md 다운로드', dlCsv: 'CSV 다운로드', copied: '복사했습니다.', copyFail: '복사하지 못했습니다. 텍스트가 선택되었으니 Ctrl+C를 누르세요.',
     integrity: '무결성', verifying: '봉인 확인 중…', verifyNow: '봉인 다시 확인', chainOk: '봉인 정상. 봉인된 기록: {n}건. 마지막 지문: {h}. 기록·메모·무효 처리·사진을 포함하며 사건 정보와 대응 단계는 제외됩니다.', chainBad: '봉인 검사 실패. 기록이나 사진이 봉인 당시와 다릅니다.', chainBadAt: '{n}번째 기록에서 봉인이 깨졌습니다. 앱 밖에서 데이터가 바뀌었습니다.', photoHashBad: '사진 {n}장이 없거나 바뀌었습니다.',
     sealExplain: '각 기록은 직전 기록과 함께 지문이 찍혀 사슬처럼 이어집니다. 오래된 기록을 고치거나 지우면 뒤의 지문이 모두 깨지고 보고서에 표시됩니다. 저장된 데이터를 사후에 고친 경우를 잡아내지만 사슬 전체를 다시 만든 경우는 막지 못하므로, 마지막 지문(보고서에 표시)이나 백업을 이 기기 밖에도 보관하세요. 공증된 시각 증명은 아닙니다.',
     archive: '사건 보관', unarchive: '보관 해제', deleteCase: '사건 삭제', delConfirm: '“{name}”과(와) 모든 기록을 삭제할까요?', delHint: '몇 초 동안 되돌릴 수 있습니다. 증거라면 먼저 백업하세요.', caseDeleted: '사건을 삭제했습니다.',
@@ -115,7 +121,13 @@
     rmPhoto: '사진 제거',
     noscript: 'Marginlog를 쓰려면 JavaScript가 필요합니다.',
     corrupt: '저장된 데이터를 읽을 수 없습니다. 사본을 {k} 키에 보관했습니다.',
-    archivedMsg: '사건을 보관했습니다. 사건 목록에서 선택해 보관을 해제할 수 있습니다.', unarchivedMsg: '사건을 복원했습니다.'
+    archivedMsg: '사건을 보관했습니다. 사건 목록에서 선택해 보관을 해제할 수 있습니다.', unarchivedMsg: '사건을 복원했습니다.',
+    sg_exhausted: '단계별 대응을 모두 거쳤습니다. 계속 기록하고 보고서를 보관하세요. 다음 단계는 지역 상담 기관의 도움을 받을 수 있습니다.',
+    corruptBlocked: '저장된 데이터를 읽을 수 없고 사본도 남기지 못해, 보호를 위해 저장을 껐습니다. 저장 공간을 확보하거나 백업한 뒤 새로고침하세요.',
+    otherTab: '다른 탭에서 데이터가 바뀌어 다시 불러왔습니다.',
+    errQuiet: '정숙 시간의 두 시각을 모두 입력하거나 기능을 끄세요.',
+    chainTrunc: '기록이 사라졌습니다. 마지막 저장 때보다 기록이 적습니다. 앱 밖에서 데이터가 지워졌습니다.',
+    restoredSkipped: '이미 있는 {n}개는 건너뛰었습니다.'
   };
   L.ja = {
     name: '日本語', language: '言語', dataBtn: 'バックアップ', close: '閉じる', cancel: 'キャンセル', save: '保存', delete: '削除', undo: '元に戻す',
@@ -159,9 +171,9 @@
     weeksH: '直近8週間', weeksAria: '直近8週間の週ごとの出来事数', factsH: '報告書に使える事実',
     fact_total: '{a}〜{b}の間に{n}件。', fact_gap: '最も長く静かだった期間：{n}日。', fact_minutes: '妨げられた時間は合計{n}分（約{h}時間）。', fact_quiet: '{n}件が静かな時間帯（{a}–{b}）に発生。', fact_late: '{n}件は48時間以上遅れて記録。',
     fact_trend_up: '悪化：直近30日で{a}件、その前は{b}件。', fact_trend_down: '改善：直近30日で{a}件、その前は{b}件。', fact_trend_flat: '横ばい：直近30日で{a}件、その前は{b}件。',
-    ladderH: 'エスカレーションの段階', stepsH: 'これまでにしたこと', stepsEmpty: '対応の記録はありません。会話・手紙・苦情を日付つきで残しましょう。', stepKind: '段階', stepDate: '実施日', stepNote: '詳細（任意）', stepDue: '回答期限（任意）', stepDueHelp: '日付を設定すると、回答なしで過ぎたときにお知らせします。', stepSaved: '保存しました。', stepRemoved: '削除しました。', dueWord: '回答期限', answered: '回答あり', overdueWord: '期限切れ',
+    ladderH: 'エスカレーションの段階', stepsH: 'これまでにしたこと', stepsEmpty: '対応の記録はありません。会話・手紙・苦情を日付つきで残しましょう。', stepKind: '段階', stepDate: '実施日', stepNote: '詳細（任意）', stepDue: '回答期限（任意）', stepDueHelp: '日付を設定すると、回答なしで過ぎたあとに Marginlog を開いたとき期限切れと表示されます。', stepSaved: '保存しました。', stepRemoved: '削除しました。', dueWord: '回答期限', answered: '回答あり', overdueWord: '期限切れ',
     stepHint_talk: '穏やかな会話。日付と返答を控えます。', stepHint_written: '日付入りのメッセージや手紙。控えを保管。', stepHint_complaint: '管理会社・人事・プラットフォーム・会社へ正式に。', stepHint_mediation: '中立の第三者が双方を支援します。', stepHint_authority: '自治体や警察の非緊急窓口。', stepHint_legal: '調停・労働局・少額訴訟・弁護士。',
-    repEmptyH: '報告する内容がありません', repEmptyB: '報告書を作るには出来事を1件以上記録してください。', generated: '作成日時', summary: '概要', timeline: '時系列', pattern: 'パターン', repHint: '報告書をコピーまたは印刷できます。末尾に封印チェックの結果が入り、読む人は記録が書き換えられていないと確認できます。', copyRep: '報告書をコピー', printRep: '印刷 / PDF保存', dlMd: '.md をダウンロード', dlCsv: 'CSV をダウンロード', copied: 'コピーしました。', copyFail: 'コピーできませんでした。テキストを選択したので Ctrl+C を押してください。',
+    repEmptyH: '報告する内容がありません', repEmptyB: '報告書を作るには出来事を1件以上記録してください。', generated: '作成日時', summary: '概要', timeline: '時系列', pattern: 'パターン', repHint: '報告書をコピーまたは印刷できます。最終行は記録を持つ端末で計算した封印チェックで、最後の指紋を記載しているので、別の場所に保管した控えと照合できます。', copyRep: '報告書をコピー', printRep: '印刷 / PDF保存', dlMd: '.md をダウンロード', dlCsv: 'CSV をダウンロード', copied: 'コピーしました。', copyFail: 'コピーできませんでした。テキストを選択したので Ctrl+C を押してください。',
     integrity: '完全性', verifying: '封印を確認中…', verifyNow: '封印を再確認', chainOk: '封印は正常。封印済み記録：{n}件。最後の指紋：{h}。記録・メモ・無効化・写真が対象で、案件情報と対応記録は含みません。', chainBad: '封印チェックに失敗。記録または写真が封印時と異なります。', chainBadAt: '{n} 件目の記録で封印が壊れています。アプリ外でデータが変更されました。', photoHashBad: '写真 {n} 枚が見つからないか変更されています。',
     sealExplain: '各記録は直前の記録と一緒に指紋が取られ、鎖のようにつながります。古い記録を変更・削除すると以降の指紋が壊れ、報告書に表示されます。保存データへの事後の改ざんは検知できますが、鎖全体を作り直されると防げません。最後の指紋（報告書に表示）かバックアップをこの端末の外にも保管してください。公証された時刻証明ではありません。',
     archive: '案件をアーカイブ', unarchive: 'アーカイブ解除', deleteCase: '案件を削除', delConfirm: '「{name}」とすべての記録を削除しますか？', delHint: '数秒間は元に戻せます。証拠なら先にバックアップを。', caseDeleted: '案件を削除しました。',
@@ -173,7 +185,13 @@
     rmPhoto: '写真を削除',
     noscript: 'Marginlog には JavaScript が必要です。',
     corrupt: '保存データを読み込めませんでした。コピーをキー {k} に残しました。',
-    archivedMsg: '案件をアーカイブしました。案件リストから選んで解除できます。', unarchivedMsg: '案件を戻しました。'
+    archivedMsg: '案件をアーカイブしました。案件リストから選んで解除できます。', unarchivedMsg: '案件を戻しました。',
+    sg_exhausted: '段階をすべて使いました。記録と報告書を保管し続けてください。次の対応は地域の相談窓口が助けになります。',
+    corruptBlocked: '保存データを読めず、コピーも残せなかったため、保護のため保存を停止しました。空き容量を確保するかバックアップして再読み込みしてください。',
+    otherTab: '別のタブでデータが変更されたため再読み込みしました。',
+    errQuiet: '静かな時間帯は開始・終了の両方を入力するか、オフにしてください。',
+    chainTrunc: '記録が欠けています。前回保存時より件数が少なくなっています。アプリ外でデータが削除されました。',
+    restoredSkipped: 'すでにある {n} 件はスキップしました。'
   };
   L.zh = {
     name: '中文', language: '语言', dataBtn: '备份', close: '关闭', cancel: '取消', save: '保存', delete: '删除', undo: '撤销',
@@ -217,9 +235,9 @@
     weeksH: '最近8周', weeksAria: '最近8周每周事件数', factsH: '可写进报告的事实',
     fact_total: '{a} 至 {b} 共 {n} 起事件。', fact_gap: '最长的平静期：{n} 天。', fact_minutes: '累计被打扰 {n} 分钟（约 {h} 小时）。', fact_quiet: '{n} 起发生在安静时段（{a}–{b}）内。', fact_late: '{n} 条记录超过48小时才补记。',
     fact_trend_up: '在恶化：最近30天 {a} 起，之前 {b} 起。', fact_trend_down: '在缓和：最近30天 {a} 起，之前 {b} 起。', fact_trend_flat: '平稳：最近30天 {a} 起，之前 {b} 起。',
-    ladderH: '升级阶梯', stepsH: '你已做过的', stepsEmpty: '还没有记录应对步骤。每次沟通、信函或投诉都请连同日期记下。', stepKind: '步骤', stepDate: '办理日期', stepNote: '详情（可选）', stepDue: '回复期限（可选）', stepDueHelp: '设置日期后，如果过期仍无回复，Marginlog 会提醒你。', stepSaved: '已保存。', stepRemoved: '已删除。', dueWord: '回复期限', answered: '已回复', overdueWord: '已逾期',
+    ladderH: '升级阶梯', stepsH: '你已做过的', stepsEmpty: '还没有记录应对步骤。每次沟通、信函或投诉都请连同日期记下。', stepKind: '步骤', stepDate: '办理日期', stepNote: '详情（可选）', stepDue: '回复期限（可选）', stepDueHelp: '设置日期后，如果过期仍无回复，你再打开 Marginlog 时该步骤会显示为已逾期。', stepSaved: '已保存。', stepRemoved: '已删除。', dueWord: '回复期限', answered: '已回复', overdueWord: '已逾期',
     stepHint_talk: '心平气和地谈一次，记下日期和回应。', stepHint_written: '带日期的消息或信函，留好副本。', stepHint_complaint: '向物业、人事、平台或公司正式投诉。', stepHint_mediation: '由中立第三方协助双方。', stepHint_authority: '当地主管部门或警方非紧急电话。', stepHint_legal: '仲裁、劳动部门、小额诉讼或律师。',
-    repEmptyH: '暂无可报告的内容', repEmptyB: '至少记录一起事件才能生成报告。', generated: '生成时间', summary: '摘要', timeline: '时间线', pattern: '规律', repHint: '可复制或打印此报告。末尾附有封存校验结果，读者可据此确认记录未被改写。', copyRep: '复制报告', printRep: '打印 / 存为 PDF', dlMd: '下载 .md', dlCsv: '下载 CSV', copied: '已复制。', copyFail: '无法复制。文本已选中，请按 Ctrl+C。',
+    repEmptyH: '暂无可报告的内容', repEmptyB: '至少记录一起事件才能生成报告。', generated: '生成时间', summary: '摘要', timeline: '时间线', pattern: '规律', repHint: '可复制或打印此报告。最后一行是在保存记录的设备上计算的封存校验，并列出最后指纹，方便你或读者与另存别处的副本比对。', copyRep: '复制报告', printRep: '打印 / 存为 PDF', dlMd: '下载 .md', dlCsv: '下载 CSV', copied: '已复制。', copyFail: '无法复制。文本已选中，请按 Ctrl+C。',
     integrity: '完整性', verifying: '正在校验封存…', verifyNow: '重新校验', chainOk: '封存完好。已封存记录：{n} 条。最后指纹：{h}。涵盖记录、备注、作废和照片，不含事项信息和应对步骤。', chainBad: '封存校验失败。记录或照片与封存时不一致。', chainBadAt: '第 {n} 条记录处封存被破坏，数据在应用之外被修改过。', photoHashBad: '{n} 张照片缺失或被改动。',
     sealExplain: '每条记录都与前一条一起生成指纹，像链条一样相连。修改或删除旧记录会破坏其后的指纹，报告中会注明。它能发现对已存数据的事后改动，但防不住有人重建整条链，所以请把最后指纹（报告中显示）或备份保存在本设备之外。它不是经公证的时间戳。',
     archive: '归档事项', unarchive: '取消归档', deleteCase: '删除事项', delConfirm: '删除“{name}”及其全部记录？', delHint: '几秒内可撤销。如果是证据，请先备份。', caseDeleted: '事项已删除。',
@@ -231,7 +249,13 @@
     rmPhoto: '移除照片',
     noscript: 'Marginlog 需要 JavaScript。',
     corrupt: '无法读取已保存的数据，已将副本保留在键 {k} 下。',
-    archivedMsg: '事项已归档。可在事项列表中选择它来取消归档。', unarchivedMsg: '事项已恢复。'
+    archivedMsg: '事项已归档。可在事项列表中选择它来取消归档。', unarchivedMsg: '事项已恢复。',
+    sg_exhausted: '阶梯上的步骤你都用过了。请继续记录并保存好报告；接下来可向当地法律服务机构求助。',
+    corruptBlocked: '无法读取已保存的数据，也无法保留副本，为保护数据已关闭保存。请释放存储空间或先备份，然后刷新。',
+    otherTab: '另一个标签页修改了数据，已重新载入。',
+    errQuiet: '请填写安静时段的起止小时，或关闭该功能。',
+    chainTrunc: '记录缺失：当前记录比上次保存时更少，数据在应用之外被删除。',
+    restoredSkipped: '已存在的 {n} 个已跳过。'
   };
   L.es = {
     name: 'Español', language: 'Idioma', dataBtn: 'Respaldo', close: 'Cerrar', cancel: 'Cancelar', save: 'Guardar', delete: 'Borrar', undo: 'Deshacer',
@@ -275,9 +299,9 @@
     weeksH: 'Últimas 8 semanas', weeksAria: 'Incidentes por semana, últimas 8 semanas', factsH: 'Hechos para tu informe',
     fact_total: '{n} incidentes entre {a} y {b}.', fact_gap: 'Racha más larga de calma: {n} días.', fact_minutes: '{n} minutos de molestia en total (unas {h} horas).', fact_quiet: '{n} incidentes en horas de silencio ({a}–{b}).', fact_late: '{n} entradas se registraron con más de 48 horas de retraso.',
     fact_trend_up: 'Empeora: {a} en los últimos 30 días frente a {b} antes.', fact_trend_down: 'Mejora: {a} en los últimos 30 días frente a {b} antes.', fact_trend_flat: 'Estable: {a} en los últimos 30 días, {b} antes.',
-    ladderH: 'Escalera de escalada', stepsH: 'Lo que has hecho', stepsEmpty: 'No hay pasos registrados. Anota cada charla, carta o queja con su fecha.', stepKind: 'Paso', stepDate: 'Fecha', stepNote: 'Detalles (opcional)', stepDue: 'Respuesta antes de (opcional)', stepDueHelp: 'Si fijas una fecha, Marginlog avisa cuando pasa sin respuesta.', stepSaved: 'Paso guardado.', stepRemoved: 'Paso eliminado.', dueWord: 'plazo de respuesta', answered: 'respondido', overdueWord: 'vencido',
+    ladderH: 'Escalera de escalada', stepsH: 'Lo que has hecho', stepsEmpty: 'No hay pasos registrados. Anota cada charla, carta o queja con su fecha.', stepKind: 'Paso', stepDate: 'Fecha', stepNote: 'Detalles (opcional)', stepDue: 'Respuesta antes de (opcional)', stepDueHelp: 'Si fijas una fecha, el paso aparece como vencido cuando abres Marginlog después sin respuesta.', stepSaved: 'Paso guardado.', stepRemoved: 'Paso eliminado.', dueWord: 'plazo de respuesta', answered: 'respondido', overdueWord: 'vencido',
     stepHint_talk: 'Una charla tranquila. Anota fecha y respuesta.', stepHint_written: 'Mensaje o carta con fecha. Guarda copia.', stepHint_complaint: 'Al administrador, RR. HH., plataforma o empresa.', stepHint_mediation: 'Un tercero neutral ayuda a ambas partes.', stepHint_authority: 'Ayuntamiento o línea no urgente de la policía.', stepHint_legal: 'Tribunal de vivienda, laboral, reclamación menor o abogado.',
-    repEmptyH: 'Nada que informar todavía', repEmptyB: 'Registra al menos un incidente para crear un informe.', generated: 'Generado', summary: 'Resumen', timeline: 'Cronología', pattern: 'Patrón', repHint: 'Copia o imprime este informe. Al final muestra la comprobación del sello para que quien lo lea vea que nada se reescribió.', copyRep: 'Copiar informe', printRep: 'Imprimir / guardar PDF', dlMd: 'Descargar .md', dlCsv: 'Descargar CSV', copied: 'Informe copiado.', copyFail: 'No se pudo copiar. El texto está seleccionado, pulsa Ctrl+C.',
+    repEmptyH: 'Nada que informar todavía', repEmptyB: 'Registra al menos un incidente para crear un informe.', generated: 'Generado', summary: 'Resumen', timeline: 'Cronología', pattern: 'Patrón', repHint: 'Copia o imprime este informe. La última línea es la comprobación del sello, calculada en el dispositivo que guarda el registro; incluye la huella final para compararla con una copia guardada en otro sitio.', copyRep: 'Copiar informe', printRep: 'Imprimir / guardar PDF', dlMd: 'Descargar .md', dlCsv: 'Descargar CSV', copied: 'Informe copiado.', copyFail: 'No se pudo copiar. El texto está seleccionado, pulsa Ctrl+C.',
     integrity: 'Integridad', verifying: 'Comprobando el sello…', verifyNow: 'Comprobar de nuevo', chainOk: 'Sello intacto. Registros sellados: {n}. Última huella: {h}. Cubre entradas, notas, anulaciones y fotos; no los datos del caso ni los pasos.', chainBad: 'Falló la comprobación del sello. Registros o fotos difieren de cuando se sellaron.', chainBadAt: 'Sello roto en el registro {n}. Los datos se cambiaron fuera de la app.', photoHashBad: '{n} fotos faltan o cambiaron.',
     sealExplain: 'Cada entrada se huella junto con la anterior, como una cadena. Cambiar o borrar una entrada antigua rompe las huellas posteriores y el informe lo indica. Detecta cambios posteriores en los datos guardados, pero no impide que alguien reconstruya toda la cadena: guarda la última huella (en el informe) o una copia fuera de este dispositivo. No es un sello de tiempo notarial.',
     archive: 'Archivar caso', unarchive: 'Desarchivar caso', deleteCase: 'Borrar caso', delConfirm: '¿Borrar «{name}» y todas sus entradas?', delHint: 'Puedes deshacer unos segundos. Haz copia antes si es una prueba.', caseDeleted: 'Caso borrado.',
@@ -289,7 +313,13 @@
     rmPhoto: 'Quitar foto',
     noscript: 'Marginlog necesita JavaScript.',
     corrupt: 'No se pudieron leer los datos guardados. Se conservó una copia en la clave {k}.',
-    archivedMsg: 'Caso archivado. Elígelo en la lista de casos para desarchivarlo.', unarchivedMsg: 'Caso restaurado.'
+    archivedMsg: 'Caso archivado. Elígelo en la lista de casos para desarchivarlo.', unarchivedMsg: 'Caso restaurado.',
+    sg_exhausted: 'Has usado todos los pasos de la escalera. Sigue registrando y conserva tus informes; un servicio de asesoría local puede ayudarte con lo que sigue.',
+    corruptBlocked: 'No se pudieron leer los datos guardados ni conservar una copia, así que se desactivó el guardado para protegerlos. Libera espacio o haz una copia y recarga.',
+    otherTab: 'Otra pestaña cambió estos datos. Recargado.',
+    errQuiet: 'Indica las dos horas del silencio o desactívalo.',
+    chainTrunc: 'Faltan registros: este registro es más corto que la última vez que se guardó. Se borraron datos fuera de la app.',
+    restoredSkipped: '{n} ya estaban, omitidos.'
   };
   var STEPS = {
     en: { talk: 'Talk', written: 'Written notice', complaint: 'Formal complaint', mediation: 'Mediation', authority: 'Authority', legal: 'Legal action' },

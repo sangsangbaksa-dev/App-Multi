@@ -63,3 +63,7 @@ button.link{min-height:44px;padding:0 8px;display:inline-flex;align-items:center
 .pv{position:relative;display:inline-block}.rm{position:absolute;top:-6px;right:-6px;width:28px;height:28px;min-height:0;padding:0;border-radius:50%;line-height:1}
 button.link{min-height:44px;padding:0 8px;display:inline-flex;align-items:center}
 .pv{position:relative;display:inline-block}.rm{position:absolute;top:-6px;right:-6px;width:28px;height:28px;min-height:0;padding:0;border-radius:50%;line-height:1}
+
+.btns.sm button{min-height:44px}button.tag.sug{min-height:44px}.rm{width:36px;height:36px}
+.hmrow{grid-template-columns:48px repeat(24,minmax(9px,1fr))}
+label.btn:has(+ input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}

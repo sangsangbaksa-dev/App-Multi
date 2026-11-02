@@ -3,7 +3,7 @@
   'use strict';
   var C = window.MLCore, I = window.MLI18n, KEY = 'marginlog:v1';
   var S = { cases: [], cur: null, tab: 'log', lang: 'en', f: { q: '', tag: '', sev: 0, voided: false } };
-  var corruptKey = null, lastTrig = null, root = document.getElementById('root'), pending = { photos: [] }, toastTimer = null, liveTimer = null, undoBuf = null;
+  var blocked = false, corruptKey = null, lastTrig = null, root = document.getElementById('root'), pending = { photos: [] }, toastTimer = null, liveTimer = null, undoBuf = null;
 
   function t(k, v) {
     var s = (I.L[S.lang] && I.L[S.lang][k]); if (s == null) s = I.L.en[k]; if (s == null) return k;
@@ -16,16 +16,24 @@
   function now() { return Date.now(); }
 
   /* ---------- storage ---------- */
+  var CPKEY = KEY + ':cp';
+  function readCp() { try { return JSON.parse(localStorage.getItem(CPKEY) || '{}') || {}; } catch (e) { return {}; } }
   function load() {
-    try {
-      var d = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if (d && Array.isArray(d.cases)) { S.cases = d.cases.map(C.sanitizeCase).filter(Boolean); S.cur = d.cur; S.lang = I.L[d.lang] ? d.lang : S.lang; }
-    } catch (e) { corruptKey = null; try { var raw = localStorage.getItem(KEY); if (raw) { corruptKey = KEY + ':corrupt-' + Date.now(); localStorage.setItem(corruptKey, raw); } } catch (e2) { /* blocked */ } }
+    var raw = null, d = null;
+    try { raw = localStorage.getItem(KEY); d = raw ? JSON.parse(raw) : null; } catch (e) { d = undefined; }
+    if (d === undefined || (d && !Array.isArray(d.cases))) {
+      /* unreadable data: keep a copy first and refuse to overwrite it if the copy fails */
+      try { corruptKey = KEY + ':corrupt-' + Date.now(); localStorage.setItem(corruptKey, raw); } catch (e2) { corruptKey = null; blocked = true; }
+    } else if (d) { S.cases = d.cases.map(C.sanitizeCase).filter(Boolean); S.cur = d.cur; S.lang = I.L[d.lang] ? d.lang : S.lang; }
     if (!S.cases.some(function (c) { return c.id === S.cur; })) S.cur = (S.cases.filter(function (c) { return !c.archived; })[0] || S.cases[0] || {}).id || null;
   }
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify({ v: 1, lang: S.lang, cur: S.cur, cases: S.cases })); return true; }
-    catch (e) { toast(t('saveFail')); return false; }
+    if (blocked) { toast(t('corruptBlocked')); return false; }
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ v: 1, lang: S.lang, cur: S.cur, cases: S.cases }));
+      var cp = {}; S.cases.forEach(function (c) { if (c.entries.length) cp[c.id] = { n: c.entries.length, head: c.entries[c.entries.length - 1].hash }; });
+      localStorage.setItem(CPKEY, JSON.stringify(cp)); return true;
+    } catch (e) { toast(t('saveFail')); return false; }
   }
   var db = null;
   function idb() {
@@ -41,6 +49,11 @@
   }
   function photoPut(id, data) { return idb().then(function (d) { return new Promise(function (res, rej) { var q = d.transaction('photos', 'readwrite').objectStore('photos').put(data, id); q.onsuccess = res; q.onerror = function () { rej(q.error); }; }); }); }
   function photoDel(id) { return idb().then(function (d) { d.transaction('photos', 'readwrite').objectStore('photos').delete(id); }, function () { /* no store */ }); }
+  function photoSweep() {
+    var used = {}; S.cases.forEach(function (c) { c.entries.forEach(function (e) { e.photos.forEach(function (p) { used[p.id] = 1; }); }); });
+    if (blocked) return;
+    idb().then(function (d) { var q = d.transaction('photos').objectStore('photos').getAllKeys(); q.onsuccess = function () { q.result.forEach(function (k) { if (!used[k]) photoDel(k); }); }; }, function () { /* no store */ });
+  }
   function photoGet(id) { return idb().then(function (d) { return new Promise(function (res) { var q = d.transaction('photos').objectStore('photos').get(id); q.onsuccess = function () { res(q.result || null); }; q.onerror = function () { res(null); }; }); }, function () { return null; }); }
 
   /* ---------- helpers ---------- */
@@ -51,7 +64,7 @@
     el.innerHTML = '<span>' + esc(msg) + '</span>' + (action ? ' <button type="button" id="toast-act">' + esc(action) + '</button>' : '');
     el.hidden = false; clearTimeout(toastTimer);
     if (action) $('#toast-act').addEventListener('click', function () { fn(); el.hidden = true; });
-    toastTimer = setTimeout(function () { el.hidden = true; undoBuf = null; }, action ? 9000 : 3500);
+    toastTimer = setTimeout(function () { el.hidden = true; undoBuf = null; }, action ? 9000 : 6000);
   }
   function download(name, mime, text) {
     var a = document.createElement('a'), u = URL.createObjectURL(new Blob([text], { type: mime }));
@@ -99,7 +112,7 @@
   function suggestion(c, sg) {
     var names = I.stepNames(S.lang);
     if (sg.key === 'none') return '<p class="sugg">' + esc(t('sg_none')) + '</p>';
-    var sn = names[(sg.kind || (sg.step && sg.step.kind))] || '', msg = t('sg_' + sg.key, { step: S.lang === 'en' || S.lang === 'es' ? sn.toLowerCase() : sn, date: sg.step ? sg.step.due : '' });
+    var sn = names[(sg.kind || (sg.step && sg.step.kind))] || '', msg = t('sg_' + sg.key, { step: (S.lang === 'en' || S.lang === 'es') && (I.L[S.lang]['sg_' + sg.key] || '').indexOf('{step}') !== 0 ? sn.toLowerCase() : sn, date: sg.step ? sg.step.due : '' });
     return '<p class="sugg ' + (sg.key === 'overdue' ? 'warn' : '') + '"><b>' + esc(t('nextStep')) + '</b> ' + esc(msg) + (sg.kind ? ' <button type="button" class="link" data-act="addstep" data-kind="' + sg.kind + '">' + esc(t('logStep')) + '</button>' : '') + (sg.step ? ' <button type="button" class="link" data-act="stepdone" data-id="' + esc(sg.step.id) + '">' + esc(t('markAnswered')) + '</button>' : '') + '</p>';
   }
 
@@ -218,8 +231,9 @@
       ev.preventDefault(); if (!onSubmit || form.__busy) return; form.__busy = true;
       var btns = form.querySelectorAll('button[type=submit]'); Array.prototype.forEach.call(btns, function (b) { b.disabled = true; });
       var done = function () { form.__busy = false; Array.prototype.forEach.call(btns, function (b) { b.disabled = false; }); };
-      var r; try { r = onSubmit(form, ev); } catch (e) { done(); return err(t('cryptoFail')); }
-      Promise.resolve(r).catch(function () { err(t('cryptoFail')); }).then(done);
+      var fail = function () { err(t(window.crypto && window.crypto.subtle ? 'saveFail' : 'cryptoFail')); };
+      var r; try { r = onSubmit(form, ev); } catch (e) { done(); return fail(); }
+      Promise.resolve(r).catch(fail).then(done);
     });
     dlg.addEventListener('cancel', function () { pending.photos = []; });
     dlg.addEventListener('close', function () { if (dlg) { dlg.remove(); dlg = null; } setTimeout(restoreFocus, 0); });
@@ -278,8 +292,8 @@
     } catch (e) { return err(t('photoStoreFail')); }
     var last = c.entries[c.entries.length - 1], e = await C.seal(last ? last.hash : '', { type: 'event', at: at, rec: now(), text: text, sev: sev, dur: dur === '' ? 0 : +dur, tags: $('#e-tags', form).value, witness: $('#e-wit', form).value.trim(), photos: photos, reported: $('#e-rep', form).checked });
     c.entries.push(e); if (pre && pre.live) c.live = null;
-    pending.photos = []; if (!save()) { c.entries.pop(); return err(t('saveFail')); }
-    closeDialog(); S.tab = 'log'; render(); toast(t('sealed', { h: e.hash.slice(0, 8) }));
+    if (!save()) { c.entries.pop(); photos.forEach(function (p) { photoDel(p.id); }); return err(t('saveFail')); }
+    pending.photos = []; closeDialog(); S.tab = 'log'; render(); toast(t('sealed', { h: e.hash.slice(0, 8) }));
   }
   function noteDialog(c, id) {
     openDialog('<h2 id="dlg-h">' + esc(t('addNote')) + '</h2><p class="hint">' + esc(t('noteHelp')) + '</p><label for="n-text">' + esc(t('noteText')) + '</label><textarea id="n-text" rows="3" maxlength="1000" required></textarea>' + btnRow('sealSave'), async function (form) {
@@ -303,7 +317,7 @@
       var at = $('#s-at', form).value, due = $('#s-due', form).value;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(at)) return err(t('errWhen')); if (at > today) return err(t('errFuture')); if (due && due < at) return err(t('errDue'));
       (c.steps = c.steps || []).push({ id: C.uid(), kind: $('#s-kind', form).value, at: at, note: $('#s-note', form).value.trim().slice(0, 300), due: due, done: false });
-      save(); closeDialog(); S.tab = 'steps'; render(); toast(t('stepSaved'));
+      if (!save()) { c.steps.pop(); return err(t('saveFail')); } closeDialog(); S.tab = 'steps'; render(); toast(t('stepSaved'));
     });
   }
   function caseDialog(kind, existing) {
@@ -315,10 +329,12 @@
       '<label for="c-goal">' + esc(t('goal')) + '</label><input id="c-goal" maxlength="200" value="' + esc(c ? c.goal : '') + '" placeholder="' + esc(t('goalPh')) + '">' +
       '<fieldset><legend>' + esc(t('quietWord')) + '</legend><label class="chk"><input type="checkbox" id="c-qon"' + (q ? ' checked' : '') + '> ' + esc(t('quietOn')) + '</label><div class="two"><div><label for="c-qa">' + esc(t('quietFrom')) + '</label><input id="c-qa" type="number" min="0" max="23" value="' + (q ? q[0] : 22) + '"></div><div><label for="c-qb">' + esc(t('quietTo')) + '</label><input id="c-qb" type="number" min="0" max="23" value="' + (q ? q[1] : 7) + '"></div></div></fieldset>' + btnRow(), function (form) {
       var name = $('#c-name', form).value.trim(); if (!name) { $('#c-name', form).focus(); return err(t('errName')); }
+      if ($('#c-qon', form).checked && ($('#c-qa', form).value === '' || $('#c-qb', form).value === '')) return err(t('errQuiet'));
       var quiet = $('#c-qon', form).checked ? [C.clampInt($('#c-qa', form).value, 0, 23), C.clampInt($('#c-qb', form).value, 0, 23)] : null;
       var o = c || { id: C.uid(), kind: $('#c-kind', form).value, created: now(), archived: false, entries: [], steps: [], live: null };
       o.name = name; o.counterpart = $('#c-who', form).value.trim(); o.goal = $('#c-goal', form).value.trim(); o.quiet = quiet;
-      if (!c) S.cases.push(o); S.cur = o.id; S.tab = 'log'; save(); closeDialog(); render();
+      var was = [o.name, o.counterpart, o.goal, o.quiet]; if (!c) S.cases.push(o); S.cur = o.id; S.tab = 'log';
+      if (!save()) { if (!c) S.cases.pop(); return err(t('saveFail')); } closeDialog(); render();
     });
     if (!c) $('#c-kind', dlg).addEventListener('change', function (ev) { var q2 = C.KINDS[ev.target.value].quiet; $('#c-qon', dlg).checked = !!q2; if (q2) { $('#c-qa', dlg).value = q2[0]; $('#c-qb', dlg).value = q2[1]; } });
   }
@@ -343,13 +359,14 @@
         var cs = d.cases.map(C.sanitizeCase).filter(Boolean), broken = 0, ph = d.photos && typeof d.photos === 'object' ? d.photos : {};
         for (var i = 0; i < cs.length; i++) { var v = await C.verifyChain(cs[i].entries); if (!v.ok) broken++; }
         var n = 0;
+        var skipped = 0; cs = cs.filter(function (c) { var same = S.cases.some(function (x) { return x.id === c.id && x.entries.length && c.entries.length && x.entries[x.entries.length - 1].hash === c.entries[c.entries.length - 1].hash; }); if (same) skipped++; return !same; });
         cs.forEach(function (c) { if (S.cases.some(function (x) { return x.id === c.id; })) c.id = C.uid(); });
         for (var j = 0; j < cs.length; j++) for (var k = 0; k < cs[j].entries.length; k++) for (var m = 0; m < cs[j].entries[k].photos.length; m++) {
           var p = cs[j].entries[k].photos[m], data = ph[p.id];
-          if (typeof data === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(data) && data.length < 6e6) { await photoPut(p.id, data); n++; }
+          if (typeof data === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(data) && data.length < 6e6 && await C.sha256Hex(data) === p.h) { await photoPut(p.id, data); n++; }
         }
-        S.cases = S.cases.concat(cs); if (!S.cur && cs[0]) S.cur = cs[0].id; save(); closeDialog(); render();
-        toast(broken ? t('restoredBroken', { n: cs.length, b: broken }) : t('restored', { n: cs.length }));
+        S.cases = S.cases.concat(cs); /* checkpoints are written by save() */ if (!S.cur && cs[0]) S.cur = cs[0].id; save(); closeDialog(); render();
+        toast(broken ? t('restoredBroken', { n: cs.length, b: broken }) : t('restored', { n: cs.length }) + (skipped ? ' ' + t('restoredSkipped', { n: skipped }) : ''));
       } catch (e) { err(t('badFile')); }
     };
     fr.readAsText(file);
@@ -358,10 +375,10 @@
   /* ---------- report ---------- */
   async function fillReport() {
     var c = cur(), pre = $('#repview'); if (!c || !pre) return;
-    var chain = await C.verifyChain(c.entries), bad = 0;
+    var chain = await C.verifyChain(c.entries, readCp()[c.id]), bad = 0;
     for (var i = 0; i < c.entries.length; i++) for (var j = 0; j < c.entries[i].photos.length; j++) { var p = c.entries[i].photos[j], d = await photoGet(p.id); if (!d || await C.sha256Hex(d) !== p.h) bad++; }
     var ok = chain.ok && !bad, md = C.reportMarkdown(c, labels(), now(), ok ? chain : { ok: false });
-    pre.textContent = md; var line = $('#chainline'); if (line) { line.textContent = ok ? t('chainOk', { n: c.entries.length, h: chain.head.slice(0, 16) }) : (chain.ok ? t('photoHashBad', { n: bad }) : t('chainBadAt', { n: chain.bad + 1 })); line.className = 'chain ' + (ok ? 'good' : 'bad'); }
+    pre.textContent = md; var line = $('#chainline'); if (line) { line.textContent = ok ? t('chainOk', { n: c.entries.length, h: chain.head }) : (chain.ok ? t('photoHashBad', { n: bad }) : t(chain.truncated ? 'chainTrunc' : 'chainBadAt', { n: chain.bad + 1 })); line.className = 'chain ' + (ok ? 'good' : 'bad'); }
     var box = $('#repphotos'); if (box) {
       var h = ''; C.events(c.entries).forEach(function (e) { e.photos.forEach(function (p2) { h += '<figure><img alt="" data-pid="' + esc(p2.id) + '"><figcaption>' + esc(fmtAt(e.at)) + '</figcaption></figure>'; }); }); box.innerHTML = h; hydratePhotos();
     }
@@ -394,7 +411,7 @@
     if (act === 'stepdel') { var del = c.steps.filter(function (s) { return s.id === id; })[0]; c.steps = c.steps.filter(function (s) { return s.id !== id; }); save(); render(); toast(t('stepRemoved'), t('undo'), function () { c.steps.push(del); save(); render(); }); return; }
     if (act === 'clearf') { S.f = { q: '', tag: '', sev: 0, voided: S.f.voided }; return render(); }
     if (act === 'editcase') return caseDialog(null, c);
-    if (act === 'archive') { c.archived = !c.archived; save(); render(); toast(t(c.archived ? 'archivedMsg' : 'unarchivedMsg')); return; }
+    if (act === 'archive') { c.archived = !c.archived; if (!save()) { c.archived = !c.archived; return; } render(); toast(t(c.archived ? 'archivedMsg' : 'unarchivedMsg')); return; }
     if (act === 'delcase') {
       return openDialog('<h2 id="dlg-h">' + esc(t('deleteCase')) + '</h2><p>' + esc(t('delConfirm', { name: c.name })) + '</p><p class="hint">' + esc(t('delHint')) + '</p><div class="btns"><button type="submit" class="pri danger">' + esc(t('deleteCase')) + '</button><button type="button" class="ghost" data-close>' + esc(t('cancel')) + '</button></div>', function () {
         var idx = S.cases.indexOf(c), was = S.cur, undone = false, pids = []; c.entries.forEach(function (e) { e.photos.forEach(function (p) { pids.push(p.id); }); });
@@ -404,7 +421,7 @@
     }
     if (act === 'photo') { var d = await photoGet(b.getAttribute('data-pid')); if (!d) return toast(t('photoMissing')); return openDialog('<h2 id="dlg-h" class="sr">' + esc(t('openPhoto')) + '</h2><img class="big-ph" alt="" src="' + d + '"><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>'); }
     if (act === 'verify') { var l = $('#chainline'); if (l) l.textContent = t('verifying'); return fillReport(); }
-    if (act === 'copyrep') { var md = await fillReport(); try { await navigator.clipboard.writeText(md); toast(t('copied')); } catch (e) { var pre = $('#repview'); var r = document.createRange(); r.selectNodeContents(pre); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t('copyFail')); } return; }
+    if (act === 'copyrep') { var pv = $('#repview'), md = pv && pv.textContent ? pv.textContent : await fillReport(); try { await navigator.clipboard.writeText(md); toast(t('copied')); } catch (e) { var pre = $('#repview'); var r = document.createRange(); r.selectNodeContents(pre); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t('copyFail')); } return; }
     if (act === 'dlmd') { var md2 = await fillReport(); return download('marginlog-' + slug(c.name) + '.md', 'text/markdown', md2); }
     if (act === 'dlcsv') return download('marginlog-' + slug(c.name) + '.csv', 'text/csv', '﻿' + C.toCsv(c));
     if (act === 'print') { await fillReport(); return window.print(); }
@@ -433,8 +450,11 @@
   /* ---------- boot ---------- */
   var nl = (navigator.language || 'en').slice(0, 2); if (I.L[nl]) S.lang = nl;
   load(); render(); if (S.tab === 'report') fillReport();
-  if (corruptKey) toast(t('corrupt', { k: corruptKey }));
+  if (blocked) toast(t('corruptBlocked'));
+  else if (corruptKey) toast(t('corrupt', { k: corruptKey }));
   else if (!(window.crypto && window.crypto.subtle)) toast(t('cryptoFail'));
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache is optional */ });
+  photoSweep();
+  window.addEventListener('storage', function (ev) { if (ev.key === KEY) { closeDialog(); S.cases = []; S.cur = null; load(); render(); toast(t('otherTab')); } });
   window.__ml = { S: S, render: render };
 })();

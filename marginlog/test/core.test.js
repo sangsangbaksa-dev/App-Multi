@@ -76,7 +76,7 @@ test('CSV neutralises formulas and quotes cells; markdown report carries seal li
 test('sanitizeCase drops junk and clamps', () => {
   assert.equal(C.sanitizeCase(null), null);
   const s = C.sanitizeCase({ name: 'x'.repeat(200), kind: 'nope', quiet: [30, -2], entries: [{ id: 'a' }, null, { id: 'b', type: 'event', at: '2026-10-01T10:00', rec: 5, text: 't', hash: 'h', prev: '', sev: 77, tags: ['A'] }], steps: [{ kind: 'bogus', at: '2026-10-01' }, { kind: 'talk', at: '2026-10-01', due: 'soon' }] });
-  assert.equal(s.name.length, 80); assert.equal(s.kind, 'other'); assert.deepEqual(s.quiet, [23, 0]); assert.equal(s.entries.length, 1); assert.equal(s.entries[0].sev, 5); assert.equal(s.steps.length, 1); assert.equal(s.steps[0].due, '');
+  assert.equal(s.name.length, 80); assert.equal(s.kind, 'other'); assert.deepEqual(s.quiet, [23, 0]); assert.equal(s.entries.length, 2, 'damaged record is kept, not dropped'); assert.equal(s.entries[1].sev, 5); assert.equal(s.steps.length, 1); assert.equal(s.steps[0].due, '');
 });
 
 test('i18n: every language has every key, same placeholders, arrays of 7 days', () => {
@@ -90,7 +90,7 @@ test('i18n: every language has every key, same placeholders, arrays of 7 days', 
 test('i18n: every key the UI asks for exists', () => {
   const src = fs.readFileSync(path.join(__dirname, '../app/app.js'), 'utf8'), en = I.L.en, missing = [];
   for (const m of src.matchAll(/\bt\('([A-Za-z0-9_]+)'/g)) if (!m[1].endsWith('_') && !(m[1] in en)) missing.push(m[1]);
-  const dyn = { kind_: Object.keys(C.KINDS), kindHint_: Object.keys(C.KINDS), whatPh_: Object.keys(C.KINDS), trend_: ['up', 'down', 'flat'], fact_trend_: ['up', 'down', 'flat'], stepHint_: C.STEP_KINDS, tip_: ['text', 'dur', 'witness', 'photo', 'timely', 'tag'], tab_: ['log', 'patterns', 'steps', 'report', 'case'], sg_: ['none', 'talk', 'written', 'complaint', 'next', 'keep', 'overdue', 'waiting'] };
+  const dyn = { kind_: Object.keys(C.KINDS), kindHint_: Object.keys(C.KINDS), whatPh_: Object.keys(C.KINDS), trend_: ['up', 'down', 'flat'], fact_trend_: ['up', 'down', 'flat'], stepHint_: C.STEP_KINDS, tip_: ['text', 'dur', 'witness', 'photo', 'timely', 'tag'], tab_: ['log', 'patterns', 'steps', 'report', 'case'], sg_: ['none', 'talk', 'written', 'complaint', 'next', 'keep', 'overdue', 'waiting', 'exhausted'] };
   for (const p in dyn) for (const k of dyn[p]) if (!((p + k) in en)) missing.push(p + k);
   assert.deepEqual(missing, []);
 });
@@ -108,4 +108,18 @@ test('voided entries stay in the report and CSV, marked, and are counted separat
   const md = C.reportMarkdown(c, lab, NOW, { ok: true, head: 'a'.repeat(64) });
   assert.ok(md.includes('VOIDED') && md.includes('wrong night') && md.includes('first incident text here')); assert.ok(md.includes('Incidents: 1'));
   assert.ok(C.toCsv(c).includes('wrong night'));
+});
+
+test('damaged or truncated chains are never reported as intact', async () => {
+  const c = await mk([{ at: '2026-10-01T23:00' }, { at: '2026-10-02T23:00' }, { at: '2026-10-03T23:00' }]);
+  const cp = { n: 3, head: c.entries[2].hash };
+  assert.equal((await C.verifyChain(c.entries, cp)).ok, true);
+  const cut = JSON.parse(JSON.stringify(c.entries)).slice(0, 2); const r = await C.verifyChain(cut, cp); assert.equal(r.ok, false); assert.equal(r.truncated, true);
+  const dmg = JSON.parse(JSON.stringify(c)); delete dmg.entries[2].hash; const s = C.sanitizeCase(dmg); assert.equal(s.entries.length, 3); assert.equal((await C.verifyChain(s.entries)).ok, false);
+  const swapped = JSON.parse(JSON.stringify(c.entries)); swapped.pop(); swapped.push(c.entries[1]); assert.equal((await C.verifyChain(swapped, cp)).ok, false);
+});
+test('suggestNext reports an exhausted ladder', async () => {
+  const c = await mk([{ at: '2026-10-30T23:00' }, { at: '2026-10-31T23:00' }, { at: '2026-11-01T23:00' }]);
+  for (const k of C.ladder(c)) c.steps.push({ id: k, kind: k, at: '2026-11-01', due: '', done: false });
+  assert.equal(C.suggestNext(c, NOW).key, 'exhausted');
 });

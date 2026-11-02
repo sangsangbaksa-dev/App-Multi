@@ -75,6 +75,11 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   await pg.reload(); await pg.click('#tab-report'); await pg.waitForFunction(() => document.querySelector('#chainline').classList.contains('bad')); assert.ok((await pg.textContent('#chainline')).includes('record 1')); assert.ok((await pg.textContent('#repview')).includes('Seal check failed'));
   await pg.screenshot({ path: out + '/06-tampered.png', fullPage: true });
   await pg.evaluate(() => { const d = JSON.parse(localStorage.getItem('marginlog:v1')); d.cases[0].entries[0].text = 'Loud bass music from upstairs, windows shaking <script>alert(1)</script>'; localStorage.setItem('marginlog:v1', JSON.stringify(d)); });
+  // tail truncation is caught by the checkpoint
+  const saved = await pg.evaluate(() => localStorage.getItem('marginlog:v1'));
+  await pg.evaluate(() => { const d = JSON.parse(localStorage.getItem('marginlog:v1')); d.cases[0].entries.pop(); localStorage.setItem('marginlog:v1', JSON.stringify(d)); });
+  await pg.reload(); await pg.click('#tab-report'); await pg.waitForFunction(() => document.querySelector('#chainline').classList.contains('bad')); assert.ok((await pg.textContent('#chainline')).includes('missing'));
+  await pg.evaluate(s => localStorage.setItem('marginlog:v1', s), saved);
   // photo: attach, hash sealed, survives reload
   await pg.reload(); await pg.click('[data-act=log]');
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP4z8Dwn+E/A8N/BgYGAB8UBAH8bX0xAAAAAElFTkSuQmCC', 'base64'); fs.writeFileSync(out + '/p.png', png);
