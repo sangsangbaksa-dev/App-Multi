@@ -273,6 +273,15 @@ test('monthlyUsage: days per month, across a year boundary', () => {
   assert.deepEqual(m, [{ month: '2025-12', days: 2 }, { month: '2026-01', days: 2 }, { month: '2026-02', days: 0 }]);
 });
 
+test('placeStats: days per place over the last year, planned trips ignored', () => {
+  const t = tr([['2026-05-01', '2026-05-10'], ['2026-05-20', '2026-05-22'], ['2025-01-01', '2025-01-05'], ['2026-09-01', '2026-09-05']]);
+  t.trips[0].place = 'Paris'; t.trips[1].place = ' paris '; t.trips[2].place = 'Old'; t.trips[3].place = 'Rome';
+  const ps = C.placeStats(t, '2026-06-01', 365);
+  assert.deepEqual(ps, [{ place: 'Paris', days: 13, trips: 2, longest: 10 }]);
+  assert.deepEqual(C.placeStats(tr([['2026-05-30', null]]), '2026-06-01', 365), [{ place: '', days: 3, trips: 1, longest: 3 }]);
+  assert.deepEqual(C.placeStats(tr([]), '2026-06-01'), []);
+});
+
 test('arrivalWindows: ranges of arrival dates that fit', () => {
   const t = tr([['2026-01-01', '2026-03-31']]); // 90 used; room opens day by day from Jun 30
   const w = C.arrivalWindows(t, 5, '2026-06-01', '2026-06-01', 120);

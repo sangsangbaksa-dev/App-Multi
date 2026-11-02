@@ -309,6 +309,22 @@
     return out;
   }
 
+  /* where the days went: per place, over the `days` days up to and including `today` (past and ongoing only; planned trips are ignored).
+     Places match ignoring case and surrounding spaces; trips without a place are grouped under ''. Biggest first. */
+  function placeStats(tr, today, days) {
+    today = today || todayStr(); days = days || 365;
+    var end = dn(today), start = end - days + 1, by = {}, order = [];
+    tr.trips.forEach(function (t) {
+      var set = stayDays([t], today), n = 0;
+      for (var d = start; d <= end; d++) if (set[d]) n++;
+      if (!n) return;
+      var label = String(t.place || '').trim(), key = label.toLowerCase();
+      if (!by[key]) { by[key] = { place: label, days: 0, trips: 0, longest: 0 }; order.push(key); }
+      var e = by[key]; e.days += n; e.trips++; if (n > e.longest) e.longest = n;
+    });
+    return order.map(function (k) { return by[k]; }).sort(function (a, b) { return b.days - a.days || (a.place < b.place ? -1 : a.place > b.place ? 1 : 0); });
+  }
+
   /* days left on each of the next `n` days if nothing new is added (an ongoing stay is assumed to end today) */
   function forecast(tr, today, n) {
     today = today || todayStr();
@@ -471,7 +487,7 @@
   var API = {
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
-    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
+    validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, placeStats: placeStats, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
     validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;
