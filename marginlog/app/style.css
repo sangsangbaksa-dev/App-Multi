@@ -69,3 +69,6 @@ button.link{min-height:44px;padding:0 8px;display:inline-flex;align-items:center
 label.btn:has(+ input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
 .chain,.rep{overflow-wrap:anywhere;word-break:break-all}
 .toast{bottom:auto;top:12px}.rm{width:44px;height:44px;top:-10px;right:-10px}
+.dn .num{background:var(--ok);color:var(--acc-ink)}button.pri.danger{color:var(--acc-ink)}
+.chain,.rep{word-break:normal}
+.tab{padding:10px 6px;flex:1 0 auto;font-size:.92rem}
