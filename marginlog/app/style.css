@@ -73,3 +73,4 @@ label.btn:has(+ input:focus-visible){outline:3px solid var(--focus);outline-offs
 .chain,.rep{word-break:normal}
 .tab{padding:10px 6px;flex:1 0 auto;font-size:.92rem}
 .toast button{min-height:44px;padding:0 12px}.tab{min-height:44px}
+.toast{top:auto;bottom:max(12px,env(safe-area-inset-bottom));cursor:pointer}.hl,.dl{font-size:.75rem}.wd{font-size:.75rem}.wn{font-size:.8rem}
