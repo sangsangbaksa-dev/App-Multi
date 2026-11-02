@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://marginlog.pages.dev/sitemap.xml
