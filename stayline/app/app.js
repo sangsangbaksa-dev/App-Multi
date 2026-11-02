@@ -283,6 +283,20 @@
     return h('section', { class: 'card' }, [h('h2', null, T('monthH')), bars, h('p', { class: 'muted small' }, T('monthCap'))]);
   }
 
+  function placesCard(tr) {
+    var ps = C.placeStats(tr, C.todayStr(), 365);
+    if (!ps.length) return null;
+    var max = ps[0].days, total = ps.reduce(function (a, x) { return a + x.days; }, 0);
+    return h('section', { class: 'card' }, [h('h2', null, T('placesH')),
+      h('ul', { class: 'places' }, ps.slice(0, 8).map(function (x) {
+        return h('li', null, [
+          h('div', { class: 'pl-top' }, [h('strong', null, x.place || T('placeNone')), h('span', { class: 'muted small' }, T('placeRow', { n: x.days, t: x.trips, l: x.longest }))]),
+          h('div', { class: 'pl-bar', role: 'presentation' }, h('i', { style: 'width:' + Math.max(2, Math.round(x.days / max * 100)) + '%' }))
+        ]);
+      })),
+      h('p', { class: 'muted small' }, T('placesCap', { n: total }))]);
+  }
+
   function tripList(tr) {
     var list = tr.trips.length ? h('ul', { class: 'trips' }, tr.trips.map(function (t) {
       var days = Object.keys(C.stayDays([t], C.todayStr())).length;
@@ -479,7 +493,7 @@
       if (state.trackers.length > 1) kids.push(overview());
       kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr));
       if (state.trackers.length > 1) kids.push(groupCard());
-      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), auditCard(tr), tripList(tr));
+      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), placesCard(tr), auditCard(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }
