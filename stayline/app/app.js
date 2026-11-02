@@ -303,7 +303,7 @@
     var b = C.borderSheet(tr, C.todayStr()), L = [T('borderTitle', { name: b.name || T('namePh') }), b.rule.kind === 'year' ? T('borderRuleY', { l: b.rule.limit }) : T('borderRuleR', { l: b.rule.limit, w: b.rule.window }),
       T('borderUsed', { u: b.used, n: Math.max(0, b.left), date: b.windowFrom, today: b.today }), ''];
     if (!b.trips.length) L.push(T('borderNone'));
-    b.trips.forEach(function (x) { L.push((x.place || '—') + ': ' + x.from + ' → ' + (x.to && x.to < b.today ? x.to : b.today) + ' (' + x.days + ')' + (x.note ? ' · ' + x.note : '')); });
+    b.trips.forEach(function (x) { L.push((x.place || '—') + ': ' + x.from + ' → ' + (x.to || b.today) + ' (' + x.days + ')' + (x.note ? ' · ' + x.note : '')); });
     if (b.overlap) L.push(T('borderOverlap'));
     if (b.left < 0) L.push(T('borderOver', { n: -b.left, today: b.today }));
     if (b.lastDay) L.push('', T('borderLast', { date: b.lastDay }));
@@ -514,6 +514,7 @@
   }
 
   function applyTheme() { var mt = document.querySelector('meta[name=theme-color]'), lt = state.theme === 'light' || (!state.theme && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches); if (mt) mt.setAttribute('content', lt ? '#f6f3ec' : '#14171a'); var th = state.theme === 'light' || state.theme === 'dark' ? state.theme : ''; if (th) document.documentElement.setAttribute('data-theme', th); else document.documentElement.removeAttribute('data-theme'); }
+  if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', function () { applyTheme(); }); } catch (e) {} }
   function render() {
     applyTheme();
     document.documentElement.lang = lang; document.title = T('app');
