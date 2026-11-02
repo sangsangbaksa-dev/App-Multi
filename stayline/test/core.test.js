@@ -363,3 +363,84 @@ test('autoItinerary: whatever it returns passes the simulator', () => {
   assert.deepEqual(C.autoItinerary(t, 3, 91, 0, '2026-06-01'), []);
   assert.deepEqual(C.autoItinerary(t, 0, 10, 0, '2026-06-01'), []);
 });
+
+/* ---- safety margin, trip notes, border sheet, 180/365 preset ---- */
+const { test: t2 } = require('node:test'), assert2 = require('node:assert');
+const SL2 = require('../app/core.js');
+t2('safety margin moves the leave-by date earlier', () => {
+  const tr = { rule: SL2.PRESETS.schengen, buffer: 5, trips: [{ id: 'a', place: '', from: '2026-03-01', to: '' }] };
+  const hard = SL2.lastDay(tr, '2026-03-10'), safe = SL2.safeLastDay(tr, '2026-03-10');
+  assert2.equal(hard, '2026-05-29');
+  assert2.equal(safe, '2026-05-24');
+  assert2.equal(SL2.safeLastDay({ rule: SL2.PRESETS.schengen, trips: tr.trips }, '2026-03-10'), null);
+});
+t2('buffer and notes are clamped and sanitised', () => {
+  const [x] = SL2.sanitize([{ id: 'k', buffer: 99, rule: SL2.PRESETS.schengen, trips: [{ id: 't', from: '2026-01-01', to: '2026-01-05', note: 'a\nb' + 'x'.repeat(300) }] }]);
+  assert2.equal(x.buffer, 30);
+  assert2.equal(x.trips[0].note.length, 120);
+  assert2.ok(!/\n/.test(x.trips[0].note));
+  assert2.equal(SL2.cleanBuffer(-3), 0); assert2.equal(SL2.cleanBuffer('abc'), 0);
+  const tr = { rule: SL2.PRESETS.schengen, trips: [] };
+  assert2.ok(SL2.addTrip(tr, { place: 'Rome', from: '2026-01-01', to: '2026-01-03', note: ' stamp ' }));
+  assert2.equal(tr.trips[0].note, 'stamp');
+  assert2.ok(SL2.updateTrip(tr, tr.trips[0].id, { from: '2026-01-01', to: '2026-01-04', note: 'new' }));
+  assert2.equal(tr.trips[0].note, 'new');
+});
+t2('border sheet lists only trips in the counting window', () => {
+  const tr = { name: 'Ana', rule: SL2.PRESETS.schengen, buffer: 3, trips: [
+    { id: 'a', place: 'Old', from: '2025-01-01', to: '2025-01-10', note: '' },
+    { id: 'b', place: 'Lisbon', from: '2026-02-01', to: '2026-02-10', note: 'ticket 42' },
+    { id: 'c', place: 'Rome', from: '2026-03-01', to: '', note: '' }] };
+  const b = SL2.borderSheet(tr, '2026-03-05');
+  assert2.deepEqual(b.trips.map(x => x.place), ['Lisbon', 'Rome']);
+  assert2.equal(b.trips[0].days, 10); assert2.equal(b.trips[1].days, 5);
+  assert2.equal(b.used, 15); assert2.equal(b.left, 75);
+  assert2.ok(b.lastDay && b.safeLastDay && b.safeLastDay < b.lastDay);
+});
+t2('180-in-365 preset', () => {
+  assert2.deepEqual(SL2.cleanRule(SL2.PRESETS.visitor180), { kind: 'rolling', limit: 180, window: 365 });
+});
+
+t2('border sheet day counts are clipped to the window', () => {
+  const tr = { rule: SL2.PRESETS.schengen, trips: [{ id: 'a', place: 'X', from: '2026-02-20', to: '2026-03-10' }] };
+  const b = SL2.borderSheet(tr, '2026-09-01');
+  assert2.equal(b.used, 5); assert2.equal(b.trips[0].days, 5);
+});
+t2('safe leave-by is null once the margin is used; year rule works with a margin', () => {
+  const tr = { rule: SL2.PRESETS.schengen, buffer: 30, trips: [{ id: 'a', place: '', from: '2026-01-01', to: '' }] };
+  assert2.equal(SL2.safeLastDay(tr, '2026-03-10'), null);
+  const y = { rule: SL2.PRESETS.tax183, buffer: 5, trips: [{ id: 'a', place: '', from: '2026-01-01', to: '' }] };
+  assert2.equal(SL2.lastDay(y, '2026-01-10'), '2026-07-02');
+  assert2.equal(SL2.safeLastDay(y, '2026-01-10'), '2026-06-27');
+});
+t2('key-date alerts keep the hard date and add the margin date; names and places stay on one line', () => {
+  const tr = { rule: SL2.PRESETS.schengen, buffer: 5, trips: [{ id: 'a', place: '', from: '2026-03-01', to: '' }] };
+  assert2.equal(SL2.alerts(tr, '2026-03-10').filter(a => a.kind === 'leave_by_safe')[0].date, '2026-05-24');
+  assert2.equal(SL2.alerts(tr, '2026-03-10').filter(a => a.kind === 'leave_by')[0].date, '2026-05-29');
+  const [x] = SL2.sanitize([{ id: 'k', name: 'A\nB', rule: SL2.PRESETS.schengen, trips: [{ id: 't', place: 'R\nS', from: '2026-01-01' }] }]);
+  assert2.equal(x.name, 'A B'); assert2.equal(x.trips[0].place, 'R S');
+  const q = { rule: SL2.PRESETS.schengen, trips: [] }; SL2.addTrip(q, { place: 'a\r\nb', from: '2026-01-01' });
+  assert2.equal(q.trips[0].place, 'a b');
+});
+
+t2('sheet counts stop at today; ICS uid and ICS ids and notes cannot inject lines', () => {
+  const tr = { rule: SL2.PRESETS.schengen, trips: [{ id: 'a', place: 'X', from: '2026-03-01', to: '2026-03-20' }] };
+  const b = SL2.borderSheet(tr, '2026-03-10');
+  assert2.equal(b.used, 10); assert2.equal(b.trips[0].days, 10);
+  const ev = { id: 'a\r\nSUMMARY:pwn', rule: SL2.PRESETS.schengen, trips: [{ id: 't', from: '2026-03-01', to: '' }] };
+  assert2.ok(!/^SUMMARY:pwn/m.test(SL2.alertsIcs([ev], '2026-03-10', k => k)));
+  assert2.equal(SL2.cleanNote('x\u2028y'), 'x y');
+});
+t2('new i18n keys exist in every language', () => {
+  const I = require('../app/i18n.js'), keys = ['a_leave_by_safe', 'icsLabel_leave_by_safe', 'borderOver', 'marginGone', 'borderCopyFail', 'safeLeave'];
+  for (const l of I.langs) for (const k of keys) assert2.ok(I.L[l][k], l + ':' + k);
+  for (const l of ['zh', 'ja']) for (const k of ['borderTitle', 'safeLeave', 'borderDisc', 'borderUsed', 'borderHint', 'marginGone', 'bufferHint']) assert2.ok(!/[:,]/.test(I.L[l][k]) && !/： /.test(I.L[l][k]), l + ':' + k);
+});
+
+t2('border sheet clips the start date and flags overlapping trips', () => {
+  const tr = { rule: SL2.PRESETS.schengen, trips: [{ id: 'a', from: '2026-02-01', to: '2026-04-10' }, { id: 'b', from: '2026-04-05', to: '2026-04-12' }] };
+  const b = SL2.borderSheet(tr, '2026-04-20');
+  assert2.ok(b.trips[0].from >= b.windowFrom);
+  assert2.equal(b.overlap, true);
+  assert2.equal(SL2.borderSheet({ rule: SL2.PRESETS.schengen, trips: [{ id: 'a', from: '2026-04-01', to: '2026-04-05' }] }, '2026-04-20').overlap, false);
+});
