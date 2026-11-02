@@ -67,3 +67,5 @@ button.link{min-height:44px;padding:0 8px;display:inline-flex;align-items:center
 .btns.sm button{min-height:44px}button.tag.sug{min-height:44px}.rm{width:36px;height:36px}
 .hmrow{grid-template-columns:48px repeat(24,minmax(9px,1fr))}
 label.btn:has(+ input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.chain,.rep{overflow-wrap:anywhere;word-break:break-all}
+.toast{bottom:auto;top:12px}.rm{width:44px;height:44px;top:-10px;right:-10px}

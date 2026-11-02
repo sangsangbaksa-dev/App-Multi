@@ -51,7 +51,7 @@
   function photoDel(id) { return idb().then(function (d) { d.transaction('photos', 'readwrite').objectStore('photos').delete(id); }, function () { /* no store */ }); }
   function photoSweep() {
     var used = {}; S.cases.forEach(function (c) { c.entries.forEach(function (e) { e.photos.forEach(function (p) { used[p.id] = 1; }); }); });
-    if (blocked) return;
+    if (blocked || corruptKey) return;
     idb().then(function (d) { var q = d.transaction('photos').objectStore('photos').getAllKeys(); q.onsuccess = function () { q.result.forEach(function (k) { if (!used[k]) photoDel(k); }); }; }, function () { /* no store */ });
   }
   function photoGet(id) { return idb().then(function (d) { return new Promise(function (res) { var q = d.transaction('photos').objectStore('photos').get(id); q.onsuccess = function () { res(q.result || null); }; q.onerror = function () { res(null); }; }); }, function () { return null; }); }
@@ -291,8 +291,8 @@
       for (var i = 0; i < pending.photos.length; i++) { var data = pending.photos[i], h = await C.sha256Hex(data), id = C.uid(); await photoPut(id, data); photos.push({ id: id, h: h }); }
     } catch (e) { return err(t('photoStoreFail')); }
     var last = c.entries[c.entries.length - 1], e = await C.seal(last ? last.hash : '', { type: 'event', at: at, rec: now(), text: text, sev: sev, dur: dur === '' ? 0 : +dur, tags: $('#e-tags', form).value, witness: $('#e-wit', form).value.trim(), photos: photos, reported: $('#e-rep', form).checked });
-    c.entries.push(e); if (pre && pre.live) c.live = null;
-    if (!save()) { c.entries.pop(); photos.forEach(function (p) { photoDel(p.id); }); return err(t('saveFail')); }
+    c.entries.push(e); var liveWas = c.live; if (pre && pre.live) c.live = null;
+    if (!save()) { c.entries.pop(); c.live = liveWas; photos.forEach(function (p) { photoDel(p.id); }); return err(t('saveFail')); }
     pending.photos = []; closeDialog(); S.tab = 'log'; render(); toast(t('sealed', { h: e.hash.slice(0, 8) }));
   }
   function noteDialog(c, id) {
@@ -332,23 +332,24 @@
       if ($('#c-qon', form).checked && ($('#c-qa', form).value === '' || $('#c-qb', form).value === '')) return err(t('errQuiet'));
       var quiet = $('#c-qon', form).checked ? [C.clampInt($('#c-qa', form).value, 0, 23), C.clampInt($('#c-qb', form).value, 0, 23)] : null;
       var o = c || { id: C.uid(), kind: $('#c-kind', form).value, created: now(), archived: false, entries: [], steps: [], live: null };
-      o.name = name; o.counterpart = $('#c-who', form).value.trim(); o.goal = $('#c-goal', form).value.trim(); o.quiet = quiet;
-      var was = [o.name, o.counterpart, o.goal, o.quiet]; if (!c) S.cases.push(o); S.cur = o.id; S.tab = 'log';
-      if (!save()) { if (!c) S.cases.pop(); return err(t('saveFail')); } closeDialog(); render();
+      var snap = { n: o.name, w: o.counterpart, g: o.goal, q: o.quiet, cur: S.cur }; o.name = name; o.counterpart = $('#c-who', form).value.trim(); o.goal = $('#c-goal', form).value.trim(); o.quiet = quiet; if (!c) S.cases.push(o); S.cur = o.id; S.tab = 'log';
+      if (!save()) { if (!c) S.cases.pop(); else { o.name = snap.n; o.counterpart = snap.w; o.goal = snap.g; o.quiet = snap.q; } S.cur = snap.cur; return err(t('saveFail')); } closeDialog(); render();
     });
     if (!c) $('#c-kind', dlg).addEventListener('change', function (ev) { var q2 = C.KINDS[ev.target.value].quiet; $('#c-qon', dlg).checked = !!q2; if (q2) { $('#c-qa', dlg).value = q2[0]; $('#c-qb', dlg).value = q2[1]; } });
   }
   function dataDialog() {
-    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div><p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
+    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
     $('#d-exp', dlg).addEventListener('click', backup);
+    if (corruptKey) $('#d-corrupt', dlg).addEventListener('click', function () { try { download('marginlog-unreadable.txt', 'text/plain', localStorage.getItem(corruptKey) || ''); } catch (e) { err(t('saveFail')); } });
     $('#d-imp', dlg).addEventListener('change', function (ev) { var f = ev.target.files[0]; if (f) restore(f); });
   }
   async function backup() {
     var photos = {}, ids = [];
     S.cases.forEach(function (c) { c.entries.forEach(function (e) { e.photos.forEach(function (p) { ids.push(p.id); }); }); });
     for (var i = 0; i < ids.length; i++) { var d = await photoGet(ids[i]); if (d) photos[ids[i]] = d; }
-    download('marginlog-backup-' + C.toLocalStamp(new Date(now())).slice(0, 10) + '.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos }));
-    err(''); toast(t('backupDone'));
+    var cp = {}; S.cases.forEach(function (c) { if (c.entries.length) cp[c.id] = { n: c.entries.length, head: c.entries[c.entries.length - 1].hash }; });
+    try { download('marginlog-backup-' + C.toLocalStamp(new Date(now())).slice(0, 10) + '.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos, cp: cp })); err(''); toast(t('backupDone')); }
+    catch (e) { err(t('saveFail')); }
   }
   function restore(file) {
     var fr = new FileReader();
@@ -356,17 +357,30 @@
     fr.onload = async function () {
       try {
         var d = JSON.parse(fr.result); if (!d || d.app !== 'marginlog' || !Array.isArray(d.cases)) throw new Error('shape');
-        var cs = d.cases.map(C.sanitizeCase).filter(Boolean), broken = 0, ph = d.photos && typeof d.photos === 'object' ? d.photos : {};
-        for (var i = 0; i < cs.length; i++) { var v = await C.verifyChain(cs[i].entries); if (!v.ok) broken++; }
-        var n = 0;
-        var skipped = 0; cs = cs.filter(function (c) { var same = S.cases.some(function (x) { return x.id === c.id && x.entries.length && c.entries.length && x.entries[x.entries.length - 1].hash === c.entries[c.entries.length - 1].hash; }); if (same) skipped++; return !same; });
-        cs.forEach(function (c) { if (S.cases.some(function (x) { return x.id === c.id; })) c.id = C.uid(); });
-        for (var j = 0; j < cs.length; j++) for (var k = 0; k < cs[j].entries.length; k++) for (var m = 0; m < cs[j].entries[k].photos.length; m++) {
-          var p = cs[j].entries[k].photos[m], data = ph[p.id];
-          if (typeof data === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(data) && data.length < 6e6 && await C.sha256Hex(data) === p.h) { await photoPut(p.id, data); n++; }
+        var cs = d.cases.map(C.sanitizeCase).filter(Boolean), broken = 0, ph = d.photos && typeof d.photos === 'object' ? d.photos : {}, fcp = d.cp && typeof d.cp === 'object' ? d.cp : {}, n = 0, skipped = 0, photoBad = 0, newCp = {};
+        for (var i = 0; i < cs.length; i++) { var v = await C.verifyChain(cs[i].entries, fcp[cs[i].id]); if (!v.ok) broken++; }
+        var before = S.cases.slice(), keep = [];
+        cs.forEach(function (c) {
+          var ex = before.filter(function (x) { return x.id === c.id; })[0], has = function (list, h) { return list.some(function (e) { return e.hash === h; }); };
+          var cl = c.entries.length ? c.entries[c.entries.length - 1].hash : '';
+          if (ex) {
+            var el = ex.entries.length ? ex.entries[ex.entries.length - 1].hash : '';
+            if (cl === el || (cl && has(ex.entries, cl))) { skipped++; return; }          /* same or older copy of a case we already hold */
+            if (el && has(c.entries, el)) { S.cases.splice(S.cases.indexOf(ex), 1); }       /* backup is a newer copy: replace */
+            else c.id = C.uid();                                                          /* diverged history: keep both */
+          }
+          if (fcp[cs[cs.indexOf(c)].id] && !newCp[c.id]) newCp[c.id] = fcp[c.id];
+          keep.push(c);
+        });
+        for (var j = 0; j < keep.length; j++) for (var k = 0; k < keep[j].entries.length; k++) for (var m = 0; m < keep[j].entries[k].photos.length; m++) {
+          var p = keep[j].entries[k].photos[m], data = ph[p.id];
+          if (typeof data === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(data) && data.length < 6e6 && await C.sha256Hex(data) === p.h) { await photoPut(p.id, data); n++; } else photoBad++;
         }
-        S.cases = S.cases.concat(cs); /* checkpoints are written by save() */ if (!S.cur && cs[0]) S.cur = cs[0].id; save(); closeDialog(); render();
-        toast(broken ? t('restoredBroken', { n: cs.length, b: broken }) : t('restored', { n: cs.length }) + (skipped ? ' ' + t('restoredSkipped', { n: skipped }) : ''));
+        S.cases = S.cases.concat(keep); if (!S.cur && keep[0]) S.cur = keep[0].id;
+        if (!save()) { S.cases = before; return err(t('saveFail')); }
+        try { var cpAll = readCp(); Object.keys(newCp).forEach(function (id) { cpAll[id] = newCp[id]; }); localStorage.setItem(CPKEY, JSON.stringify(cpAll)); } catch (e3) { /* checkpoint is best effort */ }
+        closeDialog(); render();
+        toast((broken ? t('restoredBroken', { n: keep.length, b: broken }) : t('restored', { n: keep.length })) + (skipped ? ' ' + t('restoredSkipped', { n: skipped }) : '') + (photoBad ? ' ' + t('photoHashBad', { n: photoBad }) : ''));
       } catch (e) { err(t('badFile')); }
     };
     fr.readAsText(file);
@@ -407,19 +421,21 @@
     if (act === 'note') return noteDialog(c, id);
     if (act === 'void') return voidDialog(c, id);
     if (act === 'addstep') return stepDialog(c, b.getAttribute('data-kind'));
-    if (act === 'stepdone') { (c.steps || []).forEach(function (s) { if (s.id === id) s.done = true; }); save(); render(); if (S.tab === 'report') fillReport(); return; }
-    if (act === 'stepdel') { var del = c.steps.filter(function (s) { return s.id === id; })[0]; c.steps = c.steps.filter(function (s) { return s.id !== id; }); save(); render(); toast(t('stepRemoved'), t('undo'), function () { c.steps.push(del); save(); render(); }); return; }
+    if (act === 'stepdone') { var sd = (c.steps || []).filter(function (s) { return s.id === id; })[0]; if (sd) { sd.done = true; if (!save()) { sd.done = false; return; } } render(); if (S.tab === 'report') fillReport(); return; }
+    if (act === 'stepdel') { var del = c.steps.filter(function (s) { return s.id === id; })[0]; var oldSteps = c.steps; c.steps = c.steps.filter(function (s) { return s.id !== id; }); if (!save()) { c.steps = oldSteps; return; } render(); toast(t('stepRemoved'), t('undo'), function () { c.steps.push(del); save(); render(); }); return; }
     if (act === 'clearf') { S.f = { q: '', tag: '', sev: 0, voided: S.f.voided }; return render(); }
     if (act === 'editcase') return caseDialog(null, c);
     if (act === 'archive') { c.archived = !c.archived; if (!save()) { c.archived = !c.archived; return; } render(); toast(t(c.archived ? 'archivedMsg' : 'unarchivedMsg')); return; }
     if (act === 'delcase') {
-      return openDialog('<h2 id="dlg-h">' + esc(t('deleteCase')) + '</h2><p>' + esc(t('delConfirm', { name: c.name })) + '</p><p class="hint">' + esc(t('delHint')) + '</p><div class="btns"><button type="submit" class="pri danger">' + esc(t('deleteCase')) + '</button><button type="button" class="ghost" data-close>' + esc(t('cancel')) + '</button></div>', function () {
+      return openDialog('<h2 id="dlg-h">' + esc(t('deleteCase')) + '</h2><p>' + esc(t('delConfirm', { name: c.name })) + '</p><p class="hint">' + esc(t('delHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="submit" class="pri danger">' + esc(t('deleteCase')) + '</button><button type="button" class="ghost" data-close>' + esc(t('cancel')) + '</button></div>', function () {
         var idx = S.cases.indexOf(c), was = S.cur, undone = false, pids = []; c.entries.forEach(function (e) { e.photos.forEach(function (p) { pids.push(p.id); }); });
-        setTimeout(function () { if (!undone && S.cases.indexOf(c) < 0) pids.forEach(photoDel); }, 12000); S.cases.splice(idx, 1); S.cur = (S.cases.filter(function (x) { return !x.archived; })[0] || S.cases[0] || {}).id || null; save(); closeDialog(); render();
+        S.cases.splice(idx, 1); S.cur = (S.cases.filter(function (x) { return !x.archived; })[0] || S.cases[0] || {}).id || null;
+        if (!save()) { S.cases.splice(idx, 0, c); S.cur = was; return err(t('saveFail')); }
+        setTimeout(function () { if (!undone && S.cases.indexOf(c) < 0) pids.forEach(photoDel); }, 12000); closeDialog(); render();
         toast(t('caseDeleted'), t('undo'), function () { undone = true; S.cases.splice(idx, 0, c); S.cur = was; save(); render(); });
       }, { focus: '[data-close]' });
     }
-    if (act === 'photo') { var d = await photoGet(b.getAttribute('data-pid')); if (!d) return toast(t('photoMissing')); return openDialog('<h2 id="dlg-h" class="sr">' + esc(t('openPhoto')) + '</h2><img class="big-ph" alt="" src="' + d + '"><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>'); }
+    if (act === 'photo') { var d = await photoGet(b.getAttribute('data-pid')); if (!d) return toast(t('photoMissing')); var pd = openDialog('<h2 id="dlg-h" class="sr">' + esc(t('openPhoto')) + '</h2><img class="big-ph" alt=""><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>'); $('.big-ph', pd).src = d; return; }
     if (act === 'verify') { var l = $('#chainline'); if (l) l.textContent = t('verifying'); return fillReport(); }
     if (act === 'copyrep') { var pv = $('#repview'), md = pv && pv.textContent ? pv.textContent : await fillReport(); try { await navigator.clipboard.writeText(md); toast(t('copied')); } catch (e) { var pre = $('#repview'); var r = document.createRange(); r.selectNodeContents(pre); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t('copyFail')); } return; }
     if (act === 'dlmd') { var md2 = await fillReport(); return download('marginlog-' + slug(c.name) + '.md', 'text/markdown', md2); }
@@ -454,7 +470,7 @@
   else if (corruptKey) toast(t('corrupt', { k: corruptKey }));
   else if (!(window.crypto && window.crypto.subtle)) toast(t('cryptoFail'));
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache is optional */ });
-  photoSweep();
-  window.addEventListener('storage', function (ev) { if (ev.key === KEY) { closeDialog(); S.cases = []; S.cur = null; load(); render(); toast(t('otherTab')); } });
+  setTimeout(photoSweep, 8000);
+  window.addEventListener('storage', function (ev) { if (ev.key !== KEY) return; if (dlg) { toast(t('otherTabBusy')); return; } S.cases = []; S.cur = null; load(); render(); toast(t('otherTab')); });
   window.__ml = { S: S, render: render };
 })();

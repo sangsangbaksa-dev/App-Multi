@@ -83,12 +83,12 @@
     return { grid: g, max: max };
   }
   function weekly(evs, nowTs, weeks) {
-    weeks = weeks || 8; var out = [], i;
-    var now = new Date(nowTs), mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)).getTime();
-    for (i = weeks - 1; i >= 0; i--) out.push({ start: mon - i * 7 * 864e5, n: 0, sev: 0 });
+    weeks = weeks || 8; var out = [], i, now = new Date(nowTs);
+    var monDay = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 864e5) - ((now.getDay() + 6) % 7);
+    for (i = weeks - 1; i >= 0; i--) { var dd = monDay - i * 7, u = new Date(dd * 864e5); out.push({ start: new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()).getTime(), day: dd, n: 0, sev: 0 }); }
     evs.forEach(function (e) {
-      var p = parseAt(e.at); if (!p) return;
-      var idx = Math.floor((p.ts - out[0].start) / (7 * 864e5));
+      var dn = dayNum(e.at); if (dn == null) return;
+      var idx = Math.floor((dn - out[0].day) / 7);
       if (idx >= 0 && idx < weeks) { out[idx].n++; out[idx].sev += e.sev || 0; }
     });
     return out;

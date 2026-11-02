@@ -19,7 +19,7 @@
     trend_up: 'rising', trend_down: 'falling', trend_flat: 'steady',
     nextStep: 'Next step:', logStep: 'Log it', markAnswered: 'Mark answered',
     sg_none: 'Log your first incident. Short and dated beats long and late.',
-    sg_talk: 'Consider a calm, friendly word first. {step} is the cheapest step and shows good faith.',
+    sg_talk: 'Consider a calm, friendly word first. It is the cheapest step and shows good faith.',
     sg_written: 'You have enough entries to put it in writing. Send a dated {step} and log it here.',
     sg_complaint: 'It keeps happening after a written notice. The next step is: {step}.',
     sg_next: 'The earlier steps have not stopped it. Consider {step}.',
@@ -63,7 +63,9 @@
     otherTab: 'Another tab changed this data. Reloaded.',
     errQuiet: 'Enter both hours for quiet time, or turn it off.',
     chainTrunc: 'Records are missing: this log is shorter than it was last time it was saved. Data was removed outside the app.',
-    restoredSkipped: '{n} already here, skipped.'
+    restoredSkipped: '{n} already here, skipped.',
+    dlCorrupt: 'Download the unreadable data',
+    otherTabBusy: 'Another tab changed this data. Close this window and reload before saving.'
   };
   L.ko = {
     name: '한국어', language: '언어', dataBtn: '백업', close: '닫기', cancel: '취소', save: '저장', delete: '삭제', undo: '되돌리기',
@@ -83,7 +85,7 @@
     trend_up: '증가', trend_down: '감소', trend_flat: '비슷',
     nextStep: '다음 단계:', logStep: '기록하기', markAnswered: '답변 받음',
     sg_none: '첫 사건을 기록하세요. 길고 늦은 기록보다 짧고 바로 쓴 기록이 낫습니다.',
-    sg_talk: '먼저 차분하게 말해 보는 걸 고려하세요. {step}은(는) 가장 부담이 적고 성의를 보여 줍니다.',
+    sg_talk: '먼저 차분하게 말해 보는 걸 고려하세요. 가장 부담이 적고 성의를 보여 줍니다.',
     sg_written: '문서로 남길 만큼 기록이 쌓였습니다. 날짜가 있는 {step}을(를) 보내고 여기에 기록하세요.',
     sg_complaint: '서면 통보 뒤에도 계속됩니다. 다음 단계: {step}.',
     sg_next: '앞선 단계로 멈추지 않았습니다. {step}을(를) 고려하세요.',
@@ -127,7 +129,9 @@
     otherTab: '다른 탭에서 데이터가 바뀌어 다시 불러왔습니다.',
     errQuiet: '정숙 시간의 두 시각을 모두 입력하거나 기능을 끄세요.',
     chainTrunc: '기록이 사라졌습니다. 마지막 저장 때보다 기록이 적습니다. 앱 밖에서 데이터가 지워졌습니다.',
-    restoredSkipped: '이미 있는 {n}개는 건너뛰었습니다.'
+    restoredSkipped: '이미 있는 {n}개는 건너뛰었습니다.',
+    dlCorrupt: '읽을 수 없는 데이터 내려받기',
+    otherTabBusy: '다른 탭에서 데이터가 바뀌었습니다. 이 창을 닫고 새로고침한 뒤 저장하세요.'
   };
   L.ja = {
     name: '日本語', language: '言語', dataBtn: 'バックアップ', close: '閉じる', cancel: 'キャンセル', save: '保存', delete: '削除', undo: '元に戻す',
@@ -147,7 +151,7 @@
     trend_up: '増加', trend_down: '減少', trend_flat: '横ばい',
     nextStep: '次の一手：', logStep: '記録する', markAnswered: '回答あり',
     sg_none: '最初の出来事を記録しましょう。長くて遅い記録より、短くてすぐの記録が有効です。',
-    sg_talk: 'まずは穏やかに話してみては。{step}は負担が最も小さく、誠意も示せます。',
+    sg_talk: 'まずは穏やかに話してみては。負担が最も小さく、誠意も示せます。',
     sg_written: '書面にできるだけの記録が溜まりました。日付入りの{step}を送り、ここに記録しましょう。',
     sg_complaint: '書面の後も続いています。次の段階：{step}。',
     sg_next: 'これまでの段階では止まっていません。{step}を検討しましょう。',
@@ -191,7 +195,9 @@
     otherTab: '別のタブでデータが変更されたため再読み込みしました。',
     errQuiet: '静かな時間帯は開始・終了の両方を入力するか、オフにしてください。',
     chainTrunc: '記録が欠けています。前回保存時より件数が少なくなっています。アプリ外でデータが削除されました。',
-    restoredSkipped: 'すでにある {n} 件はスキップしました。'
+    restoredSkipped: 'すでにある {n} 件はスキップしました。',
+    dlCorrupt: '読めないデータをダウンロード',
+    otherTabBusy: '別のタブでデータが変更されました。このウィンドウを閉じて再読み込みしてから保存してください。'
   };
   L.zh = {
     name: '中文', language: '语言', dataBtn: '备份', close: '关闭', cancel: '取消', save: '保存', delete: '删除', undo: '撤销',
@@ -211,7 +217,7 @@
     trend_up: '上升', trend_down: '下降', trend_flat: '平稳',
     nextStep: '下一步：', logStep: '记录', markAnswered: '已回复',
     sg_none: '先记下第一起事件。简短及时胜过冗长迟到。',
-    sg_talk: '可以先心平气和地沟通一次。{step}成本最低，也表明你的诚意。',
+    sg_talk: '可以先心平气和地沟通一次。成本最低，也表明你的诚意。',
     sg_written: '记录已足够形成书面材料。发一份带日期的{step}，并在这里记录。',
     sg_complaint: '书面通知后仍在发生。下一步：{step}。',
     sg_next: '前面的步骤没能制止。可以考虑{step}。',
@@ -255,7 +261,9 @@
     otherTab: '另一个标签页修改了数据，已重新载入。',
     errQuiet: '请填写安静时段的起止小时，或关闭该功能。',
     chainTrunc: '记录缺失：当前记录比上次保存时更少，数据在应用之外被删除。',
-    restoredSkipped: '已存在的 {n} 个已跳过。'
+    restoredSkipped: '已存在的 {n} 个已跳过。',
+    dlCorrupt: '下载无法读取的数据',
+    otherTabBusy: '另一个标签页修改了数据。请关闭此窗口并刷新后再保存。'
   };
   L.es = {
     name: 'Español', language: 'Idioma', dataBtn: 'Respaldo', close: 'Cerrar', cancel: 'Cancelar', save: 'Guardar', delete: 'Borrar', undo: 'Deshacer',
@@ -275,7 +283,7 @@
     trend_up: 'al alza', trend_down: 'a la baja', trend_flat: 'estable',
     nextStep: 'Siguiente paso:', logStep: 'Registrar', markAnswered: 'Marcar respondido',
     sg_none: 'Registra tu primer incidente. Breve y con fecha vale más que largo y tarde.',
-    sg_talk: 'Considera primero una charla tranquila. {step} es el paso más barato y muestra buena fe.',
+    sg_talk: 'Considera primero una charla tranquila. Es el paso más barato y muestra buena fe.',
     sg_written: 'Tienes entradas suficientes para ponerlo por escrito. Envía {step} con fecha y regístralo aquí.',
     sg_complaint: 'Sigue ocurriendo tras el aviso escrito. El siguiente paso: {step}.',
     sg_next: 'Los pasos anteriores no lo han frenado. Considera {step}.',
@@ -319,7 +327,9 @@
     otherTab: 'Otra pestaña cambió estos datos. Recargado.',
     errQuiet: 'Indica las dos horas del silencio o desactívalo.',
     chainTrunc: 'Faltan registros: este registro es más corto que la última vez que se guardó. Se borraron datos fuera de la app.',
-    restoredSkipped: '{n} ya estaban, omitidos.'
+    restoredSkipped: '{n} ya estaban, omitidos.',
+    dlCorrupt: 'Descargar los datos ilegibles',
+    otherTabBusy: 'Otra pestaña cambió estos datos. Cierra esta ventana y recarga antes de guardar.'
   };
   var STEPS = {
     en: { talk: 'Talk', written: 'Written notice', complaint: 'Formal complaint', mediation: 'Mediation', authority: 'Authority', legal: 'Legal action' },
