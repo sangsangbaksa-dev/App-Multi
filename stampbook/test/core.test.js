@@ -345,7 +345,7 @@ test('owed make-ups stay visible on ended packs, can be waived, and reach the ca
   const l = C.makeupList([old], '2026-11-02'); assert.equal(l.length, 1); assert.equal(l[0].open, false);
   assert.equal(C.decodeCard(C.encodeCard(old, '')).owed, 1);
   assert.equal(C.report(old, '2025-01', '2026-11-02').owed, 1);
-  assert.equal(C.waiveMakeups(old), 1); assert.equal(C.makeupsOwed(old), 0); assert.equal(C.makeupList([old], '2026-11-02')[0].open, false);
+  assert.equal(C.waiveMakeups(old), 1); assert.equal(C.makeupsOwed(old), 0); assert.equal(C.makeupList([old], '2026-11-02').length, 0);
   C.addStamp(old, '2025-01-06', '', 'excused'); assert.equal(C.makeupsOwed(old), 1, 'a new excused lesson is owed again');
   assert.equal(C.decodeCard(C.encodeCard({ student: 'N', total: 2, stamps: [] }, '')).owed, 0);
 });
