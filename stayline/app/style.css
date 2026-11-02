@@ -98,9 +98,10 @@ textarea{font:inherit;color:var(--ink);background:#101315;border:1px solid var(-
 .al-leave_by span:first-child,.al-leave_by_safe span:first-child{color:var(--warn)}
 @media print{.sheet{background:#fff;color:#000}}
 :root[data-theme=light]{--line:#8c8577}@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--line:#8c8577}}
-@media (prefers-contrast:more){:root[data-theme=light]{--mute:#3d464c;--line:#5c564a}}
+@media (prefers-contrast:more){:root[data-theme=light]{--mute:#3d464c;--line:#5c564a;--ctl:#5c564a}}
 
 :root{--ctl:#6b747b}select,input,textarea{border-color:var(--ctl)}
 :root[data-theme=light]{--ctl:#8c8577}@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--ctl:#8c8577}}
 @media (prefers-contrast:more) and (prefers-color-scheme:light){:root:not([data-theme=dark]){--mute:#3d464c;--line:#5c564a;--ctl:#5c564a}}
 @media (prefers-contrast:more){:root[data-theme=dark]{--mute:#c7ced2;--line:#56616a;--ctl:#9aa3a8}}
+@media (prefers-contrast:more) and (prefers-color-scheme:dark){:root:not([data-theme=light]){--mute:#c7ced2;--line:#56616a;--ctl:#9aa3a8}}
