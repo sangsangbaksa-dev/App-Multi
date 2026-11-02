@@ -296,3 +296,10 @@ test("client ledger and dashboard reconcile with withholding", () => {
   assert.equal(L.upcomingRecurring([{ ...o, recur: "monthly", nextRun: "2024-06-01" }], "2024-05-20", 1)[0].amount, 90);
   assert.match(L.toCSV([o]), /"100","10","50","40"/);
 });
+
+test("dashboard cash plus outstanding equals what the client owes you (payable)", () => {
+  const o = inv({ number: "W2", client: "K", items: [{ qty: 1, price: 100 }], taxRate: 0, withholdingRate: 10, paid: 50 });
+  const s = L.summarize([o], "2024-01-01")[0];
+  assert.equal(s.collected + s.outstanding, L.payableOf(o));
+  assert.equal(s.collected + s.outstanding + L.withheldOf(o), L.totalOf(o));
+});

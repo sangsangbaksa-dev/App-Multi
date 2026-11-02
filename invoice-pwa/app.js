@@ -70,7 +70,7 @@ function renderList() {
     return `<div class="card" data-id="${esc(i.id)}" role="button" tabindex="0"><div><b>${esc(i.number)}</b> · ${esc(i.client)}<br>
       <span class="muted">${q ? I.t("validUntil") : I.t("dueWord")} ${esc(I.formatDate(i.dueDate))} · ${I.t(i.status)}${i.recur ? " · " + I.t(i.recur) : ""}</span>
       ${L.overdue(i) ? `<span class="late"> ${I.t("overdue")}</span>` : ""}</div>
-      <div class="r"><b>${money(L.totalOf(i), i.currency)}</b>${!q && i.paid > 0 && bal > 0 ? `<br><span class="muted">${I.t("balance")} ${money(bal, i.currency)}</span>` : ""}</div></div>`;
+      <div class="r"><b>${money(L.totalOf(i), i.currency)}</b>${L.withheldOf(i) > 0 ? `<br><span class="muted">${I.t("payableL")} ${money(L.payableOf(i), i.currency)}</span>` : ""}${!q && i.paid > 0 && bal > 0 ? `<br><span class="muted">${I.t("balance")} ${money(bal, i.currency)}</span>` : ""}</div></div>`;
   }).join("");
   renderDash();
   renderAgeing();

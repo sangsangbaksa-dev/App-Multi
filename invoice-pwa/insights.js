@@ -111,11 +111,11 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
     if (!c.rows.length) return;
     const habits = L.clientHabits(invoices);
     $("#cash-cards").innerHTML = [
-      ...c.byMonth.map((r) => [r.month, r.amount]),
+      ...c.byMonth.map((r) => [I.formatDate(r.month + "-01").replace(/[\s.]*\d{1,2}[\s.일日]*$/, "") || r.month, r.amount]),
       ...(c.later > 0 ? [[I.t("insCashLater"), c.later]] : []),
       [I.t("insCashTotal"), c.total],
     ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
-    $("#cash-table").innerHTML = `<thead><tr><th>${esc(I.t("cashColExpected"))}</th><th>${esc(I.t("cashColInvoice"))}</th><th class="r">${esc(I.t("cashColAmount"))}</th></tr></thead><tbody>${c.rows.slice(0, 20).map((r) => {
+    $("#cash-table").innerHTML = `<caption class="sr">${esc(I.t("insCashHead"))}</caption><thead><tr><th scope="col">${esc(I.t("cashColExpected"))}</th><th>${esc(I.t("cashColInvoice"))}</th><th class="r">${esc(I.t("cashColAmount"))}</th></tr></thead><tbody>${c.rows.slice(0, 20).map((r) => {
       const why = r.slow ? I.t("insCashSlow") : r.basis === "history" ? I.t("insCashHistory", { d: habits[r.client]?.avgDays ?? "" }) : I.t("insCashDue");
       return `<tr><td>${esc(I.formatDate(r.expected))}</td><td>${esc(r.number)} · ${esc(r.client || "")}<br><span class="muted">${esc(why)}</span></td><td class="r">${esc(money(r.balance, currency))}</td></tr>`;
     }).join("")}</tbody>`;
