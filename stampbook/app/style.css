@@ -72,7 +72,7 @@ input[type=search]{-webkit-appearance:none}
 .day.blank{border:0;background:transparent;pointer-events:none}.day.today{border-color:var(--ink)}.day.sel{background:var(--ink);color:var(--paper)}
 .day.has{border-color:var(--stamp)}
 .dots{display:flex;gap:2px;font-style:normal;margin-bottom:3px}.day em{position:absolute;top:1px;right:3px;font-size:10px;font-style:normal;color:var(--mute)}
-u.k-lesson{background:var(--stamp)}u.k-noshow{background:var(--warn)}u.k-excused{background:var(--mute)}u.k-mk{background:var(--ok);border-radius:1px;transform:rotate(45deg)}
+u.k-lesson{background:var(--stamp)}u.k-noshow{background:var(--warn)}u.k-excused{background:var(--mute)}u.k-mk{background:var(--ok)}
 .dots u,.legend u{display:inline-block;width:7px;height:7px;border-radius:50%;text-decoration:none}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 14px}
 .calday h3,.ins h3{font:700 16px var(--serif);margin:0 0 8px}
@@ -93,3 +93,9 @@ u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{wid
 .toast[data-keep]~.toast:not([data-keep]){bottom:84px}
 #print-receipt{display:none}@media print{body.printing #root,body.printing .toast{display:none!important}body.printing #print-receipt{display:block;font:18px/1.6 var(--sans);white-space:pre-wrap;padding:24px;color:#000}body.printing{background:#fff}}
 .nextnote{margin:10px 0;padding:8px 10px;border:1.5px dashed var(--line);border-radius:8px;overflow-wrap:anywhere}
+/* each kind has its own shape as well as its colour (not colour alone) */
+.dots u.k-noshow,.legend u.k-noshow{border-radius:1px}
+.dots u.k-excused,.legend u.k-excused{background:transparent;border:2px solid var(--mute)}
+.dots u.k-mk,.legend u.k-mk{border-radius:0;transform:rotate(45deg) scale(.85)}
+.dots u.k-plan,.legend u.k-plan{border-style:dashed}
+.qrbox{text-align:center}.qrbox img{width:min(80vw,320px);height:auto;image-rendering:pixelated;background:#fff;padding:8px;border-radius:8px}

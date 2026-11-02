@@ -320,6 +320,7 @@
     if (p.paid === false) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T('payMsg', { name: p.student, total: p.total, price: money(p.price, p.currency) }), T('remindCopied')); } }, T('payBtn')));
     if (p.next) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T('nextMsg', { name: p.student, note: p.next }), T('remindCopied')); } }, T('nextMsgBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(receiptText(p), T('receiptCopied')); } }, T('receiptBtn')), h('button', { class: 'ghost', onclick: function () { printReceipt(p); } }, T('printBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { showQr(p); } }, 'QR' + (state.pro ? '' : ' · ' + T('pro'))));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
       h('button', { class: 'ghost', onclick: function () { deletePack(p); } }, T('del')));
@@ -395,6 +396,19 @@
     if (p.next && !confirm(T('shareNoteAsk', { note: p.next }))) return;
     if (navigator.share && (/Mobi|Android/i.test(navigator.userAgent || '') || navigator.maxTouchPoints > 1)) navigator.share({ title: p.student, text: T('cardH') + ': ' + p.student, url: url }).catch(function (e) { if (e && e.name !== 'AbortError') copy(url, T('linkCopied')); });
     else copy(url, T('linkCopied'));
+  }
+  /* QR code of the balance link, drawn offline, so the card can be shown on the teacher's phone at the lesson */
+  function showQr(p) {
+    if (!state.pro) return needPro();
+    if (!window.qrcode) return toast(T('qrErr'));
+    var url = location.origin + location.pathname + '#c=' + C.encodeCard(p, state.teacher), img;
+    try { var q = window.qrcode(0, 'L'); q.addData(url); q.make(); img = h('img', { src: q.createDataURL(6, 2), alt: T('qrAlt', { name: p.student }) }); }
+    catch (e) { return toast(T('qrErr')); }
+    var old = document.getElementById('qrdlg'); if (old) old.remove();
+    var d = h('dialog', { id: 'qrdlg', 'aria-labelledby': 'qr-h' }, [h('div', { class: 'qrbox' }, [h('h2', { id: 'qr-h', style: 'font:700 20px var(--serif);margin:0 0 8px' }, p.student), img, h('p', { class: 'note' }, T('qrNote')),
+      h('button', { class: 'pri', onclick: function () { d.close(); d.remove(); } }, T('qrClose'))])]);
+    d.addEventListener('close', function () { d.remove(); });
+    document.body.appendChild(d); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
   }
   function renewNote(p) {
     var exp = p.expires ? T('renewExp', { date: p.expires }) : '';

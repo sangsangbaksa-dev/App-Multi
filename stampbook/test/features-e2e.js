@@ -48,6 +48,10 @@ const srv = http.createServer((q, r) => {
   const core = require('../app/core.js'), np = { student: 'Zed', total: 3, stamps: [], paid: false, next: 'Bring the red book' };
   const pg2 = await ctx.newPage(); await pg2.goto(base + '/app/#c=' + core.encodeCard(np, 'Prof. Park')); await pg2.waitForSelector('.bal');
   const bt = await pg2.locator('.bal').textContent(); assert.ok(bt.includes('Bring the red book') && bt.includes('Payment still due'), bt);
+  // QR code of the balance link needs Pro, then draws an image
+  await pg.evaluate(() => { const o = JSON.parse(localStorage['stampbook.v1']); o.pro = true; localStorage['stampbook.v1'] = JSON.stringify(o); }); await pg.reload(); await pg.waitForSelector('.card');
+  await pg.locator('section.card', { hasText: 'Cara' }).locator('button', { hasText: /^QR$/ }).click(); await pg.waitForSelector('#qrdlg[open] img');
+  assert.ok((await pg.getAttribute('#qrdlg img', 'src')).startsWith('data:image/'), 'QR is an image'); await pg.click('#qrdlg button'); assert.equal(await pg.locator('#qrdlg').count(), 0);
   // every language renders the new strings without leftovers
   for (const l of ['ko', 'ja', 'zh', 'es']) { await pg.selectOption('header select', l); assert.ok(!(await pg.locator('#root').textContent()).includes('undefined'), l); }
   console.log(errs.length ? 'ERRORS: ' + errs.join('\n') : 'FEATURES E2E OK'); await b.close(); srv.close(); process.exit(errs.length ? 1 : 0);
