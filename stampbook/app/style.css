@@ -91,3 +91,4 @@ u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{wid
 
 .t-mk{color:var(--ok)}button.mk{border-color:var(--ok);color:var(--ok)}
 .toast[data-keep]~.toast:not([data-keep]){bottom:84px}
+#print-receipt{display:none}@media print{body.printing #root,body.printing .toast{display:none!important}body.printing #print-receipt{display:block;font:18px/1.6 var(--sans);white-space:pre-wrap;padding:24px;color:#000}body.printing{background:#fff}}

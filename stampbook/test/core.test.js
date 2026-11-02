@@ -349,3 +349,11 @@ test('owed make-ups stay visible on ended packs, can be waived, and reach the ca
   C.addStamp(old, '2025-01-06', '', 'excused'); assert.equal(C.makeupsOwed(old), 1, 'a new excused lesson is owed again');
   assert.equal(C.decodeCard(C.encodeCard({ student: 'N', total: 2, stamps: [] }, '')).owed, 0);
 });
+
+test('waiving make-ups is tied to specific lessons', () => {
+  const p = { id: 'w', student: 'W', total: 9, price: 90, stamps: [] };
+  C.addStamp(p, '2026-10-01', '', 'excused'); C.addStamp(p, '2026-10-02', '', 'excused');
+  C.waiveMakeups(p); assert.equal(C.makeupsOwed(p), 0);
+  C.removeStamp(p, p.stamps[0].id); C.addStamp(p, '2026-10-05', '', 'excused');
+  assert.equal(C.makeupsOwed(p), 1, 'a new excused lesson after a waive is still owed');
+});

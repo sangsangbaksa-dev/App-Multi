@@ -421,12 +421,17 @@
   /* make-up lessons: an excused (cancelled in time) lesson is owed back to the student. A lesson stamped as a make-up
      (stamp.mk = 1) pays one back. Owed never goes below zero. */
   function makeupsOwed(p) {
-    var ex = 0, mk = 0;
-    p.stamps.forEach(function (s) { if (s.kind === 'excused') ex++; else if (s.mk) mk++; });
-    return Math.max(0, ex - mk - (p.mkWaived || 0));
+    var wv = p.mkWaivedIds || [], ex = 0, mk = 0;
+    p.stamps.forEach(function (s) { if (s.kind === 'excused') { if (wv.indexOf(s.id) === -1) ex++; } else if (s.mk) mk++; });
+    return Math.max(0, ex - mk);
   }
   /* the teacher can let go of owed make-ups (e.g. the pack expired): they stop counting but stay in the log */
-  function waiveMakeups(p) { var n = makeupsOwed(p); p.mkWaived = (p.mkWaived || 0) + n; return n; }
+  function waiveMakeups(p) {
+    var n = makeupsOwed(p), ids = p.mkWaivedIds = p.mkWaivedIds || [];
+    /* waive the oldest unwaived excused lessons, one per owed make-up, by id so later lessons are not swallowed */
+    p.stamps.filter(function (s) { return s.kind === 'excused' && ids.indexOf(s.id) === -1; }).slice(0, n).forEach(function (s) { ids.push(s.id); });
+    return n;
+  }
   function makeupList(packs, today) {
     return packs.map(function (p) { return { packId: p.id, student: p.student, owed: makeupsOwed(p), remaining: remaining(p), open: (function () { var st = status(p, today); return st === 'active' || st === 'low'; })() }; })
       .filter(function (r) { return r.owed > 0; }).sort(function (a, b) { return b.owed - a.owed || (a.student < b.student ? -1 : 1); });

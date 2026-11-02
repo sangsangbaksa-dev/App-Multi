@@ -42,10 +42,11 @@
     if (action) kids.push(h('button', { class: 'tbtn', onclick: function () { t.remove(); action(); } }, actionLabel));
     var t = h('div', { class: 'toast', role: 'status', 'data-keep': keep ? '1' : false }, kids); document.body.appendChild(t);
     /* the timer waits while the pointer or keyboard focus is on the toast, so Undo cannot vanish under a finger or a focused button */
-    var ms = action ? 6000 : 2200, timer = setTimeout(done, ms), hold = false;
+    var ms = action ? 6000 : 2200, timer = setTimeout(done, ms), hold = false, hov = false, foc = false;
     function done() { if (hold) { timer = setTimeout(done, 1500); return; } if (t.contains(document.activeElement) && document.body) document.body.focus(); t.remove(); }
-    t.addEventListener('mouseenter', function () { hold = true; }); t.addEventListener('mouseleave', function () { hold = false; });
-    t.addEventListener('focusin', function () { hold = true; }); t.addEventListener('focusout', function () { hold = false; });
+    function upd() { hold = hov || foc; }
+    t.addEventListener('mouseenter', function () { hov = true; upd(); }); t.addEventListener('mouseleave', function () { hov = false; upd(); });
+    t.addEventListener('focusin', function () { foc = true; upd(); }); t.addEventListener('focusout', function () { foc = false; upd(); });
   }
   function money(n, cur) {
     try { return new Intl.NumberFormat(lang, { style: 'currency', currency: cur || 'USD', maximumFractionDigits: n % 1 ? 2 : 0 }).format(n); }
@@ -304,7 +305,7 @@
       h('button', { class: 'ghost', title: T('excusedTip'), onclick: function () { stamp(p, dateIn.value || today, 'excused'); } }, T('kExcused')));
     var owed = C.makeupsOwed(p);
     if (canStamp && owed > 0) more.push(h('button', { class: 'ghost mk', onclick: function () { stamp(p, dateIn.value || today, '', true); } }, T('mkBtn', { n: owed })));
-    if (owed > 0 && !canStamp) more.push(h('span', { class: 'chip c-low' }, T('mkOwed', { n: owed }) + ' · ' + T('mkClosed')));
+    if (owed > 0 && !canStamp) more.push(h('span', { class: 'chip c-expired' }, T('mkOwed', { n: owed }) + ' · ' + T('mkClosed')));
     if (owed > 0) more.push(h('button', { class: 'ghost', title: T('mkWaiveTip'), onclick: function () { if (confirm(T('mkWaiveAsk', { n: owed }))) { C.waiveMakeups(p); save(); render(); } } }, T('mkWaive')));
     var pc = st === 'active' || st === 'low' ? C.pace(p, today) : null;
     var paceBar = pc && pc.atRisk ? h('p', { class: 'warnbar' }, [h('b', {}, T('paceH') + ': '), T('paceRisk', { date: pc.finish, exp: p.expires, n: Math.ceil(pc.needPerWeek * 10) / 10 })]) : null;
@@ -314,7 +315,7 @@
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
-    foot.push(h('button', { class: 'ghost', onclick: function () { copy(receiptText(p), T('receiptCopied')); } }, T('receiptBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { copy(receiptText(p), T('receiptCopied')); } }, T('receiptBtn')), h('button', { class: 'ghost', onclick: function () { printReceipt(p); } }, T('printBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
       h('button', { class: 'ghost', onclick: function () { deletePack(p); } }, T('del')));
@@ -358,6 +359,12 @@
   function receiptText(p) {
     var r = C.receipt(p, state.teacher);
     return T('receiptT', { name: r.student, total: r.total, price: money(r.price, r.currency), per: money(r.perLesson, r.currency), status: T(r.paid ? 'receiptPaid' : 'receiptDue'), start: r.start || '-', exp: r.expires || T('receiptNoExp'), from: r.teacher ? T('receiptFrom', { t: r.teacher }) : '' }).replace(/\n+$/, '');
+  }
+  function printReceipt(p) {
+    var box = h('pre', { id: 'print-receipt' }, receiptText(p)); document.body.appendChild(box); document.body.classList.add('printing');
+    var end = function () { box.remove(); document.body.classList.remove('printing'); window.removeEventListener('afterprint', end); };
+    window.addEventListener('afterprint', end);
+    try { window.print(); } catch (e) { end(); }
   }
   /* delete is undoable for a few seconds instead of asking first: a mistaken tap loses nothing */
   function deletePack(p) {
