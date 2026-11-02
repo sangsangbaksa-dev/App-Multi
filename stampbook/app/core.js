@@ -116,7 +116,7 @@
   function events(packs) {
     var out = [];
     packs.forEach(function (p) {
-      p.stamps.forEach(function (s) { out.push({ date: s.date, kind: s.kind || '', stampId: s.id, packId: p.id, student: p.student, note: s.note || '' }); });
+      p.stamps.forEach(function (s) { out.push({ date: s.date, kind: s.kind || '', stampId: s.id, packId: p.id, student: p.student, note: s.note || '', mk: s.mk ? 1 : 0 }); });
     });
     return out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.student < b.student ? -1 : a.student > b.student ? 1 : 0; });
   }
@@ -384,11 +384,11 @@
     return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function toCsv(packs) {
-    var rows = [['student', 'pack_start', 'expires', 'total', 'used', 'remaining', 'price', 'currency', 'lesson_dates', 'no_shows', 'excused']];
+    var rows = [['student', 'pack_start', 'expires', 'total', 'used', 'remaining', 'price', 'currency', 'lesson_dates', 'no_shows', 'excused', 'makeups_owed']];
     packs.forEach(function (p) {
       rows.push([p.student, p.start || '', p.expires || '', p.total, used(p), remaining(p), p.price, p.currency || '',
         counted(p).map(function (s) { return s.date; }).join(' '),
-        p.stamps.filter(function (s) { return s.kind === 'noshow'; }).length, p.stamps.filter(function (s) { return s.kind === 'excused'; }).length]);
+        p.stamps.filter(function (s) { return s.kind === 'noshow'; }).length, p.stamps.filter(function (s) { return s.kind === 'excused'; }).length, makeupsOwed(p)]);
     });
     return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
   }
@@ -425,8 +425,8 @@
     p.stamps.forEach(function (s) { if (s.kind === 'excused') ex++; else if (s.mk) mk++; });
     return Math.max(0, ex - mk);
   }
-  function makeupList(packs) {
-    return packs.map(function (p) { return { packId: p.id, student: p.student, owed: makeupsOwed(p), remaining: remaining(p) }; })
+  function makeupList(packs, today) {
+    return packs.filter(function (p) { var st = status(p, today); return st === 'active' || st === 'low'; }).map(function (p) { return { packId: p.id, student: p.student, owed: makeupsOwed(p), remaining: remaining(p) }; })
       .filter(function (r) { return r.owed > 0; }).sort(function (a, b) { return b.owed - a.owed || (a.student < b.student ? -1 : 1); });
   }
   /* will the remaining lessons fit before the pack expires? Uses the average gap of the last 4 counted lessons.
@@ -435,13 +435,13 @@
     today = today || todayStr();
     var rem = remaining(p), dl = daysLeft(p, today);
     if (!p.expires || rem <= 0 || dl === null || dl <= 0) return null;
-    var cs = counted(p).slice(-5);
+    var cs = counted(p).filter(function (x) { return x.date <= today; }).slice(-5);
     var need = Math.round(rem / (dl / 7) * 10) / 10;
-    if (cs.length < 2) return { needPerWeek: need, finish: '', atRisk: false, known: false };
+    if (cs.length < 3) return { needPerWeek: need, finish: '', atRisk: false, known: false };
     var gap = daysBetween(cs[0].date, cs[cs.length - 1].date) / (cs.length - 1);
     if (!(gap > 0)) return { needPerWeek: need, finish: '', atRisk: false, known: false };
-    var base = cs[cs.length - 1].date > today ? cs[cs.length - 1].date : today;
-    var finish = addDays(base, Math.ceil(gap * rem));
+    var last = cs[cs.length - 1].date, finish = addDays(last, Math.ceil(gap * rem));
+    if (finish < today) finish = addDays(today, Math.ceil(gap * rem));
     return { needPerWeek: need, finish: finish, atRisk: finish > p.expires, known: true };
   }
   function packsAtRisk(packs, today) {

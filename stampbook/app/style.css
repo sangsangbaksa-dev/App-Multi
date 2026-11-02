@@ -50,7 +50,7 @@ label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
 @media(max-width:420px){.sum{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:no-preference){.slot.on{animation:thud .18s ease-out}@keyframes thud{from{transform:scale(1.5) rotate(var(--r,-6deg));opacity:0}}}
 
-.tbtn{margin-left:12px;min-height:32px;padding:0 12px;background:transparent;border-color:var(--paper);color:var(--paper)}
+.tbtn{margin-left:12px;min-height:44px;padding:0 12px;background:transparent;border-color:var(--paper);color:var(--paper)}
 .warnbar{border:1.5px solid var(--stamp);background:var(--card);border-radius:10px;padding:10px 12px;margin:0 0 12px;color:var(--stamp);font-weight:600}
 button.ghost.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 button.sm{min-height:32px;padding:0 10px;font-size:12px}
@@ -72,7 +72,7 @@ input[type=search]{-webkit-appearance:none}
 .day.blank{border:0;background:transparent;pointer-events:none}.day.today{border-color:var(--ink)}.day.sel{background:var(--ink);color:var(--paper)}
 .day.has{border-color:var(--stamp)}
 .dots{display:flex;gap:2px;font-style:normal;margin-bottom:3px}.day em{position:absolute;top:1px;right:3px;font-size:10px;font-style:normal;color:var(--mute)}
-u.k-lesson{background:var(--stamp)}u.k-noshow{background:var(--warn)}u.k-excused{background:var(--mute)}
+u.k-lesson{background:var(--stamp)}u.k-noshow{background:var(--warn)}u.k-excused{background:var(--mute)}u.k-mk{background:var(--ok)}
 .dots u,.legend u{display:inline-block;width:7px;height:7px;border-radius:50%;text-decoration:none}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 14px}
 .calday h3,.ins h3{font:700 16px var(--serif);margin:0 0 8px}
@@ -90,3 +90,4 @@ u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{wid
 .cloud-panel h3{margin:0 0 6px;font-size:1rem}.cloud-form{display:grid;gap:8px}.cloud-form input{width:100%}.cloud-msg{min-height:1.2em;margin:8px 0 0}.cloud-panel .muted{color:var(--mute,#666)}
 
 .t-mk{color:var(--ok)}button.mk{border-color:var(--ok);color:var(--ok)}
+.toast.up{bottom:84px}

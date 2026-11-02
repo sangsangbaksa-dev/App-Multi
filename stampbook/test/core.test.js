@@ -65,7 +65,7 @@ test('excused absences are logged but not counted; no-shows are counted', () => 
   assert.equal(C.addStamp(p, '2026-10-06'), false); assert.ok(C.addStamp(p, '2026-10-06', 'late', 'excused'), 'excused allowed when full');
   assert.equal(C.decodeCard(C.encodeCard(p, '')).dates.length, 2);
   assert.equal(C.monthStats([p], '2026-10').lessons, 2);
-  assert.ok(C.toCsv([p]).split('\n')[1].endsWith(',1,2'));
+  assert.ok(C.toCsv([p]).split('\n')[1].endsWith(',1,2,2'));
 });
 test('legacy stamps without kind still work', () => {
   const p = mk(); p.stamps.push({ id: 'x', date: '2026-10-01', note: '' }); assert.equal(C.remaining(p), 9);
@@ -328,4 +328,13 @@ test('pace: warns when the remaining lessons will not fit before expiry', () => 
 test('receipt data', () => {
   const r = C.receipt({ student: 'Ann', total: 10, price: 250, currency: 'USD', start: '2026-11-01', expires: '2027-02-01' }, 'Prof. Park');
   assert.equal(r.perLesson, 25); assert.equal(r.paid, true); assert.equal(r.teacher, 'Prof. Park');
+});
+
+test('make-ups on expired packs are not listed; receipt knows unpaid; pace needs 3 past lessons', () => {
+  const old = { id: 'o', student: 'Old', total: 5, price: 50, start: '2025-01-01', expires: '2025-03-01', stamps: [] };
+  C.addStamp(old, '2025-01-05', '', 'excused'); assert.equal(C.makeupList([old], '2026-11-02').length, 0);
+  assert.equal(C.receipt({ student: 'U', total: 2, price: 20, paid: false }).paid, false);
+  const two = { id: 't', student: 'T', total: 5, price: 50, expires: '2026-10-31', stamps: [] };
+  C.addStamp(two, '2026-10-01'); C.addStamp(two, '2026-10-20'); assert.equal(C.pace(two, '2026-10-03').known, false);
+  assert.ok(C.toCsv([old]).split('\n')[0].endsWith('makeups_owed'));
 });
