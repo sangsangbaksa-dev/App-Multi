@@ -250,15 +250,10 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
 
   return {
     render() {
-      renderInsights();
-      renderPaySpeed();
-      renderCash();
-      renderUpcoming();
-      renderExpenses();
-      renderReminders();
-      calcRate();
-      calcNet();
-      renderTips();
+      // One broken section must not blank the others.
+      for (const fn of [renderInsights, renderPaySpeed, renderCash, renderUpcoming, renderExpenses, renderReminders, calcRate, calcNet, renderTips]) {
+        try { fn(); } catch (e) { console.error(e); }
+      }
     },
   };
 }

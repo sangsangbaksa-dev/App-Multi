@@ -113,10 +113,10 @@ export function initWorkspace(ctx) {
   $("#sh-fill").onclick = () => {
     const inv = ctx.getInvoices();
     const t = I.t;
-    const rows = [[t("number"), t("client"), t("issue"), t("due"), t("total"), t("paid"), t("balance")]];
-    inv.filter((i) => !L.isQuote(i)).forEach((i) => rows.push([i.number, i.client, i.issueDate, i.dueDate, String(L.totalOf(i)), String(Number(i.paid) || 0), String(L.balanceOf(i))]));
+    const rows = [[t("number"), t("client"), t("issue"), t("due"), t("total"), t("whL"), t("paid"), t("balance")]];
+    inv.filter((i) => !L.isQuote(i)).forEach((i) => rows.push([i.number, i.client, i.issueDate, i.dueDate, String(L.totalOf(i)), String(L.withheldOf(i)), String(Number(i.paid) || 0), String(L.balanceOf(i))]));
     const n = rows.length;
-    rows.push(["", "", "", "", `=SUM(E2:E${n})`, `=SUM(F2:F${n})`, `=SUM(G2:G${n})`]);
+    rows.push(["", "", "", "", `=SUM(E2:E${n})`, `=SUM(F2:F${n})`, `=SUM(G2:G${n})`, `=SUM(H2:H${n})`]);
     if (newSheet(t("tabInvoices"), S.rowsToCells(rows))) renderSheets();
   };
   $("#sh-export").onclick = () => {

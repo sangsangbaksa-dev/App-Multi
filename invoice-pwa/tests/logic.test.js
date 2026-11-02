@@ -280,3 +280,19 @@ test("expected cash-in uses each client's habit, else the due date", () => {
   assert.deepEqual(c.byMonth.map((m) => m.amount), [100, 100, 0]);
   assert.equal(L.clientHabits([paid]).Slow.onTimePct, 0);
 });
+
+test("client names like 'constructor' cannot break habits or cash-in", () => {
+  for (const name of ["constructor", "toString", "__proto__"]) {
+    const o = inv({ id: "z", client: name, items: [{ qty: 1, price: 50 }], taxRate: 0, issueDate: "2024-05-01", dueDate: "2024-05-15" });
+    assert.doesNotThrow(() => L.expectedCash([o], "2024-05-10", "USD", 3));
+    assert.equal(L.expectedCash([o], "2024-05-10", "USD", 3).rows[0].expected, "2024-05-15");
+  }
+});
+test("client ledger and dashboard reconcile with withholding", () => {
+  const o = inv({ number: "W", client: "K", items: [{ qty: 1, price: 100 }], taxRate: 0, withholdingRate: 10, paid: 50 });
+  const c = L.byClient([o])[0];
+  assert.deepEqual([c.billed, c.withheld, c.paid, c.balance], [90, 10, 50, 40]);
+  assert.equal(L.summarize([o], "2024-01-01")[0].outstanding, 40);
+  assert.equal(L.upcomingRecurring([{ ...o, recur: "monthly", nextRun: "2024-06-01" }], "2024-05-20", 1)[0].amount, 90);
+  assert.match(L.toCSV([o]), /"100","10","50","40"/);
+});

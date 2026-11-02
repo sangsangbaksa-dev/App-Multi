@@ -132,8 +132,9 @@ export function byClient(invoices) {
   for (const i of invoices) {
     if (isQuote(i) || i.status === "draft") continue;
     const k = `${i.client}\u0000${i.currency}`;
-    const r = m.get(k) ?? { client: i.client, currency: i.currency, billed: 0, paid: 0, balance: 0, count: 0 };
-    r.billed = round2(r.billed + totalOf(i));
+    const r = m.get(k) ?? { client: i.client, currency: i.currency, billed: 0, withheld: 0, paid: 0, balance: 0, count: 0 };
+    r.billed = round2(r.billed + payableOf(i));
+    r.withheld = round2(r.withheld + withheldOf(i));
     r.paid = round2(r.paid + (Number(i.paid) || 0));
     r.balance = round2(r.balance + balanceOf(i));
     r.count++;
@@ -469,7 +470,7 @@ export function clientHabits(invoices) {
     if (last <= i.dueDate) r.onTime++;
     m.set(i.client, r);
   }
-  const out = {};
+  const out = Object.create(null);
   for (const [client, r] of m) out[client] = { count: r.days.length, avgDays: Math.round(r.days.reduce((a, b) => a + b, 0) / r.days.length), onTimePct: Math.round((100 * r.onTime) / r.days.length) };
   return out;
 }
@@ -520,7 +521,7 @@ export function upcomingRecurring(invoices, today, months = 3, cap = 24) {
     if (isQuote(inv) || !inv.recur || !inv.nextRun) continue;
     let run = inv.nextRun, n = 0;
     while (run <= end && n++ < cap) {
-      if (run >= today) rows.push({ date: run, client: inv.client, number: inv.number, currency: inv.currency, amount: totalOf(inv), freq: inv.recur });
+      if (run >= today) rows.push({ date: run, client: inv.client, number: inv.number, currency: inv.currency, amount: payableOf(inv), freq: inv.recur });
       run = addPeriod(run, inv.recur);
     }
   }
@@ -543,8 +544,8 @@ export function paymentsCSV(invoices) {
   const rows = [];
   for (const i of invoices) {
     if (isQuote(i)) continue;
-    for (const p of i.payments || []) rows.push([p.date, i.number, i.client, i.currency, p.amount, i.dueDate, totalOf(i), balanceOf(i)]);
+    for (const p of i.payments || []) rows.push([p.date, i.number, i.client, i.currency, p.amount, i.dueDate, totalOf(i), withheldOf(i), balanceOf(i)]);
   }
   rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || String(a[1]).localeCompare(String(b[1])));
-  return [["paymentDate", "invoice", "client", "currency", "amount", "dueDate", "invoiceTotal", "invoiceBalance"].join(","), ...rows.map((r) => r.map(cell).join(","))].join("\n");
+  return [["paymentDate", "invoice", "client", "currency", "amount", "dueDate", "invoiceTotal", "invoiceWithheld", "invoiceBalance"].join(","), ...rows.map((r) => r.map(cell).join(","))].join("\n");
 }
