@@ -205,6 +205,7 @@ function readForm() {
   inv.taxRate = Number(inv.taxRate) || 0;
   inv.discount = Number(inv.discount) || 0;
   inv.withholdingRate = Math.min(Math.max(Number(inv.withholdingRate) || 0, 0), L.MAX_WITHHOLDING);
+  inv.taxId = String(inv.taxId || "").trim().slice(0, 40);
   inv.recur = inv.recur || "";
   inv.paid = Number(inv.paid) || 0;
   inv.lateFeePct = Number(inv.lateFeePct) || 0;
@@ -232,7 +233,7 @@ function renderPreview() {
   const showLogo = logo && isPro();
   $("#btn-logo-rm").hidden = !logo;
   $("#preview").innerHTML = `${showLogo ? `<img class="logo" alt="" src="${esc(logo)}">` : ""}<h2>${I.t(L.isQuote(i) ? "quote" : "invoice")} ${esc(i.number)}</h2>
-    <p><b>${I.t("fromL")}:</b> ${esc(i.from)}<br><b>${I.t("toL")}:</b> ${esc(i.client)}<br>
+    <p><b>${I.t("fromL")}:</b> ${esc(i.from)}${i.taxId ? ` (${esc(I.t("taxIdShort"))} ${esc(i.taxId)})` : ""}<br><b>${I.t("toL")}:</b> ${esc(i.client)}<br>
     ${I.t("issuedL")} ${esc(I.formatDate(i.issueDate))} · ${I.t(L.isQuote(i) ? "validUntil" : "dueL")} ${esc(I.formatDate(i.dueDate))}${i.convertedFrom ? `<br><small>${esc(I.t("quoteOf", { n: i.convertedFrom }))}</small>` : ""}</p>
     <table><tr><th>${I.t("desc")}</th><th class="r">${I.t("qty")}</th><th class="r">${I.t("price")}</th><th class="r">${I.t("total")}</th></tr>
     ${i.items.map((x) => `<tr><td>${esc(x.desc)}</td><td class="r">${x.qty}</td><td class="r">${m(x.price)}</td><td class="r">${m(x.qty * x.price)}</td></tr>`).join("")}</table>
@@ -338,7 +339,7 @@ function newDoc(type, extra = {}) {
   if (!L.canSave(invoices, isPro(), null)) return openUpgrade(limitMsg());
   const last = invoices[0];
   const doc = {
-    id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
+    id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", taxId: last?.taxId ?? "", client: "",
     currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
     taxRate: last?.taxRate ?? 0, withholdingRate: last?.withholdingRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", clientEmail: "", recur: "", nextRun: "",
     items: [{ desc: "", qty: 1, price: 0 }], lateFeePct: last?.lateFeePct ?? 0, ...extra,
@@ -450,7 +451,7 @@ $("#f").onchange = (e) => { filters.f = e.target.value; renderList(); };
 $("#btn-dup").onclick = () => {
   const src = readForm();
   const copy = newDoc(src.type, {
-    from: src.from, client: src.client, currency: src.currency, taxRate: src.taxRate, withholdingRate: src.withholdingRate, discount: src.discount,
+    from: src.from, taxId: src.taxId, client: src.client, currency: src.currency, taxRate: src.taxRate, withholdingRate: src.withholdingRate, discount: src.discount,
     notes: src.notes, payinfo: src.payinfo, payLink: src.payLink, clientEmail: src.clientEmail, lateFeePct: src.lateFeePct,
     items: src.items.filter((x) => !x.lateFee).map((x) => ({ ...x })),
   });

@@ -112,3 +112,9 @@ test("withholding tax survives the client link and lowers the amount due", () =>
   assert.equal(S.shareStatus(r.inv, "2026-11-02").balance, 967000);
   assert.equal(L.totalOf(r.inv), 1000000);
 });
+
+test("tax id travels in the client link and is clipped", () => {
+  const inv = { type: "invoice", number: "I-1", from: "Me", taxId: "T" + "1".repeat(80), client: "Co", currency: "JPY", issueDate: "2026-11-01", dueDate: "2026-11-15", taxRate: 10, discount: 0, paid: 0, status: "sent", items: [{ desc: "x", qty: 1, price: 100 }] };
+  const r = S.decodeShare(S.encodeShare(inv, "ja"));
+  assert.equal(r.inv.taxId.length, 40);
+});

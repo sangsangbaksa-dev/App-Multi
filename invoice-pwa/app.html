@@ -74,6 +74,7 @@
     <form id="form" class="noprint">
       <div class="grid">
         <label><span data-i18n="from"></span><input name="from" required></label>
+        <label><span data-i18n="taxIdLabel"></span><input name="taxId" maxlength="40" autocomplete="off" placeholder="T1234567890123 / 123-45-67890"></label>
         <label><span data-i18n="client"></span><input name="client" list="clients" required aria-describedby="client-hint"><small id="client-hint" class="muted" aria-live="polite"></small></label>
         <label data-pro><span data-i18n="clientEmail"></span><input type="email" name="clientEmail" maxlength="190" autocomplete="off"></label>
         <datalist id="clients"></datalist>

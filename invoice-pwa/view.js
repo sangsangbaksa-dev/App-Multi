@@ -44,7 +44,7 @@ function paint() {
   pay.textContent = I.t("vwPay");
   if (inv.payLink) pay.href = inv.payLink;
   $("#vw-paper").innerHTML = `<h2>${I.t(quote ? "quote" : "invoice")} ${esc(inv.number)}</h2>
-    <p><b>${I.t("fromL")}:</b> ${esc(inv.from)}<br><b>${I.t("toL")}:</b> ${esc(inv.client)}<br>
+    <p><b>${I.t("fromL")}:</b> ${esc(inv.from)}${inv.taxId ? ` (${esc(I.t("taxIdShort"))} ${esc(inv.taxId)})` : ""}<br><b>${I.t("toL")}:</b> ${esc(inv.client)}<br>
     ${I.t("issuedL")} ${esc(I.formatDate(inv.issueDate))} · ${I.t(quote ? "validUntil" : "dueL")} ${esc(I.formatDate(inv.dueDate))}</p>
     <table><tr><th>${I.t("desc")}</th><th class="r">${I.t("qty")}</th><th class="r">${I.t("price")}</th><th class="r">${I.t("total")}</th></tr>
     ${inv.items.map((x) => `<tr><td>${esc(x.desc)}</td><td class="r">${x.qty}</td><td class="r">${m(x.price)}</td><td class="r">${m(x.qty * x.price)}</td></tr>`).join("")}</table>

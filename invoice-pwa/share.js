@@ -37,7 +37,7 @@ function fromB64Url(s) {
 // Compact keys keep the link short. Payments are included so the client sees the balance, not only the total.
 export function toSnapshot(inv, lang = "en") {
   return {
-    v: SHARE_VERSION, t: isQuote(inv) ? "q" : "i", n: clip(inv.number, 40), f: clip(inv.from, 120), c: clip(inv.client, 120),
+    v: SHARE_VERSION, t: isQuote(inv) ? "q" : "i", n: clip(inv.number, 40), f: clip(inv.from, 120), ti: clip(inv.taxId, 40), c: clip(inv.client, 120),
     cur: inv.currency, is: inv.issueDate, du: inv.dueDate, tx: num(inv.taxRate), ds: num(inv.discount), wh: num(inv.withholdingRate),
     pd: isQuote(inv) ? 0 : num(inv.paid), st: inv.status, no: clip(inv.notes, 600), pi: clip(inv.payinfo, 600),
     pl: safeLink(inv.payLink), fe: num(inv.lateFeePct), l: LANGS.includes(lang) ? lang : "en",
@@ -66,7 +66,7 @@ export function decodeShare(payload) {
   return {
     ok: true,
     inv: {
-      type: quote ? "quote" : "invoice", number: clip(d.n, 40), from: clip(d.f, 120), client: clip(d.c, 120), currency: d.cur,
+      type: quote ? "quote" : "invoice", number: clip(d.n, 40), from: clip(d.f, 120), taxId: clip(d.ti, 40), client: clip(d.c, 120), currency: d.cur,
       issueDate: d.is, dueDate: d.du, taxRate: num(d.tx), discount: num(d.ds), withholdingRate: Math.min(num(d.wh), 50), paid: quote ? 0 : num(d.pd), status,
       notes: clip(d.no, 600), payinfo: clip(d.pi, 600), payLink: safeLink(d.pl), lateFeePct: num(d.fe), items,
       lang: LANGS.includes(d.l) ? d.l : "en",
