@@ -366,9 +366,8 @@
     var box = h('pre', { id: 'print-receipt' }, receiptText(p)); document.body.appendChild(box); document.body.classList.add('printing');
     /* afterprint is unreliable on some mobile browsers, so a timer cleans up too */
     var end = function () { box.remove(); document.body.classList.remove('printing'); window.removeEventListener('afterprint', end); };
-    window.addEventListener('afterprint', end); setTimeout(end, 60000);
+    window.addEventListener('afterprint', end); setTimeout(end, 30000); /* the class stays until afterprint (or this timer) because mobile browsers snapshot the page after print() returns */
     try { window.print(); } catch (e) { end(); return; }
-    document.body.classList.remove('printing'); /* print() blocks until the dialog closes on desktop; the page is normal again at once */
   }
   /* delete is undoable for a few seconds instead of asking first: a mistaken tap loses nothing */
   function deletePack(p) {
