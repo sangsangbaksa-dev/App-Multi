@@ -432,7 +432,7 @@ t2('sheet counts stop at today; ICS uid and ICS ids and notes cannot inject line
   assert2.equal(SL2.cleanNote('x\u2028y'), 'x y');
 });
 t2('new i18n keys exist in every language', () => {
-  const I = require('../app/i18n.js'), keys = ['a_leave_by_safe', 'icsLabel_leave_by_safe', 'borderOver', 'marginGone', 'borderCopyFail', 'safeLeave'];
+  const I = require('../app/i18n.js'), keys = ['borderCounted', 'borderOverlap', 'a_leave_by_safe', 'icsLabel_leave_by_safe', 'borderOver', 'marginGone', 'borderCopyFail', 'safeLeave'];
   for (const l of I.langs) for (const k of keys) assert2.ok(I.L[l][k], l + ':' + k);
   for (const l of ['zh', 'ja']) for (const k of ['borderTitle', 'safeLeave', 'borderDisc', 'borderUsed', 'borderHint', 'marginGone', 'bufferHint']) assert2.ok(!/[:,]/.test(I.L[l][k]) && !/： /.test(I.L[l][k]), l + ':' + k);
 });
