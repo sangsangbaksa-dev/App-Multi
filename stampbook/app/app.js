@@ -46,6 +46,7 @@
     function done() { if (hold) { timer = setTimeout(done, 1500); return; } if (t.contains(document.activeElement) && document.body) document.body.focus(); t.remove(); }
     function upd() { hold = hov || foc; }
     t.addEventListener('mouseenter', function () { hov = true; upd(); }); t.addEventListener('mouseleave', function () { hov = false; upd(); });
+    t.addEventListener('pointerdown', function () { hov = true; upd(); setTimeout(function () { hov = false; upd(); }, 4000); });
     t.addEventListener('focusin', function () { foc = true; upd(); }); t.addEventListener('focusout', function () { foc = false; upd(); });
   }
   function money(n, cur) {
@@ -361,9 +362,11 @@
     return T('receiptT', { name: r.student, total: r.total, price: money(r.price, r.currency), per: money(r.perLesson, r.currency), status: T(r.paid ? 'receiptPaid' : 'receiptDue'), start: r.start || '-', exp: r.expires || T('receiptNoExp'), from: r.teacher ? T('receiptFrom', { t: r.teacher }) : '' }).replace(/\n+$/, '');
   }
   function printReceipt(p) {
+    var old = document.getElementById('print-receipt'); if (old) old.remove();
     var box = h('pre', { id: 'print-receipt' }, receiptText(p)); document.body.appendChild(box); document.body.classList.add('printing');
+    /* afterprint is unreliable on some mobile browsers, so a timer cleans up too */
     var end = function () { box.remove(); document.body.classList.remove('printing'); window.removeEventListener('afterprint', end); };
-    window.addEventListener('afterprint', end);
+    window.addEventListener('afterprint', end); setTimeout(end, 60000);
     try { window.print(); } catch (e) { end(); }
   }
   /* delete is undoable for a few seconds instead of asking first: a mistaken tap loses nothing */
