@@ -303,7 +303,7 @@
     var b = C.borderSheet(tr, C.todayStr()), L = [T('borderTitle', { name: b.name || T('namePh') }), b.rule.kind === 'year' ? T('borderRuleY', { l: b.rule.limit }) : T('borderRuleR', { l: b.rule.limit, w: b.rule.window }),
       T('borderUsed', { u: b.used, n: Math.max(0, b.left), date: b.windowFrom, today: b.today }), ''];
     if (!b.trips.length) L.push(T('borderNone'));
-    b.trips.forEach(function (x) { L.push((x.place || '—') + ': ' + x.from + ' → ' + (x.to || b.today) + ' (' + x.days + ')' + (x.note ? ' · ' + x.note : '')); });
+    b.trips.forEach(function (x) { L.push((x.place || '—') + ': ' + x.from + ' → ' + (x.to || b.today) + ' (' + x.days + (x.countedFrom !== x.from ? ', ' + T('borderCounted', { date: x.countedFrom }) : '') + ')' + (x.note ? ' · ' + x.note : '')); });
     if (b.overlap) L.push(T('borderOverlap'));
     if (b.left < 0) L.push(T('borderOver', { n: -b.left, today: b.today }));
     if (b.lastDay) L.push('', T('borderLast', { date: b.lastDay }));

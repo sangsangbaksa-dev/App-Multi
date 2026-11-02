@@ -440,7 +440,7 @@ t2('new i18n keys exist in every language', () => {
 t2('border sheet clips the start date and flags overlapping trips', () => {
   const tr = { rule: SL2.PRESETS.schengen, trips: [{ id: 'a', from: '2026-02-01', to: '2026-04-10' }, { id: 'b', from: '2026-04-05', to: '2026-04-12' }] };
   const b = SL2.borderSheet(tr, '2026-04-20');
-  assert2.ok(b.trips[0].from >= b.windowFrom);
+  assert2.equal(b.trips[0].from, '2026-02-01'); assert2.ok(b.trips[0].countedFrom >= b.windowFrom);
   assert2.equal(b.overlap, true);
   assert2.equal(SL2.borderSheet({ rule: SL2.PRESETS.schengen, trips: [{ id: 'a', from: '2026-04-01', to: '2026-04-05' }] }, '2026-04-20').overlap, false);
 });

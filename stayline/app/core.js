@@ -430,7 +430,7 @@
     tr.trips.slice().sort(function (x, y) { return x.from < y.from ? -1 : x.from > y.from ? 1 : 0; }).forEach(function (x) {
       var b = x.to ? dn(x.to) : t;
       if (b < a || dn(x.from) > t) return;
-      rows.push({ place: x.place || '', from: str(Math.max(dn(x.from), a)), to: x.to || '', days: Object.keys(stayDays([x], today)).filter(function (k) { return +k >= a && +k <= t; }).length, note: x.note || '' });
+      rows.push({ place: x.place || '', from: x.from, countedFrom: str(Math.max(dn(x.from), a)), to: x.to || '', days: Object.keys(stayDays([x], today)).filter(function (k) { return +k >= a && +k <= t; }).length, note: x.note || '' });
     });
     return { name: tr.name || '', rule: s.rule, used: s.used, left: s.left, windowFrom: s.windowFrom, today: today, trips: rows, overlap: rows.reduce(function (n, r) { return n + r.days; }, 0) > s.used, lastDay: lastDay(tr, today), safeLastDay: safeLastDay(tr, today), expires: tr.expires || '' };
   }
