@@ -380,3 +380,8 @@ test('balance card dates are packed small and old links still open', () => {
   assert.deepEqual(C.decodeCard(legacy).dates, ['2026-10-01', '2026-10-08']);
   assert.equal(C.decodeCard(Buffer.from(JSON.stringify({ v: 1, n: 'X', T: 3, z: [1e9] })).toString('base64')), null);
 });
+
+test('balance link handles old and unsorted dates', () => {
+  const p = { id: 'o', student: 'Old', total: 5, price: 1, stamps: [{ id: 'a', date: '2026-03-01' }, { id: 'b', date: '1999-12-31' }, { id: 'c', date: '1950-05-05' }] };
+  assert.deepEqual(C.decodeCard(C.encodeCard(p, '')).dates, ['1950-05-05', '1999-12-31', '2026-03-01']);
+});
