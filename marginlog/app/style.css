@@ -72,3 +72,4 @@ label.btn:has(+ input:focus-visible){outline:3px solid var(--focus);outline-offs
 .dn .num{background:var(--ok);color:var(--acc-ink)}button.pri.danger{color:var(--acc-ink)}
 .chain,.rep{word-break:normal}
 .tab{padding:10px 6px;flex:1 0 auto;font-size:.92rem}
+.toast button{min-height:44px;padding:0 12px}.tab{min-height:44px}

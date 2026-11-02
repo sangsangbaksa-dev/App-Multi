@@ -3,7 +3,7 @@
   'use strict';
   var C = window.MLCore, I = window.MLI18n, KEY = 'marginlog:v1';
   var S = { cases: [], cur: null, tab: 'log', lang: 'en', f: { q: '', tag: '', sev: 0, voided: false } };
-  var stale = false, blocked = false, corruptKey = null, lastTrig = null, root = document.getElementById('root'), pending = { photos: [] }, toastTimer = null, liveTimer = null, undoBuf = null;
+  var persisted = null, stale = false, blocked = false, corruptKey = null, lastTrig = null, root = document.getElementById('root'), pending = { photos: [] }, toastTimer = null, liveTimer = null, undoBuf = null;
 
   function t(k, v) {
     var s = (I.L[S.lang] && I.L[S.lang][k]); if (s == null) s = I.L.en[k]; if (s == null) return k;
@@ -23,10 +23,11 @@
     try { raw = localStorage.getItem(KEY); d = raw ? JSON.parse(raw) : null; } catch (e) { d = undefined; }
     if (d === undefined || (d && !Array.isArray(d.cases))) {
       /* unreadable data: keep a copy first and refuse to overwrite it if the copy fails */
-      try { corruptKey = KEY + ':corrupt'; var oldc = localStorage.getItem(corruptKey); if (oldc !== null && oldc !== raw) corruptKey += '-' + Date.now(); if (oldc !== raw) localStorage.setItem(corruptKey, raw); } catch (e2) { corruptKey = null; blocked = true; }
+      try { var k0 = KEY + ':corrupt', k1 = KEY + ':corrupt-b', v0 = localStorage.getItem(k0), v1 = localStorage.getItem(k1); corruptKey = v0 === raw ? k0 : v1 === raw ? k1 : v0 === null ? k0 : v1 === null ? k1 : null; if (!corruptKey) blocked = true; else if (localStorage.getItem(corruptKey) !== raw) localStorage.setItem(corruptKey, raw); } catch (e2) { corruptKey = null; blocked = true; }
     } else if (d) { S.cases = d.cases.map(C.sanitizeCase).filter(Boolean); S.cur = d.cur; S.lang = I.L[d.lang] ? d.lang : S.lang; }
     if (!S.cases.some(function (c) { return c.id === S.cur; })) S.cur = (S.cases.filter(function (c) { return !c.archived; })[0] || S.cases[0] || {}).id || null;
   }
+  function saveMsg() { return blocked ? t('corruptBlocked') : stale ? t('otherTabBusy') : t('saveFail'); }
   function save() {
     if (blocked) { toast(t('corruptBlocked')); return false; }
     if (stale) { toast(t('otherTabBusy')); return false; }
@@ -52,8 +53,8 @@
   function photoPut(id, data) { return idb().then(function (d) { return new Promise(function (res, rej) { var q = d.transaction('photos', 'readwrite').objectStore('photos').put(data, id); q.onsuccess = res; q.onerror = function () { rej(q.error); }; }); }); }
   function photoDel(id) { return idb().then(function (d) { d.transaction('photos', 'readwrite').objectStore('photos').delete(id); }, function () { /* no store */ }); }
   function photoSweep() {
-    var used = {}; S.cases.forEach(function (c) { c.entries.forEach(function (e) { e.photos.forEach(function (p) { used[p.id] = 1; }); }); });
-    if (blocked || corruptKey) return;
+    var used = {}; if (blocked || corruptKey) return;
+    try { (JSON.parse(localStorage.getItem(KEY) || '{}').cases || []).forEach(function (c) { (c.entries || []).forEach(function (e) { (e.photos || []).forEach(function (p) { used[p.id] = 1; }); }); }); } catch (e) { return; }
     idb().then(function (d) { var q = d.transaction('photos').objectStore('photos').getAllKeys(); q.onsuccess = function () { q.result.forEach(function (k) { if (!used[k]) photoDel(k); }); }; }, function () { /* no store */ });
   }
   function photoGet(id) { return idb().then(function (d) { return new Promise(function (res) { var q = d.transaction('photos').objectStore('photos').get(id); q.onsuccess = function () { res(q.result || null); }; q.onerror = function () { res(null); }; }); }, function () { return null; }); }
@@ -133,7 +134,7 @@
       '<label class="sr" for="ftag">' + esc(t('tagsWord')) + '</label><select id="ftag"><option value="">' + esc(t('anyTag')) + '</option>' + Object.keys(tags).sort().map(function (x) { return '<option' + (S.f.tag === x ? ' selected' : '') + ' value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('') + '</select>' +
       '<label class="sr" for="fsev">' + esc(t('sevWord')) + '</label><select id="fsev"><option value="0">' + esc(t('anySev')) + '</option>' + [2, 3, 4, 5].map(function (n) { return '<option' + (S.f.sev === n ? ' selected' : '') + ' value="' + n + '">' + esc(t('sevMin', { n: n })) + '</option>'; }).join('') + '</select>' +
       '<label class="chk"><input type="checkbox" id="fvoid"' + (S.f.voided ? ' checked' : '') + '> ' + esc(t('showVoided')) + '</label></form>';
-    if (!list.length) return h + '<div class="empty small"><p>' + esc(t('noMatch')) + '</p><button type="button" class="ghost" data-act="clearf">' + esc(t('clearFilters')) + '</button></div>';
+    if (!list.length) return h + '<div class="empty small"><p>' + esc(t(!all.length ? 'allVoided' : 'noMatch')) + '</p><button type="button" class="ghost" data-act="clearf">' + esc(t('clearFilters')) + '</button></div>';
     h += '<p class="count" role="status">' + esc(t('showing', { n: list.length, t: all.length })) + '</p><ol class="entries">';
     list.forEach(function (e) {
       var s = C.strength(e), isV = !!v[e.id], notes = C.addenda(c.entries, e.id), p = C.parseAt(e.at), quiet = p && C.inQuiet(p.h, c.quiet);
@@ -294,7 +295,7 @@
     } catch (e) { return err(t('photoStoreFail')); }
     var last = c.entries[c.entries.length - 1], e = await C.seal(last ? last.hash : '', { type: 'event', at: at, rec: now(), text: text, sev: sev, dur: dur === '' ? 0 : +dur, tags: $('#e-tags', form).value, witness: $('#e-wit', form).value.trim(), photos: photos, reported: $('#e-rep', form).checked });
     c.entries.push(e); var liveWas = c.live; if (pre && pre.live) c.live = null;
-    if (!save()) { c.entries.pop(); c.live = liveWas; photos.forEach(function (p) { photoDel(p.id); }); return err(t('saveFail')); }
+    if (!save()) { c.entries.pop(); c.live = liveWas; photos.forEach(function (p) { photoDel(p.id); }); return err(saveMsg()); }
     bumpCp(c);
     pending.photos = []; closeDialog(); S.tab = 'log'; render(); toast(t('sealed', { h: e.hash.slice(0, 8) }));
   }
@@ -302,14 +303,14 @@
     openDialog('<h2 id="dlg-h">' + esc(t('addNote')) + '</h2><p class="hint">' + esc(t('noteHelp')) + '</p><label for="n-text">' + esc(t('noteText')) + '</label><textarea id="n-text" rows="3" maxlength="1000" required></textarea>' + btnRow('sealSave'), async function (form) {
       var text = $('#n-text', form).value.trim(); if (text.length < 2) return err(t('errText'));
       var last = c.entries[c.entries.length - 1], e = await C.seal(last.hash, { type: 'note', ref: id, at: C.toLocalStamp(new Date(now())), rec: now(), text: text });
-      c.entries.push(e); if (!save()) { c.entries.pop(); return err(t('saveFail')); } bumpCp(c); closeDialog(); render(); toast(t('sealed', { h: e.hash.slice(0, 8) }));
+      c.entries.push(e); if (!save()) { c.entries.pop(); return err(saveMsg()); } bumpCp(c); closeDialog(); render(); toast(t('sealed', { h: e.hash.slice(0, 8) }));
     });
   }
   function voidDialog(c, id) {
     openDialog('<h2 id="dlg-h">' + esc(t('voidBtn')) + '</h2><p class="hint">' + esc(t('voidHelp')) + '</p><label for="v-text">' + esc(t('voidReason')) + '</label><textarea id="v-text" rows="2" maxlength="300" required></textarea>' + btnRow('voidConfirm'), async function (form) {
       var text = $('#v-text', form).value.trim(); if (text.length < 3) return err(t('errText'));
       var last = c.entries[c.entries.length - 1], e = await C.seal(last.hash, { type: 'void', ref: id, at: C.toLocalStamp(new Date(now())), rec: now(), text: text });
-      c.entries.push(e); if (!save()) { c.entries.pop(); return err(t('saveFail')); } bumpCp(c); closeDialog(); render(); toast(t('voided'));
+      c.entries.push(e); if (!save()) { c.entries.pop(); return err(saveMsg()); } bumpCp(c); closeDialog(); render(); toast(t('voided'));
     });
   }
   function stepDialog(c, kind) {
@@ -320,7 +321,7 @@
       var at = $('#s-at', form).value, due = $('#s-due', form).value;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(at)) return err(t('errWhen')); if (at > today) return err(t('errFuture')); if (due && due < at) return err(t('errDue'));
       (c.steps = c.steps || []).push({ id: C.uid(), kind: $('#s-kind', form).value, at: at, note: $('#s-note', form).value.trim().slice(0, 300), due: due, done: false });
-      if (!save()) { c.steps.pop(); return err(t('saveFail')); } closeDialog(); S.tab = 'steps'; render(); toast(t('stepSaved'));
+      if (!save()) { c.steps.pop(); return err(saveMsg()); } closeDialog(); S.tab = 'steps'; render(); toast(t('stepSaved'));
     });
   }
   function caseDialog(kind, existing) {
@@ -336,23 +337,23 @@
       var quiet = $('#c-qon', form).checked ? [C.clampInt($('#c-qa', form).value, 0, 23), C.clampInt($('#c-qb', form).value, 0, 23)] : null;
       var o = c || { id: C.uid(), kind: $('#c-kind', form).value, created: now(), archived: false, entries: [], steps: [], live: null };
       var snap = { n: o.name, w: o.counterpart, g: o.goal, q: o.quiet, cur: S.cur }; o.name = name; o.counterpart = $('#c-who', form).value.trim(); o.goal = $('#c-goal', form).value.trim(); o.quiet = quiet; if (!c) S.cases.push(o); S.cur = o.id; if (!c) S.tab = 'log';
-      if (!save()) { if (!c) S.cases.pop(); else { o.name = snap.n; o.counterpart = snap.w; o.goal = snap.g; o.quiet = snap.q; } S.cur = snap.cur; return err(t('saveFail')); } closeDialog(); render();
+      if (!save()) { if (!c) S.cases.pop(); else { o.name = snap.n; o.counterpart = snap.w; o.goal = snap.g; o.quiet = snap.q; } S.cur = snap.cur; return err(saveMsg()); } closeDialog(); render();
     });
     if (!c) $('#c-kind', dlg).addEventListener('change', function (ev) { var q2 = C.KINDS[ev.target.value].quiet; $('#c-qon', dlg).checked = !!q2; if (q2) { $('#c-qa', dlg).value = q2[0]; $('#c-qb', dlg).value = q2[1]; } });
   }
   function dataDialog() {
-    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
+    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(t(persisted ? 'persistYes' : 'persistNo')) + '</p><p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
     $('#d-exp', dlg).addEventListener('click', backup);
-    if (corruptKey) $('#d-corrupt', dlg).addEventListener('click', function () { try { download('marginlog-unreadable.txt', 'text/plain', localStorage.getItem(corruptKey) || ''); } catch (e) { err(t('saveFail')); } });
+    if (corruptKey) $('#d-corrupt', dlg).addEventListener('click', function () { try { download('marginlog-unreadable.txt', 'text/plain', localStorage.getItem(corruptKey) || ''); } catch (e) { err(saveMsg()); } });
     $('#d-imp', dlg).addEventListener('change', function (ev) { var f = ev.target.files[0]; if (f) restore(f); });
   }
   async function backup() {
     var photos = {}, ids = [];
     S.cases.forEach(function (c) { c.entries.forEach(function (e) { e.photos.forEach(function (p) { ids.push(p.id); }); }); });
-    for (var i = 0; i < ids.length; i++) { var d = await photoGet(ids[i]); if (d) photos[ids[i]] = d; }
+    var missing = 0; for (var i = 0; i < ids.length; i++) { var d = await photoGet(ids[i]); if (d) photos[ids[i]] = d; else missing++; }
     var cp = {}; S.cases.forEach(function (c) { if (c.entries.length) cp[c.id] = { n: c.entries.length, head: c.entries[c.entries.length - 1].hash }; });
-    try { download('marginlog-backup-' + C.toLocalStamp(new Date(now())).slice(0, 10) + '.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos, cp: cp })); err(''); toast(t('backupDone')); }
-    catch (e) { err(t('saveFail')); }
+    try { download('marginlog-backup-' + C.toLocalStamp(new Date(now())).slice(0, 10) + '.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos, cp: cp })); err(''); try { localStorage.setItem(KEY + ':lastbackup', String(now())); } catch (e4) { /* optional */ } toast(t('backupDone') + (missing ? ' ' + t('backupMissing', { n: missing }) : '')); }
+    catch (e) { err(saveMsg()); }
   }
   function restore(file) {
     var fr = new FileReader();
@@ -368,7 +369,7 @@
           var origId = c.id, ex = before.filter(function (x) { return x.id === origId; })[0], cl = c.entries.length ? c.entries[c.entries.length - 1].hash : '';
           if (ex) {
             var el = ex.entries.length ? ex.entries[ex.entries.length - 1].hash : '';
-            if (cl === el || (cl && has(ex.entries, cl))) { skipped++; return; }          /* same or older copy of a case we already hold */
+            if (!cl || cl === el || has(ex.entries, cl)) { skipped++; return; }          /* same or older copy of a case we already hold */
             if (!vok[ci]) { rejected++; return; }                                         /* never let an unverifiable copy replace local data */
             if (el && has(c.entries, el)) { S.cases.splice(S.cases.indexOf(ex), 1); }       /* backup is a verified newer copy: replace */
             else c.id = C.uid();                                                          /* diverged history: keep both */
@@ -382,10 +383,10 @@
           if (typeof data === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(data) && data.length < 6e6 && await C.sha256Hex(data) === p.h) { await photoPut(p.id, data); n++; } else photoBad++;
         }
         S.cases = S.cases.concat(keep); if (!S.cur && keep[0]) S.cur = keep[0].id;
-        if (!save()) { S.cases = before; return err(t('saveFail')); }
+        if (!save()) { S.cases = before; return err(saveMsg()); }
         try { var cpAll = readCp(); Object.keys(newCp).forEach(function (id) { cpAll[id] = newCp[id]; }); localStorage.setItem(CPKEY, JSON.stringify(cpAll)); } catch (e3) { /* checkpoint is best effort */ }
         closeDialog(); render();
-        toast((broken ? t('restoredBroken', { n: keep.length, b: broken }) : t('restored', { n: keep.length })) + (skipped + rejected ? ' ' + t('restoredSkipped', { n: skipped + rejected }) : '') + (photoBad ? ' ' + t('photoHashBad', { n: photoBad }) : ''));
+        toast((broken ? t('restoredBroken', { n: keep.length, b: broken }) : t('restored', { n: keep.length })) + (skipped ? ' ' + t('restoredSkipped', { n: skipped }) : '') + (rejected ? ' ' + t('restoredRejected', { n: rejected }) : '') + (photoBad ? ' ' + t('photoHashBad', { n: photoBad }) : ''));
       } catch (e) { err(t('badFile')); }
     };
     fr.readAsText(file);
@@ -435,7 +436,7 @@
       return openDialog('<h2 id="dlg-h">' + esc(t('deleteCase')) + '</h2><p>' + esc(t('delConfirm', { name: c.name })) + '</p><p class="hint">' + esc(t('delHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="submit" class="pri danger">' + esc(t('deleteCase')) + '</button><button type="button" class="ghost" data-close>' + esc(t('cancel')) + '</button></div>', function () {
         var idx = S.cases.indexOf(c), was = S.cur, undone = false, pids = []; c.entries.forEach(function (e) { e.photos.forEach(function (p) { pids.push(p.id); }); });
         S.cases.splice(idx, 1); S.cur = (S.cases.filter(function (x) { return !x.archived; })[0] || S.cases[0] || {}).id || null;
-        if (!save()) { S.cases.splice(idx, 0, c); S.cur = was; return err(t('saveFail')); }
+        if (!save()) { S.cases.splice(idx, 0, c); S.cur = was; return err(saveMsg()); }
         setTimeout(function () { if (undone || S.cases.indexOf(c) >= 0) return; var used = {}; S.cases.forEach(function (x) { x.entries.forEach(function (e) { e.photos.forEach(function (p) { used[p.id] = 1; }); }); }); pids.forEach(function (id) { if (!used[id]) photoDel(id); }); }, 12000); closeDialog(); render();
         toast(t('caseDeleted'), t('undo'), function () { undone = true; S.cases.splice(idx, 0, c); S.cur = was; save(); render(); });
       }, { focus: '[data-close]' });
@@ -476,6 +477,11 @@
   else if (!(window.crypto && window.crypto.subtle)) toast(t('cryptoFail'));
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache is optional */ });
   setTimeout(photoSweep, 8000);
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(function (ok) { persisted = ok; }); } catch (e5) { /* optional */ }
+  try {
+    var total = S.cases.reduce(function (a, c) { return a + C.events(c.entries).length; }, 0), lb = +localStorage.getItem(KEY + ':lastbackup') || 0;
+    if (!blocked && !corruptKey && total >= 3 && now() - lb > 14 * 864e5) setTimeout(function () { if (!dlg) toast(t('backupNudge')); }, 1500);
+  } catch (e6) { /* optional */ }
   window.addEventListener('storage', function (ev) { if (ev.key !== KEY) return; if (dlg) { stale = true; toast(t('otherTabBusy')); return; } stale = false; S.cases = []; S.cur = null; load(); render(); toast(t('otherTab')); });
   window.__ml = { S: S, render: render };
 })();

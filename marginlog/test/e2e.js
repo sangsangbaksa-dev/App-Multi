@@ -54,6 +54,7 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   await pg.locator('.entry [data-act=note]').first().click(); await pg.fill('#n-text', 'Neighbour admitted it'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('dialog', { state: 'detached' }); assert.ok((await pg.locator('.note').first().textContent()).includes('Neighbour admitted'));
   await pg.locator('.entry [data-act=void]').last().click(); await pg.click('dialog button[type=submit]'); assert.ok((await pg.locator('dialog .err').textContent()).length > 3); await pg.fill('#v-text', 'Wrong date'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('dialog', { state: 'detached' });
   assert.equal(await pg.locator('.entry').count(), 4); await pg.check('#fvoid'); assert.equal(await pg.locator('.entry.voided').count(), 1); await pg.uncheck('#fvoid');
+  await log({ at: ago(5, 23, 5), text: 'Late night noise again from the same flat' });
   // patterns
   await pg.click('#tab-patterns'); await pg.waitForSelector('.hm'); assert.ok((await pg.locator('.insight').textContent()).includes('%')); assert.equal(await pg.locator('.hmrow i.hc').count(), 7 * 24); await pg.screenshot({ path: out + '/03-patterns.png', fullPage: true });
   // steps

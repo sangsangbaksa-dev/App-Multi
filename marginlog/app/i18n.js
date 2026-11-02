@@ -65,7 +65,13 @@
     chainTrunc: 'Records are missing: this log is shorter than it was last time it was saved. Data was removed outside the app.',
     restoredSkipped: '{n} already here, skipped.',
     dlCorrupt: 'Download the unreadable data',
-    otherTabBusy: 'Another tab changed this data. Close this window and reload before saving.'
+    otherTabBusy: 'Another tab changed this data. Close this window and reload before saving.',
+    backupMissing: 'Warning: {n} photos were not found on this device and are not in the file.',
+    persistYes: 'This browser has promised not to clear Marginlog’s data automatically.',
+    persistNo: 'Browsers can clear site data when storage runs low. A backup file is the only real safety net.',
+    backupNudge: 'You have entries but no recent backup. Tap Backup to save a copy.',
+    restoredRejected: '{n} copies were not restored because their seal check failed and you already have that case.',
+    allVoided: 'Every entry here is voided. Tick “Show voided” to see them.'
   };
   L.ko = {
     name: '한국어', language: '언어', dataBtn: '백업', close: '닫기', cancel: '취소', save: '저장', delete: '삭제', undo: '되돌리기',
@@ -131,7 +137,13 @@
     chainTrunc: '기록이 사라졌습니다. 마지막 저장 때보다 기록이 적습니다. 앱 밖에서 데이터가 지워졌습니다.',
     restoredSkipped: '이미 있는 {n}개는 건너뛰었습니다.',
     dlCorrupt: '읽을 수 없는 데이터 내려받기',
-    otherTabBusy: '다른 탭에서 데이터가 바뀌었습니다. 이 창을 닫고 새로고침한 뒤 저장하세요.'
+    otherTabBusy: '다른 탭에서 데이터가 바뀌었습니다. 이 창을 닫고 새로고침한 뒤 저장하세요.',
+    backupMissing: '경고: 사진 {n}장이 이 기기에 없어 파일에 포함되지 않았습니다.',
+    persistYes: '이 브라우저는 Marginlog 데이터를 자동으로 지우지 않기로 했습니다.',
+    persistNo: '저장 공간이 부족하면 브라우저가 사이트 데이터를 지울 수 있습니다. 백업 파일이 유일한 안전망입니다.',
+    backupNudge: '기록은 있는데 최근 백업이 없습니다. 백업을 눌러 사본을 저장하세요.',
+    restoredRejected: '봉인 검사에 실패했고 이미 같은 사건이 있어 {n}개는 복원하지 않았습니다.',
+    allVoided: '여기 있는 기록은 모두 무효 처리되었습니다. “무효 처리된 기록 보기”를 체크하세요.'
   };
   L.ja = {
     name: '日本語', language: '言語', dataBtn: 'バックアップ', close: '閉じる', cancel: 'キャンセル', save: '保存', delete: '削除', undo: '元に戻す',
@@ -197,7 +209,13 @@
     chainTrunc: '記録が欠けています。前回保存時より件数が少なくなっています。アプリ外でデータが削除されました。',
     restoredSkipped: 'すでにある {n} 件はスキップしました。',
     dlCorrupt: '読めないデータをダウンロード',
-    otherTabBusy: '別のタブでデータが変更されました。このウィンドウを閉じて再読み込みしてから保存してください。'
+    otherTabBusy: '別のタブでデータが変更されました。このウィンドウを閉じて再読み込みしてから保存してください。',
+    backupMissing: '警告：写真 {n} 枚がこの端末に見つからず、ファイルに含まれていません。',
+    persistYes: 'このブラウザは Marginlog のデータを自動削除しないと約束しています。',
+    persistNo: '空き容量が減るとブラウザはサイトデータを消すことがあります。バックアップファイルだけが本当の保険です。',
+    backupNudge: '記録はありますが最近のバックアップがありません。バックアップを押してコピーを保存してください。',
+    restoredRejected: '封印チェックに失敗し、同じ案件がすでにあるため {n} 件は復元しませんでした。',
+    allVoided: 'ここにある記録はすべて無効です。「無効の記録も表示」にチェックを入れてください。'
   };
   L.zh = {
     name: '中文', language: '语言', dataBtn: '备份', close: '关闭', cancel: '取消', save: '保存', delete: '删除', undo: '撤销',
@@ -263,7 +281,13 @@
     chainTrunc: '记录缺失：当前记录比上次保存时更少，数据在应用之外被删除。',
     restoredSkipped: '已存在的 {n} 个已跳过。',
     dlCorrupt: '下载无法读取的数据',
-    otherTabBusy: '另一个标签页修改了数据。请关闭此窗口并刷新后再保存。'
+    otherTabBusy: '另一个标签页修改了数据。请关闭此窗口并刷新后再保存。',
+    backupMissing: '警告：有 {n} 张照片在本设备上找不到，未包含在文件中。',
+    persistYes: '此浏览器已承诺不会自动清除 Marginlog 的数据。',
+    persistNo: '存储空间不足时，浏览器可能清除网站数据。备份文件才是真正的保险。',
+    backupNudge: '你已有记录但最近没有备份。点“备份”保存一份副本。',
+    restoredRejected: '有 {n} 份因封存校验失败且本地已有该事项，未予恢复。',
+    allVoided: '这里的记录都已作废。勾选“显示已作废”即可查看。'
   };
   L.es = {
     name: 'Español', language: 'Idioma', dataBtn: 'Respaldo', close: 'Cerrar', cancel: 'Cancelar', save: 'Guardar', delete: 'Borrar', undo: 'Deshacer',
@@ -329,7 +353,13 @@
     chainTrunc: 'Faltan registros: este registro es más corto que la última vez que se guardó. Se borraron datos fuera de la app.',
     restoredSkipped: '{n} ya estaban, omitidos.',
     dlCorrupt: 'Descargar los datos ilegibles',
-    otherTabBusy: 'Otra pestaña cambió estos datos. Cierra esta ventana y recarga antes de guardar.'
+    otherTabBusy: 'Otra pestaña cambió estos datos. Cierra esta ventana y recarga antes de guardar.',
+    backupMissing: 'Aviso: {n} fotos no se encontraron en este dispositivo y no están en el archivo.',
+    persistYes: 'Este navegador ha prometido no borrar automáticamente los datos de Marginlog.',
+    persistNo: 'Los navegadores pueden borrar los datos del sitio si falta espacio. Un archivo de copia es la única red de seguridad real.',
+    backupNudge: 'Tienes entradas pero ninguna copia reciente. Pulsa Respaldo para guardar una.',
+    restoredRejected: '{n} copias no se restauraron porque falló su comprobación del sello y ya tienes ese caso.',
+    allVoided: 'Todas las entradas están anuladas. Marca «Mostrar anuladas» para verlas.'
   };
   var STEPS = {
     en: { talk: 'Talk', written: 'Written notice', complaint: 'Formal complaint', mediation: 'Mediation', authority: 'Authority', legal: 'Legal action' },

@@ -94,7 +94,7 @@
     return out;
   }
   function topBand(evs) {
-    if (evs.length < 3) return null;
+    if (evs.length < 5) return null;
     var dow = new Array(7).fill(0), hr = new Array(24).fill(0);
     evs.forEach(function (e) { var p = parseAt(e.at); if (p) { dow[p.dow]++; hr[p.h]++; } });
     var bestD = 0, i; for (i = 1; i < 7; i++) if (dow[i] > dow[bestD]) bestD = i;

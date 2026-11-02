@@ -44,9 +44,9 @@ test('heatmap and weekly bucket by weekday/hour and week', async () => {
   const h = C.heatmap(C.events(c.entries)); assert.equal(h.grid[0][10], 2); assert.equal(h.grid[6][23], 1); assert.equal(h.max, 2);
   const w = C.weekly(C.events(c.entries), NOW, 8); assert.equal(w.length, 8); assert.equal(w[7].n, 3); assert.equal(w[6].n, 1);
 });
-test('topBand needs 3 events and finds the busiest weekday and 3-hour band', async () => {
-  const c = await mk([{ at: '2026-10-02T22:00' }, { at: '2026-10-09T23:00' }, { at: '2026-10-16T22:30' }, { at: '2026-10-20T10:00' }]);
-  const tb = C.topBand(C.events(c.entries)); assert.equal(tb.dow, 4); assert.equal(tb.from, 21); assert.equal(C.topBand(C.events(c.entries).slice(0, 2)), null);
+test('topBand needs 5 events and finds the busiest weekday and 3-hour band', async () => {
+  const c = await mk([{ at: '2026-10-02T22:00' }, { at: '2026-10-09T23:00' }, { at: '2026-10-16T22:30' }, { at: '2026-10-23T22:15' }, { at: '2026-10-20T10:00' }]);
+  const tb = C.topBand(C.events(c.entries)); assert.equal(tb.dow, 4); assert.equal(tb.from, 21); assert.equal(C.topBand(C.events(c.entries).slice(0, 4)), null);
 });
 test('strength score and tips', async () => {
   const bare = await C.seal('', { at: '2026-10-01T10:00', rec: C.parseAt('2026-10-05T10:00').ts, text: 'short' });
