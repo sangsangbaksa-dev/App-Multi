@@ -92,3 +92,10 @@ u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{wid
 .t-mk{color:var(--ok)}button.mk{border-color:var(--ok);color:var(--ok)}
 .toast[data-keep]~.toast:not([data-keep]){bottom:84px}
 #print-receipt{display:none}@media print{body.printing #root,body.printing .toast{display:none!important}body.printing #print-receipt{display:block;font:18px/1.6 var(--sans);white-space:pre-wrap;padding:24px;color:#000}body.printing{background:#fff}}
+.nextnote{margin:10px 0;padding:8px 10px;border:1.5px dashed var(--line);border-radius:8px;overflow-wrap:anywhere}
+/* each kind has its own shape as well as its colour (not colour alone) */
+.dots u.k-noshow,.legend u.k-noshow{border-radius:1px}
+.dots u.k-excused,.legend u.k-excused{background:transparent;border:2px solid var(--mute)}
+.dots u.k-mk,.legend u.k-mk{border-radius:0;transform:rotate(45deg) scale(.85)}
+.dots u.k-plan,.legend u.k-plan{border-style:dashed}
+.qrbox{text-align:center}.qrbox img{width:min(80vw,320px);height:auto;image-rendering:pixelated;background:#fff;padding:8px;border-radius:8px}

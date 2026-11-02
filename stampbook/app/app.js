@@ -79,8 +79,8 @@
       h('div', { class: 'note' }, T('cardH') + (card.teacher ? ' · ' + T('cardFrom', { t: card.teacher }) : '')),
       h('h2', { style: 'font:700 22px var(--serif);margin:6px 0' }, card.student),
       h('div', { class: 'big' }, String(left)),
-      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), card.owed ? h('div', { class: 'meta' }, T('cardOwed', { n: card.owed })) : null, grid,
-      h('p', { class: 'note' }, T('cardNote'))
+      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), card.owed ? h('div', { class: 'meta' }, T('cardOwed', { n: card.owed })) : null, card.unpaid ? h('div', { class: 'meta' }, T('cardUnpaid')) : null, card.next ? h('div', { class: 'nextnote' }, [h('b', {}, T('cardNext') + ': '), card.next]) : null, grid,
+      h('p', { class: 'note' }, (card.asOf ? T('cardAsOf', { date: card.asOf }) + ' · ' : '') + T('cardNote'))
     ]));
   }
 
@@ -170,7 +170,7 @@
       if (!d) return grid.appendChild(h('div', { class: 'day blank' }));
       var ev = map[d] || [], n = ev.filter(function (e) { return e.kind !== 'excused'; }).length;
       grid.appendChild(h('button', { type: 'button', class: 'day' + (d === today ? ' today' : '') + (d === calDay ? ' sel' : '') + (ev.length ? ' has' : '') + (plan[d] ? ' plan' : ''),
-        'aria-pressed': String(d === calDay), 'aria-label': d + (ev.length ? ' · ' + ev.length : ''),
+        'aria-pressed': String(d === calDay), 'aria-label': d + (ev.length ? ' · ' + ev.map(function (e) { return e.kind === 'noshow' ? T('kNoshow') : e.kind === 'excused' ? T('kExcused') : e.mk ? T('mkTag') : T('legendLesson'); }).join(', ') : '') + (plan[d] ? ' · ' + T('planned') : ''),
         onclick: function () { calDay = calDay === d ? '' : d; render(); } },
         [h('span', {}, String(+d.slice(8))), ev.length ? h('i', { class: 'dots' }, ev.slice(0, 4).map(function (e) { return h('u', { class: 'k-' + (e.mk ? 'mk' : (e.kind || 'lesson')) }); })) : (plan[d] ? h('i', { class: 'dots' }, [h('u', { class: 'k-plan' })]) : null),
          n > 4 ? h('em', {}, '+' + (n - 4)) : null]));
@@ -316,7 +316,11 @@
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { var v = prompt(T('nextPh', { max: C.NEXT_MAX }), p.next || ''); if (v !== null) { var tooLong = v.trim().length > C.NEXT_MAX; C.setNext(p, v); save(); render(); toast(tooLong ? T('nextCut', { max: C.NEXT_MAX }) : T('nextSaved')); } } }, T('nextBtn') + (p.next ? ' ✓' : '')));
+    if (p.paid === false) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T('payMsg', { name: p.student, total: p.total, price: money(p.price, p.currency) }), T('remindCopied')); } }, T('payBtn')));
+    if (p.next) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T('nextMsg', { name: p.student, note: p.next }), T('remindCopied')); } }, T('nextMsgBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(receiptText(p), T('receiptCopied')); } }, T('receiptBtn')), h('button', { class: 'ghost', onclick: function () { printReceipt(p); } }, T('printBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { showQr(p); } }, 'QR' + (state.pro ? '' : ' · ' + T('pro'))));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
       h('button', { class: 'ghost', onclick: function () { deletePack(p); } }, T('del')));
@@ -389,7 +393,23 @@
   function shareLink(p) {
     if (!state.pro) return needPro();
     var url = location.origin + location.pathname + '#c=' + C.encodeCard(p, state.teacher);
-    copy(url, T('linkCopied'));
+    if (p.next && !confirm(T('shareNoteAsk', { note: p.next }))) return;
+    if (navigator.share && (/Mobi|Android/i.test(navigator.userAgent || '') || navigator.maxTouchPoints > 1)) navigator.share({ title: p.student, text: T('cardH') + ': ' + p.student, url: url }).catch(function (e) { if (e && e.name !== 'AbortError') copy(url, T('linkCopied')); });
+    else copy(url, T('linkCopied'));
+  }
+  /* QR code of the balance link, drawn offline, so the card can be shown on the teacher's phone at the lesson */
+  function showQr(p) {
+    if (!state.pro) return needPro();
+    if (!window.qrcode) return toast(T('qrErr'));
+    var url = location.origin + location.pathname + '#c=' + C.encodeCard(p, state.teacher), img;
+    if (url.length > 2000) return toast(T('qrErr'));
+    try { var q = window.qrcode(0, 'L'); q.addData(url); q.make(); img = h('img', { src: q.createDataURL(6, 2), alt: T('qrAlt', { name: p.student }) }); }
+    catch (e) { return toast(T('qrErr')); }
+    var old = document.getElementById('qrdlg'); if (old) old.remove();
+    var d = h('dialog', { id: 'qrdlg', 'aria-labelledby': 'qr-h' }, [h('div', { class: 'qrbox' }, [h('h2', { id: 'qr-h', style: 'font:700 20px var(--serif);margin:0 0 8px' }, p.student), img, h('p', { class: 'note' }, T('qrNote')),
+      h('button', { class: 'pri', onclick: function () { d.close(); d.remove(); } }, T('qrClose'))])]);
+    d.addEventListener('close', function () { d.remove(); });
+    document.body.appendChild(d); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
   }
   function renewNote(p) {
     var exp = p.expires ? T('renewExp', { date: p.expires }) : '';

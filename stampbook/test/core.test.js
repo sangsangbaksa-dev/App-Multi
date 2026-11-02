@@ -357,3 +357,31 @@ test('waiving make-ups is tied to specific lessons', () => {
   C.removeStamp(p, p.stamps[0].id); C.addStamp(p, '2026-10-05', '', 'excused');
   assert.equal(C.makeupsOwed(p), 1, 'a new excused lesson after a waive is still owed');
 });
+
+test('balance card carries the next-lesson note and unpaid flag', () => {
+  const p = { id: 'n', student: 'Nia', total: 4, price: 40, paid: false, stamps: [] };
+  C.setNext(p, '  Bring the red book  '); const c = C.decodeCard(C.encodeCard(p, 'T'));
+  assert.equal(c.next, 'Bring the red book'); assert.equal(c.unpaid, true);
+  const q = C.decodeCard(C.encodeCard({ student: 'Q', total: 2, stamps: [] }, '')); assert.equal(q.next, ''); assert.equal(q.unpaid, false);
+  assert.equal(C.setNext(p, 'x'.repeat(300)).length, 120);
+});
+
+test('balance card records the date it was made', () => {
+  const c = C.decodeCard(C.encodeCard({ student: 'D', total: 2, stamps: [] }, ''));
+  assert.match(c.asOf, /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('balance card dates are packed small and old links still open', () => {
+  const p = { id: 'b', student: 'Big', total: 200, price: 1, stamps: [] };
+  for (let i = 0; i < 200; i++) C.addStamp(p, C.addDays('2026-01-01', i * 2));
+  const link = C.encodeCard(p, 'Prof. Park'); assert.ok(link.length < 1500, 'link length ' + link.length);
+  const back = C.decodeCard(link); assert.equal(back.dates.length, 200); assert.equal(back.dates[0], '2026-01-01'); assert.equal(back.dates[199], C.addDays('2026-01-01', 398));
+  const legacy = Buffer.from(JSON.stringify({ v: 1, t: '', n: 'Old', T: 3, x: '', s: ['2026-10-01', '2026-10-08'] })).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  assert.deepEqual(C.decodeCard(legacy).dates, ['2026-10-01', '2026-10-08']);
+  assert.equal(C.decodeCard(Buffer.from(JSON.stringify({ v: 1, n: 'X', T: 3, z: [1e9] })).toString('base64')), null);
+});
+
+test('balance link handles old and unsorted dates', () => {
+  const p = { id: 'o', student: 'Old', total: 5, price: 1, stamps: [{ id: 'a', date: '2026-03-01' }, { id: 'b', date: '1999-12-31' }, { id: 'c', date: '1950-05-05' }] };
+  assert.deepEqual(C.decodeCard(C.encodeCard(p, '')).dates, ['1950-05-05', '1999-12-31', '2026-03-01']);
+});
