@@ -278,7 +278,7 @@ test("expected cash-in uses each client's habit, else the due date", () => {
   assert.equal(by.o2.expected, "2024-05-20");
   assert.equal(c.total, 200);
   assert.deepEqual(c.byMonth.map((m) => m.amount), [100, 100, 0]);
-  assert.equal(L.clientHabits([paid]).Slow.onTimePct, 0);
+  assert.equal(L.clientHabits([paid]).slow.onTimePct, 0);
 });
 
 test("client names like 'constructor' cannot break habits or cash-in", () => {
@@ -313,5 +313,13 @@ test("monthLabel keeps the year and month, never a day", () => {
 
 test("reminder habit lookup works for a client with a single paid invoice and reports on-time share", () => {
   const p = inv({ id: "h1", client: "Zed", items: [{ qty: 1, price: 10 }], taxRate: 0, issueDate: "2024-01-01", dueDate: "2024-01-31", paid: 10, status: "paid", payments: [{ date: "2024-01-20", amount: 10 }] });
-  assert.deepEqual(L.clientHabits([p]).Zed, { count: 1, avgDays: 19, onTimePct: 100 });
+  assert.deepEqual(L.clientHabits([p]).zed, { count: 1, avgDays: 19, onTimePct: 100 });
+});
+
+test("habits treat 'Acme' and ' acme ' as one client", () => {
+  const mk = (id, client, issue, on) => inv({ id, client, items: [{ qty: 1, price: 10 }], taxRate: 0, issueDate: issue, dueDate: issue, paid: 10, status: "paid", payments: [{ date: on, amount: 10 }] });
+  const h = L.clientHabits([mk("a", "Acme", "2024-01-01", "2024-01-11"), mk("b", " acme ", "2024-02-01", "2024-02-21")]);
+  assert.deepEqual(h.acme, { count: 2, avgDays: 15, onTimePct: 0 });
+  const open = inv({ id: "c", client: "ACME", items: [{ qty: 1, price: 10 }], taxRate: 0, issueDate: "2024-03-01", dueDate: "2024-03-05" });
+  assert.equal(L.expectedCash([mk("a", "Acme", "2024-01-01", "2024-01-11"), open], "2024-03-02", "USD", 1).rows[0].basis, "history");
 });

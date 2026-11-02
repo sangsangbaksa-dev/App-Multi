@@ -457,6 +457,8 @@ export function paymentStats(invoices) {
   };
 }
 
+// Same normalisation as the remembered-client profiles: "Acme" and " acme " are one client.
+export const habitKey = (name) => String(name ?? "").trim().toLowerCase();
 // Per-client payment habit from fully paid invoices with dated payments: days from issue to last payment, and how often on time.
 export function clientHabits(invoices) {
   const m = new Map();
@@ -465,10 +467,10 @@ export function clientHabits(invoices) {
     const dates = (i.payments || []).map((p) => p.date).filter(validDate);
     if (!dates.length) continue;
     const last = dates.sort().at(-1);
-    const r = m.get(i.client) ?? { days: [], onTime: 0 };
+    const r = m.get(habitKey(i.client)) ?? { days: [], onTime: 0 };
     r.days.push(Math.max(0, dayDiff(i.issueDate, last)));
     if (last <= i.dueDate) r.onTime++;
-    m.set(i.client, r);
+    m.set(habitKey(i.client), r);
   }
   const out = Object.create(null);
   for (const [client, r] of m) out[client] = { count: r.days.length, avgDays: Math.round(r.days.reduce((a, b) => a + b, 0) / r.days.length), onTimePct: Math.round((100 * r.onTime) / r.days.length) };
@@ -485,7 +487,7 @@ export function expectedCash(invoices, today, currency = "USD", months = 3) {
     if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency) continue;
     const bal = balanceOf(i);
     if (!(bal > 0) || !validDate(i.issueDate) || !validDate(i.dueDate)) continue;
-    const h = habits[i.client];
+    const h = habits[habitKey(i.client)];
     let when = h ? addDays(i.issueDate, h.avgDays) : i.dueDate;
     if (when < today) when = today;
     rows.push({ id: i.id, number: i.number, client: i.client, balance: bal, due: i.dueDate, expected: when, basis: h ? "history" : "due", slow: when > i.dueDate && when > today });

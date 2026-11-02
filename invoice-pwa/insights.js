@@ -116,7 +116,7 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
       [I.t("insCashTotal"), c.total],
     ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
     $("#cash-table").innerHTML = `<caption class="sr">${esc(I.t("insCashHead"))}</caption><thead><tr><th scope="col">${esc(I.t("cashColExpected"))}</th><th>${esc(I.t("cashColInvoice"))}</th><th class="r">${esc(I.t("cashColAmount"))}</th></tr></thead><tbody>${c.rows.slice(0, 20).map((r) => {
-      const why = r.slow ? I.t("insCashSlow") : r.basis === "history" ? I.t("insCashHistory", { d: habits[r.client]?.avgDays ?? "" }) : I.t("insCashDue");
+      const why = r.slow ? I.t("insCashSlow") : r.basis === "history" ? I.t("insCashHistory", { d: habits[L.habitKey(r.client)]?.avgDays ?? "" }) : I.t("insCashDue");
       return `<tr><td>${esc(I.formatDate(r.expected))}</td><td>${esc(r.number)} · ${esc(r.client || "")}<br><span class="muted">${esc(why)}</span></td><td class="r">${esc(money(r.balance, currency))}</td></tr>`;
     }).join("")}</tbody>`;
   }
@@ -252,10 +252,12 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
 
   return {
     render() {
-      // One broken section must not blank the others.
+      // One broken section must not blank the others. The banner clears on the next fully clean render.
+      let failed = false;
       for (const fn of [renderInsights, renderPaySpeed, renderCash, renderUpcoming, renderExpenses, renderReminders, calcRate, calcNet, renderTips]) {
-        try { fn(); } catch (e) { console.error(e); const n = document.querySelector("#sec-err"); if (n) { n.hidden = false; n.textContent = I.t("secErr"); } }
+        try { fn(); } catch (e) { failed = true; console.error(e); const n = document.querySelector("#sec-err"); if (n) { n.hidden = false; n.textContent = I.t("secErr"); } }
       }
+      if (!failed) { const n = document.querySelector("#sec-err"); if (n) n.hidden = true; }
     },
   };
 }

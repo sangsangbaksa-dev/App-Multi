@@ -222,8 +222,8 @@ function renderPreview() {
   const i = readForm();
   const t = L.calcTotals(i.items, i.taxRate, i.discount, i.withholdingRate);
   const m = (n) => money(n, i.currency);
-  const habit = !L.isQuote(i) && i.client ? L.clientHabits(invoices.filter((x) => x.id !== i.id))[i.client] : null;
-  $("#client-hint").textContent = habit ? `${I.t("insCashHistory", { d: habit.avgDays })} · ${I.t("insPayOnTime")} ${habit.onTimePct}% (${habit.count})` : "";
+  const habit = !L.isQuote(i) && i.client ? L.clientHabits(invoices.filter((x) => x.id !== i.id))[L.habitKey(i.client)] : null;
+  $("#client-hint").textContent = habit ? `${I.t("insCashHistory", { d: habit.avgDays })} · ${I.t("insPayOnTime")} ${habit.onTimePct}% · ${I.t("habitFrom", { n: habit.count })}` : "";
   const late = L.overdue({ ...i, paid: L.isQuote(i) ? 0 : i.paid }, today());
   $("#btn-latefee").hidden = !late;
   $("#btn-remind").hidden = !late;
