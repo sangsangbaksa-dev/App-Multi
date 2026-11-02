@@ -268,6 +268,28 @@
     return { lessons: lessons, value: Math.round(value * 100) / 100 };
   }
 
+  /* income per month for the last n months ending at ym (oldest first): paid packs counted in the month of p.start.
+     Result rows: {ym, packs, byCur:{USD:300}}. Unpaid packs are left out (they show as outstanding). */
+  function incomeByMonth(packs, ym, n) {
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) out.push({ ym: ymAdd(ym, -i), packs: 0, byCur: {} });
+    packs.forEach(function (p) {
+      if (p.paid === false || !p.start) return;
+      var row = out.filter(function (r) { return r.ym === p.start.slice(0, 7); })[0];
+      if (!row) return;
+      var c = p.currency || 'USD';
+      row.packs++; row.byCur[c] = Math.round(((row.byCur[c] || 0) + (+p.price || 0)) * 100) / 100;
+    });
+    return out;
+  }
+  function incomeCsv(packs, ym, n) {
+    var rows = [['month', 'packs', 'income', 'currency']];
+    incomeByMonth(packs, ym, n).forEach(function (r) {
+      Object.keys(r.byCur).sort().forEach(function (c) { rows.push([r.ym, r.packs, r.byCur[c], c]); });
+    });
+    return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
+  }
+
   /* ---- merge a backup into current data (second device, or restoring without losing newer stamps) ----
      Same pack id: local fields win, stamps are unioned by stamp id. New ids are added. Returns {packs, added, merged}. */
   function mergePacks(local, incoming) {
@@ -398,7 +420,7 @@
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
-    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, mergePacks: mergePacks, presets: presets, report: report,
+    ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, incomeByMonth: incomeByMonth, incomeCsv: incomeCsv, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, mergePacks: mergePacks, presets: presets, report: report,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, statsCsv: statsCsv, monthReport: monthReport, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SB = API;

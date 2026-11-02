@@ -29,7 +29,7 @@ const srv = http.createServer((q, r) => {
   assert.equal(await pg.locator('.day.today').count(), 1);
   await pg.screenshot({ path: out + '/calendar-en.png', fullPage: true });
   await pg.click('.tabs button >> nth=2'); await pg.waitForSelector('.ins .bars');
-  assert.equal(await pg.locator('.bars.wk .bar').count(), 7); assert.equal(await pg.locator('.ins .bar').count(), 13);
+  assert.equal(await pg.locator('.bars.wk .bar').count(), 7); assert.equal(await pg.locator('.ins .bar').count(), 19);
   assert.ok((await pg.locator('.ins').textContent()).includes('Joon'));
   await pg.screenshot({ path: out + '/insights-en.png', fullPage: true });
   // note search, unpaid, forecast-free path
