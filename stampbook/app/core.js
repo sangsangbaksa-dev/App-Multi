@@ -327,7 +327,7 @@
       lessons: rows.filter(function (r) { return r.kind !== 'excused'; }).length,
       noshow: rows.filter(function (r) { return r.kind === 'noshow'; }).length,
       excused: rows.filter(function (r) { return r.kind === 'excused'; }).length,
-      left: remaining(p), total: p.total, expires: p.expires || '', status: status(p, today) };
+      left: remaining(p), total: p.total, expires: p.expires || '', status: status(p, today), owed: makeupsOwed(p) };
   }
 
   /* ---- balance card: a read-only snapshot packed into a URL hash, no server ---- */
@@ -348,7 +348,7 @@
   function encodeCard(p, teacher) {
     return b64e(JSON.stringify({
       v: 1, t: teacher || '', n: p.student, T: p.total, x: p.expires || '',
-      s: counted(p).map(function (s) { return s.date; })
+      s: counted(p).map(function (s) { return s.date; }), m: makeupsOwed(p) || undefined
     }));
   }
   function decodeCard(str) {
@@ -359,7 +359,7 @@
       var re = /^\d{4}-\d{2}-\d{2}$/;
       if (o.x && !re.test(o.x)) return null;
       for (var i = 0; i < o.s.length; i++) if (!re.test(o.s[i])) return null;
-      return { teacher: String(o.t || '').slice(0, 80), student: o.n.slice(0, 80), total: o.T, expires: o.x || '', dates: o.s };
+      return { teacher: String(o.t || '').slice(0, 80), student: o.n.slice(0, 80), total: o.T, expires: o.x || '', dates: o.s, owed: o.m > 0 && o.m <= 100 && o.m % 1 === 0 ? o.m : 0 };
     } catch (e) { return null; }
   }
 
@@ -423,10 +423,12 @@
   function makeupsOwed(p) {
     var ex = 0, mk = 0;
     p.stamps.forEach(function (s) { if (s.kind === 'excused') ex++; else if (s.mk) mk++; });
-    return Math.max(0, ex - mk);
+    return Math.max(0, ex - mk - (p.mkWaived || 0));
   }
+  /* the teacher can let go of owed make-ups (e.g. the pack expired): they stop counting but stay in the log */
+  function waiveMakeups(p) { var n = makeupsOwed(p); p.mkWaived = (p.mkWaived || 0) + n; return n; }
   function makeupList(packs, today) {
-    return packs.filter(function (p) { var st = status(p, today); return st === 'active' || st === 'low'; }).map(function (p) { return { packId: p.id, student: p.student, owed: makeupsOwed(p), remaining: remaining(p) }; })
+    return packs.map(function (p) { return { packId: p.id, student: p.student, owed: makeupsOwed(p), remaining: remaining(p), open: (function () { var st = status(p, today); return st === 'active' || st === 'low'; })() }; })
       .filter(function (r) { return r.owed > 0; }).sort(function (a, b) { return b.owed - a.owed || (a.student < b.student ? -1 : 1); });
   }
   /* will the remaining lessons fit before the pack expires? Uses the average gap of the last 4 counted lessons.
@@ -457,7 +459,7 @@
   var API = {
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
-    addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
+    addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
     ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, incomeByMonth: incomeByMonth, incomeCsv: incomeCsv, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, mergePacks: mergePacks, presets: presets, report: report,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, statsCsv: statsCsv, monthReport: monthReport, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };

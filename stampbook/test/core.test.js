@@ -332,9 +332,20 @@ test('receipt data', () => {
 
 test('make-ups on expired packs are not listed; receipt knows unpaid; pace needs 3 past lessons', () => {
   const old = { id: 'o', student: 'Old', total: 5, price: 50, start: '2025-01-01', expires: '2025-03-01', stamps: [] };
-  C.addStamp(old, '2025-01-05', '', 'excused'); assert.equal(C.makeupList([old], '2026-11-02').length, 0);
+  C.addStamp(old, '2025-01-05', '', 'excused'); assert.equal(C.makeupList([old], '2026-11-02')[0].open, false);
   assert.equal(C.receipt({ student: 'U', total: 2, price: 20, paid: false }).paid, false);
   const two = { id: 't', student: 'T', total: 5, price: 50, expires: '2026-10-31', stamps: [] };
   C.addStamp(two, '2026-10-01'); C.addStamp(two, '2026-10-20'); assert.equal(C.pace(two, '2026-10-03').known, false);
   assert.ok(C.toCsv([old]).split('\n')[0].endsWith('makeups_owed'));
+});
+
+test('owed make-ups stay visible on ended packs, can be waived, and reach the card and report', () => {
+  const old = { id: 'o', student: 'Old', total: 3, price: 30, start: '2025-01-01', expires: '2025-03-01', stamps: [] };
+  C.addStamp(old, '2025-01-05', '', 'excused');
+  const l = C.makeupList([old], '2026-11-02'); assert.equal(l.length, 1); assert.equal(l[0].open, false);
+  assert.equal(C.decodeCard(C.encodeCard(old, '')).owed, 1);
+  assert.equal(C.report(old, '2025-01', '2026-11-02').owed, 1);
+  assert.equal(C.waiveMakeups(old), 1); assert.equal(C.makeupsOwed(old), 0); assert.equal(C.makeupList([old], '2026-11-02')[0].open, false);
+  C.addStamp(old, '2025-01-06', '', 'excused'); assert.equal(C.makeupsOwed(old), 1, 'a new excused lesson is owed again');
+  assert.equal(C.decodeCard(C.encodeCard({ student: 'N', total: 2, stamps: [] }, '')).owed, 0);
 });

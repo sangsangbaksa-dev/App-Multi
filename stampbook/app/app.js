@@ -38,10 +38,14 @@
   function toast(msg, actionLabel, action, keep) {
     /* a delete's Undo toast (keep) survives other toasts, which stack above it, so a later action cannot make a delete permanent unnoticed */
     [].forEach.call(document.querySelectorAll('.toast'), function (x) { if (!x.hasAttribute('data-keep')) x.remove(); });
-    var kids = [msg], held = !!document.querySelector('.toast[data-keep]');
+    var kids = [msg];
     if (action) kids.push(h('button', { class: 'tbtn', onclick: function () { t.remove(); action(); } }, actionLabel));
-    var t = h('div', { class: 'toast' + (held ? ' up' : ''), role: 'status', 'data-keep': keep ? '1' : false }, kids); document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, action ? 6000 : 2200);
+    var t = h('div', { class: 'toast', role: 'status', 'data-keep': keep ? '1' : false }, kids); document.body.appendChild(t);
+    /* the timer waits while the pointer or keyboard focus is on the toast, so Undo cannot vanish under a finger or a focused button */
+    var ms = action ? 6000 : 2200, timer = setTimeout(done, ms), hold = false;
+    function done() { if (hold) { timer = setTimeout(done, 1500); return; } if (t.contains(document.activeElement) && document.body) document.body.focus(); t.remove(); }
+    t.addEventListener('mouseenter', function () { hold = true; }); t.addEventListener('mouseleave', function () { hold = false; });
+    t.addEventListener('focusin', function () { hold = true; }); t.addEventListener('focusout', function () { hold = false; });
   }
   function money(n, cur) {
     try { return new Intl.NumberFormat(lang, { style: 'currency', currency: cur || 'USD', maximumFractionDigits: n % 1 ? 2 : 0 }).format(n); }
@@ -73,7 +77,7 @@
       h('div', { class: 'note' }, T('cardH') + (card.teacher ? ' · ' + T('cardFrom', { t: card.teacher }) : '')),
       h('h2', { style: 'font:700 22px var(--serif);margin:6px 0' }, card.student),
       h('div', { class: 'big' }, String(left)),
-      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), grid,
+      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), card.owed ? h('div', { class: 'meta' }, T('cardOwed', { n: card.owed })) : null, grid,
       h('p', { class: 'note' }, T('cardNote'))
     ]));
   }
@@ -178,7 +182,7 @@
         (plan[calDay] || []).length ? h('ul', { class: 'evs' }, plan[calDay].map(function (e) { var pk = state.packs.filter(function (x) { return x.id === e.packId; })[0]; return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'tag t-excused' }, T(e.skipped ? 'skipped' : 'planned')),
           h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(pk, e.date); save(); render(); } }, T(e.skipped ? 'unskip' : 'skip'))]); })) : null,
         list.length ? h('ul', { class: 'evs' }, list.map(function (e) {
-          return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, h('span', { class: 'ln' }, e.note)]); }))
+          return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, e.mk ? h('span', { class: 'tag t-mk' }, T('mkTag')) : null, h('span', { class: 'ln' }, e.note)]); }))
           : ((plan[calDay] || []).length ? null : h('p', { class: 'note' }, T('calNone')))]));
     }
     return box;
@@ -208,7 +212,7 @@
       bars([0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = (i + ws) % 7; return { v: wc[d], l: fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)), hot: wmax > 0 && wc[d] === wmax }; }), wmax, 'wk')]));
     var mkl = C.makeupList(state.packs, today);
     box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('mkH')), h('p', { class: 'note' }, T('mkB')),
-      mkl.length ? h('ul', { class: 'evs' }, mkl.map(function (r) { return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('mkOwed', { n: r.owed }) + ' · ' + T('left', { n: r.remaining }))]); }))
+      mkl.length ? h('ul', { class: 'evs' }, mkl.map(function (r) { return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('mkOwed', { n: r.owed }) + ' · ' + (r.open ? T('left', { n: r.remaining }) : T('mkClosed')))]); }))
         : h('p', { class: 'note' }, T('mkNone'))]));
     var risk = C.packsAtRisk(state.packs, today);
     if (risk.length) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('paceH')), h('ul', { class: 'evs' }, risk.map(function (r) {
@@ -300,6 +304,8 @@
       h('button', { class: 'ghost', title: T('excusedTip'), onclick: function () { stamp(p, dateIn.value || today, 'excused'); } }, T('kExcused')));
     var owed = C.makeupsOwed(p);
     if (canStamp && owed > 0) more.push(h('button', { class: 'ghost mk', onclick: function () { stamp(p, dateIn.value || today, '', true); } }, T('mkBtn', { n: owed })));
+    if (owed > 0 && !canStamp) more.push(h('span', { class: 'chip c-low' }, T('mkOwed', { n: owed }) + ' · ' + T('mkClosed')));
+    if (owed > 0) more.push(h('button', { class: 'ghost', title: T('mkWaiveTip'), onclick: function () { if (confirm(T('mkWaiveAsk', { n: owed }))) { C.waiveMakeups(p); save(); render(); } } }, T('mkWaive')));
     var pc = st === 'active' || st === 'low' ? C.pace(p, today) : null;
     var paceBar = pc && pc.atRisk ? h('p', { class: 'warnbar' }, [h('b', {}, T('paceH') + ': '), T('paceRisk', { date: pc.finish, exp: p.expires, n: Math.ceil(pc.needPerWeek * 10) / 10 })]) : null;
     var foot = [];
@@ -345,6 +351,7 @@
     if (!r.rows.length) out.push(T('reportNone'));
     r.rows.forEach(function (x) { out.push(x.date.slice(5).replace('-', '/') + (x.kind ? ' [' + T(x.kind === 'noshow' ? 'kNoshow' : 'kExcused') + ']' : '') + (x.note ? ' ' + x.note : '')); });
     out.push(T('reportLine', { n: r.lessons, a: r.noshow, b: r.excused, left: r.left, total: r.total }));
+    if (r.owed) out.push(T('reportOwed', { n: r.owed }));
     if (r.expires) out.push(T('reportExp', { date: r.expires }));
     return out.join('\n');
   }
