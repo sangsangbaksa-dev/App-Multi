@@ -303,3 +303,10 @@ test("dashboard cash plus outstanding equals what the client owes you (payable)"
   assert.equal(s.collected + s.outstanding, L.payableOf(o));
   assert.equal(s.collected + s.outstanding + L.withheldOf(o), L.totalOf(o));
 });
+
+test("monthLabel keeps the year and month, never a day", () => {
+  assert.match(L.monthLabel("2026-11", "en-US"), /Nov.*2026/);
+  assert.match(L.monthLabel("2026-11", "es-ES"), /nov.*2026/i);
+  assert.match(L.monthLabel("2026-11", "ko-KR"), /2026.*11/);
+  assert.equal(L.monthLabel("bad"), "bad");
+});

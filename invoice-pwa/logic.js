@@ -497,6 +497,12 @@ export function expectedCash(invoices, today, currency = "USD", months = 3) {
   return { rows, byMonth, later, total: round2(rows.reduce((s, r) => s + r.balance, 0)) };
 }
 
+// "Nov 2026" style label for a YYYY-MM key, in the viewer's locale (falls back to the key).
+export function monthLabel(month, locale = "en-US") {
+  if (!/^\d{4}-\d{2}$/.test(month || "")) return String(month ?? "");
+  try { return new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", timeZone: "UTC" }).format(new Date(month + "-01T00:00:00Z")); } catch { return month; }
+}
+
 // Cash that arrived per payment month (by the payment's own date), one currency.
 export function receivedByMonth(invoices, today, months = 6, currency = "USD") {
   const keys = monthsBack(today, months);

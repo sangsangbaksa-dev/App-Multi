@@ -111,7 +111,7 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
     if (!c.rows.length) return;
     const habits = L.clientHabits(invoices);
     $("#cash-cards").innerHTML = [
-      ...c.byMonth.map((r) => [I.formatDate(r.month + "-01").replace(/[\s.]*\d{1,2}[\s.일日]*$/, "") || r.month, r.amount]),
+      ...c.byMonth.map((r) => [L.monthLabel(r.month, I.locale()), r.amount]),
       ...(c.later > 0 ? [[I.t("insCashLater"), c.later]] : []),
       [I.t("insCashTotal"), c.total],
     ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
@@ -232,9 +232,11 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
       .filter((i) => !L.isQuote(i) && i.status !== "draft" && L.balanceOf(i) > 0)
       .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""));
     $("#rem-empty").hidden = open.length > 0;
+    const expected = new Map();
+    for (const cur of new Set(open.map((i) => i.currency || "USD"))) for (const r of L.expectedCash(invoices, today(), cur, 3).rows) expected.set(r.id, r);
     $("#rem-list").innerHTML = open.map((i) => `<article class="tip">
       <h3 class="h tip-h">${esc(i.number)} · ${esc(i.client || "")}</h3>
-      <p class="muted">${esc(money(L.balanceOf(i), i.currency))} · ${esc(I.formatDate(i.dueDate))}</p>
+      <p class="muted">${esc(money(L.balanceOf(i), i.currency))} · ${esc(I.formatDate(i.dueDate))}${expected.get(i.id) ? ` · ${esc(I.t("cashColExpected"))} ${esc(I.formatDate(expected.get(i.id).expected))}${expected.get(i.id).slow ? " ⚠" : ""}` : ""}</p>
       <button type="button" data-rem="${esc(i.id)}">${esc(I.t("remCopy"))}</button></article>`).join("");
   }
   $("#rem-list").addEventListener("click", async (e) => {
