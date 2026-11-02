@@ -316,8 +316,10 @@ export const EXPENSE_LIMIT = 2000;
 export function validExpense(e) {
   return !!e && typeof e.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date || ""))
     && typeof e.desc === "string" && e.desc.length <= 120
-    && Number(e.amount) >= 0 && Number.isFinite(Number(e.amount)) && typeof e.currency === "string";
+    && Number(e.amount) >= 0 && Number.isFinite(Number(e.amount)) && typeof e.currency === "string"
+    && (e.category === undefined || EXPENSE_CATEGORIES.includes(e.category));
 }
+export const EXPENSE_CATEGORIES = ["software", "equipment", "travel", "meals", "office", "marketing", "fees", "other"];
 // Income is what has been paid on invoices issued in `year`; expenses are dated expenses in `year`. Both in one currency.
 export function yearSummary(invoices, expenses, year, currency = "USD") {
   const y = String(year);
@@ -333,6 +335,61 @@ export function yearSummary(invoices, expenses, year, currency = "USD") {
   const profit = round2(income - spent);
   return { income, expenses: spent, profit };
 }
+// Years that have any invoice or expense, newest first; the current year is always offered.
+export function taxYears(invoices, expenses, today) {
+  const ys = new Set([String(today).slice(0, 4)]);
+  for (const i of invoices) if (!isQuote(i) && /^\d{4}/.test(i.issueDate || "")) ys.add(i.issueDate.slice(0, 4));
+  for (const e of expenses) ys.add(String(e.date).slice(0, 4));
+  return [...ys].sort().reverse();
+}
+const quarterOf = (date) => Math.floor((Number(String(date).slice(5, 7)) - 1) / 3);
+// Income, expenses and profit per quarter. Income is counted by invoice issue date, like yearSummary, so the four rows add up to it.
+export function quarterlySummary(invoices, expenses, year, currency = "USD") {
+  const y = String(year);
+  const q = [0, 1, 2, 3].map((k) => ({ quarter: k + 1, income: 0, expenses: 0, profit: 0 }));
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency || !String(i.issueDate).startsWith(y)) continue;
+    const r = q[quarterOf(i.issueDate)];
+    r.income = round2(r.income + Math.min(totalOf(i), Number(i.paid) || 0));
+  }
+  for (const e of expenses) {
+    if ((e.currency || "USD") !== currency || !String(e.date).startsWith(y)) continue;
+    const r = q[quarterOf(e.date)];
+    r.expenses = round2(r.expenses + Number(e.amount));
+  }
+  for (const r of q) r.profit = round2(r.income - r.expenses);
+  return q;
+}
+// Spending by category for one year and currency, biggest first. Expenses saved before categories existed count as "other".
+export function expensesByCategory(expenses, year, currency = "USD") {
+  const sums = {};
+  for (const e of expenses) {
+    if ((e.currency || "USD") !== currency || !String(e.date).startsWith(String(year))) continue;
+    const c = EXPENSE_CATEGORIES.includes(e.category) ? e.category : "other";
+    sums[c] = round2((sums[c] || 0) + Number(e.amount));
+  }
+  return Object.entries(sums).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total || a.category.localeCompare(b.category));
+}
+const safeCell = (v) => { if (typeof v === "number") return esc(v); const s = String(v ?? ""); return esc(/^[=+\-@\t\r]/.test(s) ? "'" + s : s); };
+export function expensesCSV(expenses, year) {
+  const rows = expenses.filter((e) => !year || String(e.date).startsWith(String(year)))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.desc.localeCompare(b.desc))
+    .map((e) => [e.date, e.desc, EXPENSE_CATEGORIES.includes(e.category) ? e.category : "other", e.currency, e.amount]);
+  return [["date", "description", "category", "currency", "amount"].join(","), ...rows.map((r) => r.map(safeCell).join(","))].join("\n");
+}
+// One sheet for the accountant: quarters, totals, spending by category and the tax set-aside at the user's rate.
+export function taxReportCSV(invoices, expenses, year, currency, pct) {
+  const q = quarterlySummary(invoices, expenses, year, currency);
+  const sum = yearSummary(invoices, expenses, year, currency);
+  const tax = taxEstimate(sum.profit, pct);
+  const rows = [["section", "label", "income", "expenses", "profit"],
+    ...q.map((r) => ["quarter", `Q${r.quarter} ${year}`, r.income, r.expenses, r.profit]),
+    ["total", `${year} ${currency}`, sum.income, sum.expenses, sum.profit],
+    ...expensesByCategory(expenses, year, currency).map((c) => ["category", c.category, "", c.total, ""]),
+    ["tax-set-aside", `${Number(pct) || 0}%`, "", "", tax ?? ""]];
+  return rows.map((r) => r.map(safeCell).join(",")).join("\n");
+}
+
 // A rough estimate only: a percentage of profit, never below zero. The user sets the percentage and checks it with an adviser.
 export function taxEstimate(profit, pct) {
   const p = Number(pct);

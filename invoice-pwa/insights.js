@@ -139,24 +139,55 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
     if (!pro) return;
     const invoices = getInvoices();
     const { currency } = L.currencyOf(invoices);
-    const year = today().slice(0, 4);
+    const years = L.taxYears(invoices, getExpenses(), today());
+    const sel = $("#exp-year");
+    const keep = years.includes(sel.value) ? sel.value : (years.includes(today().slice(0, 4)) ? today().slice(0, 4) : years[0]);
+    if (sel.options.length !== years.length || [...sel.options].some((o, k) => o.value !== years[k])) {
+      sel.innerHTML = years.map((y) => `<option value="${esc(y)}">${esc(y)}</option>`).join("");
+    }
+    sel.value = keep;
+    const year = sel.value;
+    const catSel = $("#exp-cat");
+    if (!catSel.options.length || catSel.dataset.lang !== I.getLang()) {
+      const keep = catSel.value;
+      catSel.innerHTML = L.EXPENSE_CATEGORIES.map((c) => `<option value="${c}">${esc(I.t("cat" + c))}</option>`).join("");
+      catSel.dataset.lang = I.getLang();
+      catSel.value = keep || "other";
+    }
     const list = getExpenses().filter((e) => e.date.startsWith(year)).sort((a, b) => (a.date < b.date ? 1 : -1));
     $("#exp-empty").hidden = list.length > 0;
     const table = $("#exp-table");
     table.hidden = !list.length;
-    table.innerHTML = list.length ? `<tbody>${list.map((e) => `<tr><td>${esc(e.date)}</td><td>${esc(e.desc)}</td><td class="r">${esc(money(e.amount, e.currency))}</td><td class="r"><button type="button" data-exp-del="${esc(e.id)}" aria-label="${esc(I.t("expDelete"))}: ${esc(e.desc)}">${esc(I.t("expDelete"))}</button></td></tr>`).join("")}</tbody>` : "";
+    table.innerHTML = list.length ? `<tbody>${list.map((e) => `<tr><td>${esc(e.date)}</td><td>${esc(e.desc)}${L.EXPENSE_CATEGORIES.includes(e.category) ? ` <span class="muted">· ${esc(I.t("cat" + e.category))}</span>` : ""}</td><td class="r">${esc(money(e.amount, e.currency))}</td><td class="r"><button type="button" data-exp-del="${esc(e.id)}" aria-label="${esc(I.t("expDelete"))}: ${esc(e.desc)}">${esc(I.t("expDelete"))}</button></td></tr>`).join("")}</tbody>` : "";
     const sum = L.yearSummary(invoices, getExpenses(), year, currency);
     $("#exp-sum").textContent = fill(I.raw("expSummary"), { year, income: money(sum.income, currency), expenses: money(sum.expenses, currency), profit: money(sum.profit, currency) });
     const tax = L.taxEstimate(sum.profit, $("#tax-pct").value);
     $("#tax-out").textContent = tax === null ? I.t("calcInvalid") : fill(I.raw("taxOut"), { tax: money(tax, currency) });
+    const q = L.quarterlySummary(invoices, getExpenses(), year, currency);
+    $("#exp-q").innerHTML = `<thead><tr><th>${esc(I.t("qQuarter"))}</th><th class="r">${esc(I.t("qIncome"))}</th><th class="r">${esc(I.t("qExpenses"))}</th><th class="r">${esc(I.t("qProfit"))}</th></tr></thead><tbody>${q.map((r) =>
+      `<tr><td>Q${r.quarter}</td><td class="r">${esc(money(r.income, currency))}</td><td class="r">${esc(money(r.expenses, currency))}</td><td class="r">${esc(money(r.profit, currency))}</td></tr>`).join("")}</tbody>`;
+    const cats = L.expensesByCategory(getExpenses(), year, currency);
+    const ct = $("#exp-cats");
+    ct.hidden = !cats.length;
+    ct.innerHTML = cats.length ? `<caption>${esc(I.t("catHead"))}</caption><tbody>${cats.map((c) => `<tr><td>${esc(I.t("cat" + c.category))}</td><td class="r">${esc(money(c.total, currency))}</td></tr>`).join("")}</tbody>` : "";
   }
+  $("#exp-year").addEventListener("change", renderExpenses);
+  $("#exp-csv").onclick = () => {
+    if (!isPro()) return openUpgrade(I.t("expCsvPro"));
+    download(`expenses-${$("#exp-year").value}.csv`, "text/csv", L.expensesCSV(getExpenses(), $("#exp-year").value));
+  };
+  $("#tax-csv").onclick = () => {
+    if (!isPro()) return openUpgrade(I.t("expCsvPro"));
+    const year = $("#exp-year").value;
+    download(`tax-report-${year}.csv`, "text/csv", L.taxReportCSV(getInvoices(), getExpenses(), year, L.currencyOf(getInvoices()).currency, $("#tax-pct").value));
+  };
 
   $("#exp-up").onclick = () => openUpgrade(I.t("expLocked"));
   $("#exp-form").addEventListener("submit", (e) => {
     e.preventDefault();
     if (!isPro()) return openUpgrade(I.t("expLocked"));
     const date = $("#exp-date").value, desc = $("#exp-desc").value.trim(), amount = Number($("#exp-amount").value);
-    const expense = { id: crypto.randomUUID(), date, desc, amount, currency: L.currencyOf(getInvoices()).currency };
+    const expense = { id: crypto.randomUUID(), date, desc, amount, currency: L.currencyOf(getInvoices()).currency, category: $("#exp-cat").value };
     if (!L.validExpense(expense) || !date) { $("#exp-err").textContent = I.t("expErr"); return; }
     if (getExpenses().length >= L.EXPENSE_LIMIT) { $("#exp-err").textContent = I.t("expErr"); return; }
     $("#exp-err").textContent = "";
