@@ -348,7 +348,7 @@
   function encodeCard(p, teacher) {
     return b64e(JSON.stringify({
       v: 1, t: teacher || '', n: p.student, T: p.total, x: p.expires || '',
-      s: counted(p).map(function (s) { return s.date; }), m: makeupsOwed(p) || undefined, q: p.next ? String(p.next).slice(0, 120) : undefined, u: p.paid === false ? 1 : undefined
+      s: counted(p).map(function (s) { return s.date; }), m: makeupsOwed(p) || undefined, q: p.next ? String(p.next).slice(0, 120) : undefined, u: p.paid === false ? 1 : undefined, d: todayStr()
     }));
   }
   function decodeCard(str) {
@@ -359,7 +359,7 @@
       var re = /^\d{4}-\d{2}-\d{2}$/;
       if (o.x && !re.test(o.x)) return null;
       for (var i = 0; i < o.s.length; i++) if (!re.test(o.s[i])) return null;
-      return { teacher: String(o.t || '').slice(0, 80), student: o.n.slice(0, 80), total: o.T, expires: o.x || '', dates: o.s, next: typeof o.q === 'string' ? o.q.slice(0, 120) : '', unpaid: o.u === 1, owed: o.m > 0 && o.m <= 100 && o.m % 1 === 0 ? o.m : 0 };
+      return { teacher: String(o.t || '').slice(0, 80), student: o.n.slice(0, 80), total: o.T, expires: o.x || '', dates: o.s, next: typeof o.q === 'string' ? o.q.slice(0, 120) : '', unpaid: o.u === 1, asOf: /^\d{4}-\d{2}-\d{2}$/.test(o.d || '') ? o.d : '', owed: o.m > 0 && o.m <= 100 && o.m % 1 === 0 ? o.m : 0 };
     } catch (e) { return null; }
   }
 
@@ -427,7 +427,8 @@
   }
   /* the teacher can let go of owed make-ups (e.g. the pack expired): they stop counting but stay in the log */
   /* a short note for the student's balance card, e.g. homework or what to bring next time */
-  function setNext(p, text) { p.next = String(text || '').trim().slice(0, 120); return p.next; }
+  var NEXT_MAX = 120;
+  function setNext(p, text) { p.next = String(text || '').trim().slice(0, NEXT_MAX); return p.next; }
   function waiveMakeups(p) {
     var n = makeupsOwed(p), ids = p.mkWaivedIds = p.mkWaivedIds || [];
     /* waive the oldest unwaived excused lessons, one per owed make-up, by id so later lessons are not swallowed */
@@ -466,7 +467,7 @@
   var API = {
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
-    addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, setNext: setNext, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
+    addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, setNext: setNext, NEXT_MAX: NEXT_MAX, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
     ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, incomeByMonth: incomeByMonth, incomeCsv: incomeCsv, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, mergePacks: mergePacks, presets: presets, report: report,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, statsCsv: statsCsv, monthReport: monthReport, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };

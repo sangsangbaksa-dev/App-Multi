@@ -365,3 +365,8 @@ test('balance card carries the next-lesson note and unpaid flag', () => {
   const q = C.decodeCard(C.encodeCard({ student: 'Q', total: 2, stamps: [] }, '')); assert.equal(q.next, ''); assert.equal(q.unpaid, false);
   assert.equal(C.setNext(p, 'x'.repeat(300)).length, 120);
 });
+
+test('balance card records the date it was made', () => {
+  const c = C.decodeCard(C.encodeCard({ student: 'D', total: 2, stamps: [] }, ''));
+  assert.match(c.asOf, /^\d{4}-\d{2}-\d{2}$/);
+});

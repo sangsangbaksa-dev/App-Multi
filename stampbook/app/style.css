@@ -72,7 +72,7 @@ input[type=search]{-webkit-appearance:none}
 .day.blank{border:0;background:transparent;pointer-events:none}.day.today{border-color:var(--ink)}.day.sel{background:var(--ink);color:var(--paper)}
 .day.has{border-color:var(--stamp)}
 .dots{display:flex;gap:2px;font-style:normal;margin-bottom:3px}.day em{position:absolute;top:1px;right:3px;font-size:10px;font-style:normal;color:var(--mute)}
-u.k-lesson{background:var(--stamp)}u.k-noshow{background:var(--warn)}u.k-excused{background:var(--mute)}u.k-mk{background:var(--ok)}
+u.k-lesson{background:var(--stamp)}u.k-noshow{background:var(--warn)}u.k-excused{background:var(--mute)}u.k-mk{background:var(--ok);border-radius:1px;transform:rotate(45deg)}
 .dots u,.legend u{display:inline-block;width:7px;height:7px;border-radius:50%;text-decoration:none}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 14px}
 .calday h3,.ins h3{font:700 16px var(--serif);margin:0 0 8px}
