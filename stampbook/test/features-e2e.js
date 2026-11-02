@@ -36,7 +36,7 @@ const srv = http.createServer((q, r) => {
   assert.ok((await pg.locator('.ins').textContent()).includes('No make-ups owed'));
   await pg.click('[role=tab]:has-text("Packs")');
   // receipt
-  await pg.locator('section.card', { hasText: 'Cara' }).locator('button', { hasText: 'Receipt' }).click();
+  await pg.locator('section.card', { hasText: 'Cara' }).locator('button', { hasText: /^Receipt$/ }).click();
   const rc = await pg.evaluate(() => navigator.clipboard.readText()); assert.ok(rc.includes('Cara') && rc.includes('4 lessons') && rc.includes('$20') && rc.includes('Prof. Park'), rc);
   // delete with undo (no confirm dialog)
   pg.on('dialog', d => { errs.push('unexpected dialog'); d.dismiss(); });
