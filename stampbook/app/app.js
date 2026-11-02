@@ -35,12 +35,19 @@
     (function flat(a) { return Array.isArray(a) ? a.reduce(function (x, y) { return x.concat(flat(y)); }, []) : [a]; })(kids == null ? [] : kids).forEach(function (c) { if (c == null) return; e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
     return e;
   }
-  function toast(msg, actionLabel, action) {
-    [].forEach.call(document.querySelectorAll('.toast'), function (x) { x.remove(); });
+  function toast(msg, actionLabel, action, keep) {
+    /* a delete's Undo toast (keep) survives other toasts, which stack above it, so a later action cannot make a delete permanent unnoticed */
+    [].forEach.call(document.querySelectorAll('.toast'), function (x) { if (!x.hasAttribute('data-keep')) x.remove(); });
     var kids = [msg];
     if (action) kids.push(h('button', { class: 'tbtn', onclick: function () { t.remove(); action(); } }, actionLabel));
-    var t = h('div', { class: 'toast', role: 'status' }, kids); document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, action ? 6000 : 2200);
+    var t = h('div', { class: 'toast', role: 'status', 'data-keep': keep ? '1' : false }, kids); document.body.appendChild(t);
+    /* the timer waits while the pointer or keyboard focus is on the toast, so Undo cannot vanish under a finger or a focused button */
+    var ms = action ? 6000 : 2200, timer = setTimeout(done, ms), hold = false, hov = false, foc = false;
+    function done() { if (hold || (t.matches && t.matches(':hover'))) { timer = setTimeout(done, 1500); return; } if (t.contains(document.activeElement) && document.body) document.body.focus(); t.remove(); }
+    function upd() { hold = hov || foc; }
+    t.addEventListener('mouseenter', function () { hov = true; upd(); }); t.addEventListener('mouseleave', function () { hov = false; upd(); });
+    t.addEventListener('pointerdown', function () { hov = true; upd(); setTimeout(function () { hov = false; upd(); }, 4000); });
+    t.addEventListener('focusin', function () { foc = true; upd(); }); t.addEventListener('focusout', function () { foc = false; upd(); });
   }
   function money(n, cur) {
     try { return new Intl.NumberFormat(lang, { style: 'currency', currency: cur || 'USD', maximumFractionDigits: n % 1 ? 2 : 0 }).format(n); }
@@ -72,7 +79,7 @@
       h('div', { class: 'note' }, T('cardH') + (card.teacher ? ' · ' + T('cardFrom', { t: card.teacher }) : '')),
       h('h2', { style: 'font:700 22px var(--serif);margin:6px 0' }, card.student),
       h('div', { class: 'big' }, String(left)),
-      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), grid,
+      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), card.owed ? h('div', { class: 'meta' }, T('cardOwed', { n: card.owed })) : null, grid,
       h('p', { class: 'note' }, T('cardNote'))
     ]));
   }
@@ -165,11 +172,11 @@
       grid.appendChild(h('button', { type: 'button', class: 'day' + (d === today ? ' today' : '') + (d === calDay ? ' sel' : '') + (ev.length ? ' has' : '') + (plan[d] ? ' plan' : ''),
         'aria-pressed': String(d === calDay), 'aria-label': d + (ev.length ? ' · ' + ev.length : ''),
         onclick: function () { calDay = calDay === d ? '' : d; render(); } },
-        [h('span', {}, String(+d.slice(8))), ev.length ? h('i', { class: 'dots' }, ev.slice(0, 4).map(function (e) { return h('u', { class: 'k-' + (e.kind || 'lesson') }); })) : (plan[d] ? h('i', { class: 'dots' }, [h('u', { class: 'k-plan' })]) : null),
+        [h('span', {}, String(+d.slice(8))), ev.length ? h('i', { class: 'dots' }, ev.slice(0, 4).map(function (e) { return h('u', { class: 'k-' + (e.mk ? 'mk' : (e.kind || 'lesson')) }); })) : (plan[d] ? h('i', { class: 'dots' }, [h('u', { class: 'k-plan' })]) : null),
          n > 4 ? h('em', {}, '+' + (n - 4)) : null]));
     });
     box.appendChild(head); box.appendChild(grid);
-    box.appendChild(h('div', { class: 'legend note' }, [['lesson', 'legendLesson'], ['noshow', 'legendNoshow'], ['excused', 'legendExcused'], ['plan', 'planned']].map(function (k) {
+    box.appendChild(h('div', { class: 'legend note' }, [['lesson', 'legendLesson'], ['noshow', 'legendNoshow'], ['excused', 'legendExcused'], ['mk', 'mkTag'], ['plan', 'planned']].map(function (k) {
       return h('span', {}, [h('u', { class: 'k-' + k[0] }), ' ' + T(k[1])]); })));
     if (calDay && calDay.slice(0, 7) === calYm) {
       var list = map[calDay] || [];
@@ -177,7 +184,7 @@
         (plan[calDay] || []).length ? h('ul', { class: 'evs' }, plan[calDay].map(function (e) { var pk = state.packs.filter(function (x) { return x.id === e.packId; })[0]; return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'tag t-excused' }, T(e.skipped ? 'skipped' : 'planned')),
           h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(pk, e.date); save(); render(); } }, T(e.skipped ? 'unskip' : 'skip'))]); })) : null,
         list.length ? h('ul', { class: 'evs' }, list.map(function (e) {
-          return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, h('span', { class: 'ln' }, e.note)]); }))
+          return h('li', {}, [h('b', {}, e.student), e.kind ? h('span', { class: 'tag t-' + e.kind }, T(e.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, e.mk ? h('span', { class: 'tag t-mk' }, T('mkTag')) : null, h('span', { class: 'ln' }, e.note)]); }))
           : ((plan[calDay] || []).length ? null : h('p', { class: 'note' }, T('calNone')))]));
     }
     return box;
@@ -194,7 +201,7 @@
   }
   function insightsView(today) {
     var ov = C.overview(state.packs, today), box = h('div', { class: 'ins' });
-    if (!ov.lessons) { box.appendChild(h('div', { class: 'empty' }, [h('p', {}, T('insNoData'))])); return box; }
+    if (!ov.lessons && !C.makeupList(state.packs, today).length) { box.appendChild(h('div', { class: 'empty' }, [h('p', {}, T('insNoData'))])); return box; }
     box.appendChild(h('div', { class: 'sum' }, [
       h('div', {}, [h('b', {}, String(ov.students)), h('span', {}, T('ovStudents'))]),
       h('div', {}, [h('b', {}, String(ov.lessons)), h('span', {}, T('ovLessons'))]),
@@ -205,6 +212,13 @@
     var wc = C.weekdayCounts(state.packs), wmax = Math.max.apply(null, wc), ws = weekStart();
     box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insWeekday')),
       bars([0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = (i + ws) % 7; return { v: wc[d], l: fmt({ weekday: 'short' }, C.addDays('2026-11-01', d)), hot: wmax > 0 && wc[d] === wmax }; }), wmax, 'wk')]));
+    var mkl = C.makeupList(state.packs, today);
+    box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('mkH')), h('p', { class: 'note' }, T('mkB')),
+      mkl.length ? h('ul', { class: 'evs' }, mkl.map(function (r) { return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('mkOwed', { n: r.owed }) + ' · ' + (r.open ? T('left', { n: r.remaining }) : T('mkClosed')))]); }))
+        : h('p', { class: 'note' }, T('mkNone'))]));
+    var risk = C.packsAtRisk(state.packs, today);
+    if (risk.length) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('paceH')), h('ul', { class: 'evs' }, risk.map(function (r) {
+      return h('li', {}, [h('b', {}, r.student), h('span', { class: 'ln' }, T('paceRisk', { date: r.finish, exp: r.expires, n: Math.ceil(r.needPerWeek * 10) / 10 }))]); }))]));
     var qs = C.quiet(state.packs, today, 14);
     box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('insQuiet')), h('p', { class: 'note' }, T('insQuietB', { d: 14 })),
       qs.length ? h('ul', { class: 'evs' }, qs.map(function (r) {
@@ -290,18 +304,25 @@
     var more = [];
     if (canStamp) more.push(h('button', { class: 'ghost', title: T('noshowTip'), onclick: function () { stamp(p, dateIn.value || today, 'noshow'); } }, T('kNoshow')),
       h('button', { class: 'ghost', title: T('excusedTip'), onclick: function () { stamp(p, dateIn.value || today, 'excused'); } }, T('kExcused')));
+    var owed = C.makeupsOwed(p);
+    if (canStamp && owed > 0) more.push(h('button', { class: 'ghost mk', onclick: function () { stamp(p, dateIn.value || today, '', true); } }, T('mkBtn', { n: owed })));
+    if (owed > 0 && !canStamp) more.push(h('span', { class: 'chip c-expired' }, T('mkOwed', { n: owed }) + ' · ' + T('mkClosed')));
+    if (owed > 0) more.push(h('button', { class: 'ghost', title: T('mkWaiveTip'), onclick: function () { if (confirm(T('mkWaiveAsk', { n: owed }))) { C.waiveMakeups(p); save(); render(); } } }, T('mkWaive')));
+    var pc = st === 'active' || st === 'low' ? C.pace(p, today) : null;
+    var paceBar = pc && pc.atRisk ? h('p', { class: 'warnbar' }, [h('b', {}, T('paceH') + ': '), T('paceRisk', { date: pc.finish, exp: p.expires, n: Math.ceil(pc.needPerWeek * 10) / 10 })]) : null;
     var foot = [];
     if (st === 'low' || st === 'expired' || st === 'done') foot.push(h('button', { class: 'pri', onclick: function () { renewPack(p); } }, T('renewPack')));
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { copy(receiptText(p), T('receiptCopied')); } }, T('receiptBtn')), h('button', { class: 'ghost', onclick: function () { printReceipt(p); } }, T('printBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
-      h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del')));
+      h('button', { class: 'ghost', onclick: function () { deletePack(p); } }, T('del')));
     var log = h('details', { class: 'log' }, [h('summary', {}, T('hist') + ' (' + p.stamps.length + ')'),
       p.stamps.length ? h('ul', {}, p.stamps.slice().reverse().map(function (s) {
-        return h('li', {}, [h('span', { class: 'ld' }, s.date), s.kind ? h('span', { class: 'tag t-' + s.kind }, T(s.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null,
+        return h('li', {}, [h('span', { class: 'ld' }, s.date), s.kind ? h('span', { class: 'tag t-' + s.kind }, T(s.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, s.mk ? h('span', { class: 'tag t-mk' }, T('mkTag')) : null,
           h('span', { class: 'ln' }, s.note || ''),
           h('button', { class: 'ghost sm', 'aria-label': T('editNote') + ' ' + s.date, onclick: function () { var v = prompt(T('notePh'), s.note || ''); if (v !== null) { C.setNote(p, s.id, v); save(); render(); } } }, T('editNote'))]);
       })) : h('p', { class: 'note' }, T('histEmpty'))]);
@@ -309,7 +330,7 @@
     return h('section', { class: 'card ' + st, 'aria-label': p.student }, [
       h('div', { class: 'top' }, [h('h2', {}, p.student), h('span', {}, [p.paid === false ? h('span', { class: 'chip c-expired', style: 'margin-right:6px' }, T('unpaid')) : null, h('span', { class: 'chip c-' + st }, T('s_' + st))])]),
       h('div', { class: 'meta' }, [T('left', { n: rem }), h('span', { class: soon ? 'soon' : '' }, exp + (soon ? ' · ' + T('soon') : '')), money(p.price, p.currency)].reduce(function (a, x, i) { if (i) a.push(' · '); a.push(x); return a; }, [])),
-      grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
+      paceBar, grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
       h('div', { class: 'foot' }, foot)
     ]);
   }
@@ -332,16 +353,35 @@
     if (!r.rows.length) out.push(T('reportNone'));
     r.rows.forEach(function (x) { out.push(x.date.slice(5).replace('-', '/') + (x.kind ? ' [' + T(x.kind === 'noshow' ? 'kNoshow' : 'kExcused') + ']' : '') + (x.note ? ' ' + x.note : '')); });
     out.push(T('reportLine', { n: r.lessons, a: r.noshow, b: r.excused, left: r.left, total: r.total }));
+    if (r.owed) out.push(T('reportOwed', { n: r.owed }));
     if (r.expires) out.push(T('reportExp', { date: r.expires }));
     return out.join('\n');
+  }
+  function receiptText(p) {
+    var r = C.receipt(p, state.teacher);
+    return T('receiptT', { name: r.student, total: r.total, price: money(r.price, r.currency), per: money(r.perLesson, r.currency), status: T(r.paid ? 'receiptPaid' : 'receiptDue'), start: r.start || '-', exp: r.expires || T('receiptNoExp'), from: r.teacher ? T('receiptFrom', { t: r.teacher }) : '' }).replace(/\n+$/, '');
+  }
+  function printReceipt(p) {
+    var old = document.getElementById('print-receipt'); if (old) old.remove();
+    var box = h('pre', { id: 'print-receipt' }, receiptText(p)); document.body.appendChild(box); document.body.classList.add('printing');
+    /* afterprint is unreliable on some mobile browsers, so a timer cleans up too */
+    var end = function () { box.remove(); document.body.classList.remove('printing'); window.removeEventListener('afterprint', end); };
+    window.addEventListener('afterprint', end); setTimeout(end, 30000); /* the class stays until afterprint (or this timer) because mobile browsers snapshot the page after print() returns */
+    try { window.print(); } catch (e) { end(); return; }
+  }
+  /* delete is undoable for a few seconds instead of asking first: a mistaken tap loses nothing */
+  function deletePack(p) {
+    var at = state.packs.indexOf(p); if (at === -1) return;
+    state.packs.splice(at, 1); save(); render();
+    toast(T('delDone') + ': ' + p.student, T('undo'), function () { state.packs.splice(Math.min(at, state.packs.length), 0, p); save(); render(); }, true);
   }
   function renewPack(p) {
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
     if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'low') return showUpgrade();
     var n = C.renew(p, C.todayStr()); state.packs.unshift(n); save(); render(); toast(T('renewed', { name: p.student }));
   }
-  function stamp(p, date, kind) {
-    if (!C.addStamp(p, date, '', kind)) return;
+  function stamp(p, date, kind, makeup) {
+    if (!C.addStamp(p, date, '', kind, makeup)) return;
     var id = p.stamps.filter(function (x) { return x.date === date; }).pop().id;
     save(); render();
     toast(T('stamped', { date: date }), T('undo'), function () { C.removeStamp(p, id); save(); render(); });
@@ -430,7 +470,7 @@
       state.pro ? null : h('div', {}, [
         h('label', { for: 'lic' }, T('lic')),
         h('div', { class: 'row' }, [key,
-          h('button', { class: 'pri', onclick: function () { activate(key.value); } }, T('activate'))]),
+          h('button', { id: 'act', class: 'pri', onclick: function () { activate(key.value); } }, T('activate'))]),
         h('p', {}, [h('a', { href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))])
       ])
     ]);
@@ -439,8 +479,10 @@
   /* Licence: the server function checks the key with the payment provider when it is configured. If it answers
      {configured:false} (or is not there), the older offline checksum is used. A network failure never falls back. */
   function callLicense(body) {
-    return fetch('/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }, function () { return { status: r.status, j: null }; }); });
+    var ctl = window.AbortController ? new AbortController() : null, timer = ctl ? setTimeout(function () { ctl.abort(); }, 10000) : 0;
+    return fetch('/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }, function (e) { if (e && e.name === 'AbortError') throw e; return { status: r.status, j: null }; }); })
+      .then(function (x) { clearTimeout(timer); return x; }, function (e) { clearTimeout(timer); throw e; });
   }
   function grant(mode, key, instanceId) { state.pro = true; state.key = key; state.licMode = mode; state.instanceId = instanceId || ''; state.licChecked = Date.now(); save(); render(); toast(T('okKey')); }
   function activate(raw) {
@@ -452,7 +494,8 @@
         return r.j.ok ? grant('server', key, r.j.instanceId) : toast(T('badKey'));
       }
       if (C.validKey(key)) grant('offline', key.toUpperCase()); else toast(T('badKey'));
-    }, function () {
+    }, function (err) {
+      if (err && err.name === 'AbortError') return toast(T('netTimeout'));
       /* no server function reachable at all: only the offline scheme can be checked, and only when the app is served without one */
       if (!navigator.onLine) return toast(T('netErr'));
       if (C.validKey(key)) grant('offline', key.toUpperCase()); else toast(T('badKey'));

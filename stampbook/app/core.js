@@ -41,10 +41,12 @@
     return daysBetween(today || todayStr(), p.expires);
   }
 
-  function addStamp(p, date, note, kind) {
+  function addStamp(p, date, note, kind, makeup) {
     kind = kind === 'noshow' || kind === 'excused' ? kind : '';
     if (kind !== 'excused' && remaining(p) <= 0) return false;
-    p.stamps.push({ id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: date, note: String(note || '').slice(0, 200), kind: kind });
+    var st = { id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: date, note: String(note || '').slice(0, 200), kind: kind };
+    if (makeup && kind === '') st.mk = 1;
+    p.stamps.push(st);
     p.stamps.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     return true;
   }
@@ -114,7 +116,7 @@
   function events(packs) {
     var out = [];
     packs.forEach(function (p) {
-      p.stamps.forEach(function (s) { out.push({ date: s.date, kind: s.kind || '', stampId: s.id, packId: p.id, student: p.student, note: s.note || '' }); });
+      p.stamps.forEach(function (s) { out.push({ date: s.date, kind: s.kind || '', stampId: s.id, packId: p.id, student: p.student, note: s.note || '', mk: s.mk ? 1 : 0 }); });
     });
     return out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.student < b.student ? -1 : a.student > b.student ? 1 : 0; });
   }
@@ -325,7 +327,7 @@
       lessons: rows.filter(function (r) { return r.kind !== 'excused'; }).length,
       noshow: rows.filter(function (r) { return r.kind === 'noshow'; }).length,
       excused: rows.filter(function (r) { return r.kind === 'excused'; }).length,
-      left: remaining(p), total: p.total, expires: p.expires || '', status: status(p, today) };
+      left: remaining(p), total: p.total, expires: p.expires || '', status: status(p, today), owed: makeupsOwed(p) };
   }
 
   /* ---- balance card: a read-only snapshot packed into a URL hash, no server ---- */
@@ -346,7 +348,7 @@
   function encodeCard(p, teacher) {
     return b64e(JSON.stringify({
       v: 1, t: teacher || '', n: p.student, T: p.total, x: p.expires || '',
-      s: counted(p).map(function (s) { return s.date; })
+      s: counted(p).map(function (s) { return s.date; }), m: makeupsOwed(p) || undefined
     }));
   }
   function decodeCard(str) {
@@ -357,7 +359,7 @@
       var re = /^\d{4}-\d{2}-\d{2}$/;
       if (o.x && !re.test(o.x)) return null;
       for (var i = 0; i < o.s.length; i++) if (!re.test(o.s[i])) return null;
-      return { teacher: String(o.t || '').slice(0, 80), student: o.n.slice(0, 80), total: o.T, expires: o.x || '', dates: o.s };
+      return { teacher: String(o.t || '').slice(0, 80), student: o.n.slice(0, 80), total: o.T, expires: o.x || '', dates: o.s, owed: o.m > 0 && o.m <= 100 && o.m % 1 === 0 ? o.m : 0 };
     } catch (e) { return null; }
   }
 
@@ -382,11 +384,11 @@
     return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function toCsv(packs) {
-    var rows = [['student', 'pack_start', 'expires', 'total', 'used', 'remaining', 'price', 'currency', 'lesson_dates', 'no_shows', 'excused']];
+    var rows = [['student', 'pack_start', 'expires', 'total', 'used', 'remaining', 'price', 'currency', 'lesson_dates', 'no_shows', 'excused', 'makeups_owed']];
     packs.forEach(function (p) {
       rows.push([p.student, p.start || '', p.expires || '', p.total, used(p), remaining(p), p.price, p.currency || '',
         counted(p).map(function (s) { return s.date; }).join(' '),
-        p.stamps.filter(function (s) { return s.kind === 'noshow'; }).length, p.stamps.filter(function (s) { return s.kind === 'excused'; }).length]);
+        p.stamps.filter(function (s) { return s.kind === 'noshow'; }).length, p.stamps.filter(function (s) { return s.kind === 'excused'; }).length, makeupsOwed(p)]);
     });
     return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
   }
@@ -416,10 +418,53 @@
     return !!m && keySum(m[1] + m[2]) === m[3];
   }
 
+  /* make-up lessons: an excused (cancelled in time) lesson is owed back to the student. A lesson stamped as a make-up
+     (stamp.mk = 1) pays one back. Owed never goes below zero. */
+  function makeupsOwed(p) {
+    var wv = p.mkWaivedIds || [], ex = 0, mk = 0;
+    p.stamps.forEach(function (s) { if (s.kind === 'excused') { if (wv.indexOf(s.id) === -1) ex++; } else if (s.mk) mk++; });
+    return Math.max(0, ex - mk);
+  }
+  /* the teacher can let go of owed make-ups (e.g. the pack expired): they stop counting but stay in the log */
+  function waiveMakeups(p) {
+    var n = makeupsOwed(p), ids = p.mkWaivedIds = p.mkWaivedIds || [];
+    /* waive the oldest unwaived excused lessons, one per owed make-up, by id so later lessons are not swallowed */
+    p.stamps.filter(function (s) { return s.kind === 'excused' && ids.indexOf(s.id) === -1; }).slice(0, n).forEach(function (s) { ids.push(s.id); });
+    return n;
+  }
+  function makeupList(packs, today) {
+    return packs.map(function (p) { return { packId: p.id, student: p.student, owed: makeupsOwed(p), remaining: remaining(p), open: (function () { var st = status(p, today); return st === 'active' || st === 'low'; })() }; })
+      .filter(function (r) { return r.owed > 0; }).sort(function (a, b) { return b.owed - a.owed || (a.student < b.student ? -1 : 1); });
+  }
+  /* will the remaining lessons fit before the pack expires? Uses the average gap of the last 4 counted lessons.
+     -> null when it cannot say, else { needPerWeek, finish, atRisk } (finish = projected date of the last lesson) */
+  function pace(p, today) {
+    today = today || todayStr();
+    var rem = remaining(p), dl = daysLeft(p, today);
+    if (!p.expires || rem <= 0 || dl === null || dl <= 0) return null;
+    var cs = counted(p).filter(function (x) { return x.date <= today; }).slice(-5);
+    var need = Math.round(rem / (dl / 7) * 10) / 10;
+    if (cs.length < 3) return { needPerWeek: need, finish: '', atRisk: false, known: false };
+    var gap = daysBetween(cs[0].date, cs[cs.length - 1].date) / (cs.length - 1);
+    if (!(gap > 0)) return { needPerWeek: need, finish: '', atRisk: false, known: false };
+    var last = cs[cs.length - 1].date, finish = addDays(last, Math.ceil(gap * rem));
+    if (finish < today) finish = addDays(today, Math.ceil(gap * rem));
+    return { needPerWeek: need, finish: finish, atRisk: finish > p.expires, known: true };
+  }
+  function packsAtRisk(packs, today) {
+    return packs.map(function (p) { return { p: p, pc: pace(p, today) }; }).filter(function (x) { return x.pc && x.pc.atRisk; })
+      .map(function (x) { return { packId: x.p.id, student: x.p.student, needPerWeek: x.pc.needPerWeek, finish: x.pc.finish, expires: x.p.expires, left: remaining(x.p) }; });
+  }
+  /* plain-text receipt for a pack the student paid for */
+  function receipt(p, teacher) {
+    return { teacher: teacher || '', student: p.student, total: p.total, price: p.price, currency: p.currency || 'USD', perLesson: Math.round(perLesson(p) * 100) / 100,
+      start: p.start || '', expires: p.expires || '', paid: p.paid !== false };
+  }
+
   var API = {
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
-    addStamp: addStamp, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
+    addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
     ymAdd: ymAdd, monthGrid: monthGrid, events: events, dayMap: dayMap, monthlyTrend: monthlyTrend, weekdayCounts: weekdayCounts, studentStats: studentStats, quiet: quiet, overview: overview, incomeByMonth: incomeByMonth, incomeCsv: incomeCsv, setSchedule: setSchedule, upcoming: upcoming, agenda: agenda, toIcs: toIcs, backupDue: backupDue, setPaid: setPaid, unpaid: unpaid, outstanding: outstanding, searchNotes: searchNotes, forecast: forecast, toggleSkip: toggleSkip, plannedWithSkips: plannedWithSkips, mergePacks: mergePacks, presets: presets, report: report,
     encodeCard: encodeCard, decodeCard: decodeCard, toCsv: toCsv, statsCsv: statsCsv, monthReport: monthReport, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
