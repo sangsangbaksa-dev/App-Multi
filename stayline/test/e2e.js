@@ -108,5 +108,18 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   assert.equal((await lp.goto(base + '/og.png')).status(), 200);
   const sm = await (await lp.goto(base + '/sitemap.xml')).text(); assert.ok(sm.includes(CFG.siteUrl + '/ko/privacy') && sm.includes('hreflang="x-default"'));
   assert.ok((await (await lp.goto(base + '/robots.txt')).text()).includes('Sitemap: ' + CFG.siteUrl + '/sitemap.xml'));
+  // v-next: margin, note, border sheet, theme
+  const fctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', timezoneId: 'UTC' }); const fp = await fctx.newPage(); fp.on('pageerror', e => errs.push(e.message)); fp.on('dialog', d => d.accept());
+  await fp.goto(base + '/app/'); await fp.waitForSelector('.empty'); await fp.click('.empty .pri'); await fp.waitForSelector('.board');
+  await fp.click('.rowhead .pri'); await fp.fill('#f-place', 'Rome'); await fp.fill('#f-from', add(-3)); await fp.check('#f-on'); await fp.fill('#f-note', 'stamp page 7'); await fp.click('dialog button[type=submit]');
+  await fp.waitForSelector('.trips li .note'); assert.equal(await fp.locator('.trips li .note').textContent(), 'stamp page 7');
+  assert.equal(await fp.locator('.sub .safe').count(), 0);
+  await fp.click('.editc'); await fp.fill('#e-buf', '5'); await fp.click('dialog button[type=submit]');
+  await fp.waitForSelector('.sub .safe'); assert.ok((await fp.locator('.sub .safe').textContent()).includes('5-day margin'));
+  const sheet = await fp.locator('pre.sheet').textContent(); assert.ok(sheet.includes('Rome') && sheet.includes('stamp page 7') && sheet.includes('Last day with your margin'));
+  await fp.click('.foot button:has-text("Theme: auto")'); assert.equal(await fp.evaluate(() => document.documentElement.dataset.theme), 'light');
+  await fp.screenshot({ path: out + '/app-light.png', fullPage: true });
+  await fp.click('.foot button:has-text("Theme: light")'); assert.equal(await fp.evaluate(() => document.documentElement.dataset.theme), 'dark');
+  await fp.screenshot({ path: out + '/app-dark.png', fullPage: true });
   console.log(errs.length ? 'ERRORS: ' + errs.join('\n') : 'E2E OK'); await b.close(); srv.close(); process.exit(errs.length ? 1 : 0);
 })().catch(e => { console.error('FAIL', e); process.exit(1); });
