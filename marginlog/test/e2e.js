@@ -12,7 +12,7 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   const base = `http://localhost:${srv.address().port}`, out = process.argv[2] || '/tmp/ml-shots'; fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch(), errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', timezoneId: 'UTC', permissions: ['clipboard-read', 'clipboard-write'], acceptDownloads: true });
-  const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
+  const pg = await ctx.newPage(); pg.on('pageerror', e => { console.log('PAGEERR', e.message); errs.push(e.message); }); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
   const log = async (o) => {
     await pg.click('[data-act=log]'); await pg.fill('#e-at', o.at); await pg.fill('#e-text', o.text);
     if (o.sev) await pg.check(`input[name=sev][value="${o.sev}"]`, { force: true });
@@ -66,7 +66,7 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   await pg.screenshot({ path: out + '/04-steps.png', fullPage: true });
   // report + seal
   await pg.click('#tab-report'); await pg.waitForFunction(() => document.querySelector('#chainline').classList.contains('good')); const rep = await pg.textContent('#repview');
-  assert.ok(rep.includes('# Flat <b>3B</b> noise') && rep.includes('Seal intact') && rep.includes('Timeline')); assert.ok(!rep.includes('Wrong date') || rep.includes('voided') || true);
+  assert.ok(rep.includes('# Flat <b>3B</b> noise') && rep.includes('Seal intact') && rep.includes('Timeline')); assert.ok(rep.includes('VOIDED') && rep.includes('Wrong date'), 'voided entry kept in report');
   await pg.click('[data-act=copyrep]'); assert.ok((await pg.evaluate(() => navigator.clipboard.readText())).includes('Seal intact'));
   const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('[data-act=dlcsv]')]); assert.ok(dl.suggestedFilename().endsWith('.csv'));
   await pg.screenshot({ path: out + '/05-report.png', fullPage: true });
@@ -96,6 +96,11 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   for (const l of ['ko', 'ja', 'zh', 'es', 'en']) { await pg.selectOption('#lang', l); const txt = await pg.textContent('body'); assert.ok(!/\b(tab_|sg_|kind_|stepHint_)/.test(txt), l + ' raw key'); assert.equal(await pg.locator('html').getAttribute('lang'), l); }
   // delete case + undo
   await pg.click('#tab-case'); await pg.click('[data-act=delcase]'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.empty .kind'); await pg.click('#toast-act'); await pg.waitForSelector('.hero');
+  // archive keeps the case reachable
+  await pg.click('[data-act=newcase][data-kind=""]'); await pg.fill('#c-name', 'Second'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.hero');
+  await pg.click('#tab-case'); await pg.click('[data-act=archive]'); assert.ok((await pg.locator('#casesel option:checked').textContent()).includes('Second'));
+  await pg.selectOption('#casesel', { index: 0 }); await pg.click('#tab-case'); await pg.click('[data-act=archive]');
+  await pg.selectOption('#casesel', { label: 'Second (archived)' }).catch(() => {}); 
   // landing pages render
   for (const l of ['', 'ko/', 'ja/', 'zh/', 'es/']) { const r = await pg.goto(base + '/' + l); assert.equal(r.status(), 200); assert.ok(await pg.locator('h1').count() === 1 && await pg.locator('a.cta').count() === 1, l); }
   await pg.goto(base + '/'); await pg.screenshot({ path: out + '/08-landing.png', fullPage: true });

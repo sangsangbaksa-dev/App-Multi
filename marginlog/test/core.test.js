@@ -69,9 +69,9 @@ test('CSV neutralises formulas and quotes cells; markdown report carries seal li
   const c = await mk([{ at: '2026-10-01T23:00', text: '=HYPERLINK("x"),\nline', witness: '+1 Ana' }]);
   const csv = C.toCsv(c); assert.ok(csv.includes('"\'=HYPERLINK(""x""),\nline"')); assert.ok(csv.includes("'+1 Ana"));
   const L = Object.assign({}, I.L.en, { stepNames: I.stepNames('en'), days: I.L.en.days, sev: 'Severity', late: 'late', reportedTo: 'reported', stTotal: 'x' });
-  const lab = { counterpart: 'Other', goal: 'Goal', generated: 'Generated', summary: 'Summary', total: 'Incidents', last30: 'Last 30', prev30: 'prev', avgSev: 'Avg', minutes: 'Min', quietHits: 'Quiet', pattern: 'Pattern', days: I.L.en.days, timeline: 'Timeline', sev: 'Severity', late: 'late', witness: 'Witness', photos: 'Photos', reportedTo: 'reported', steps: 'Steps', stepNames: I.stepNames('en'), due: 'due', answered: 'answered', integrity: 'Integrity', chainOk: I.L.en.chainOk, chainBad: I.L.en.chainBad };
+  const lab = { counterpart: 'Other', goal: 'Goal', generated: 'Generated', summary: 'Summary', total: 'Incidents', last30: 'Last 30', prev30: 'prev', avgSev: 'Avg', minutes: 'Min', quietHits: 'Quiet', pattern: 'Pattern', days: I.L.en.days, timeline: 'Timeline', sev: 'Severity', late: 'late', witness: 'Witness', photos: 'Photos', reportedTo: 'reported', voidedBadge: 'voided', steps: 'Steps', stepNames: I.stepNames('en'), due: 'due', answered: 'answered', integrity: 'Integrity', chainOk: I.L.en.chainOk, chainBad: I.L.en.chainBad };
   const chain = await C.verifyChain(c.entries); const md = C.reportMarkdown(c, lab, NOW, chain);
-  assert.ok(md.startsWith('# T')); assert.ok(md.includes('Seal intact: 1 sealed records')); assert.ok(C.reportMarkdown(c, lab, NOW, { ok: false }).includes('Seal check failed'));
+  assert.ok(md.startsWith('# T')); assert.ok(md.includes('Seal intact. Sealed records: 1')); assert.ok(C.reportMarkdown(c, lab, NOW, { ok: false }).includes('Seal check failed'));
 });
 test('sanitizeCase drops junk and clamps', () => {
   assert.equal(C.sanitizeCase(null), null);
@@ -100,4 +100,12 @@ test('site build: five landing pages with hreflang and an app link', () => {
   for (const f of ['index.html', 'ko/index.html', 'ja/index.html', 'zh/index.html', 'es/index.html', 'app/index.html', 'app/sw.js', 'app/core.js', '_headers', 'icon-512.png']) assert.ok(fs.existsSync(path.join(out, f)), f);
   const ko = fs.readFileSync(path.join(out, 'ko/index.html'), 'utf8'); assert.ok(ko.includes('lang="ko"') && ko.includes('hreflang="es"') && ko.includes('href="../app/"'));
   assert.equal(fs.existsSync(path.join(out, 'test')), false);
+});
+test('voided entries stay in the report and CSV, marked, and are counted separately', async () => {
+  const c = await mk([{ at: '2026-10-01T23:00', text: 'first incident text here' }, { at: '2026-10-02T23:00', text: 'second incident text here' }]);
+  c.entries.push(await C.seal(c.entries[1].hash, { type: 'void', ref: c.entries[0].id, at: '2026-10-03T08:00', rec: NOW, text: 'wrong night' }));
+  const lab = Object.assign({}, I.L.en, { stepNames: I.stepNames('en'), days: I.L.en.days, total: 'Incidents', last30: 'L', prev30: 'p', avgSev: 'A', minutes: 'M', quietHits: 'Q', reportedTo: 'r', late: 'late', sev: 'Sev', steps: 'Steps', due: 'due' });
+  const md = C.reportMarkdown(c, lab, NOW, { ok: true, head: 'a'.repeat(64) });
+  assert.ok(md.includes('VOIDED') && md.includes('wrong night') && md.includes('first incident text here')); assert.ok(md.includes('Incidents: 1'));
+  assert.ok(C.toCsv(c).includes('wrong night'));
 });

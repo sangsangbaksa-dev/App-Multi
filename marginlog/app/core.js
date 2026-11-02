@@ -168,14 +168,14 @@
     return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function toCsv(c) {
-    var rows = [['when', 'recorded', 'late', 'severity', 'minutes', 'tags', 'witness', 'reported', 'text', 'notes', 'hash']];
-    events(c.entries).slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; }).forEach(function (e) {
-      rows.push([e.at.replace('T', ' '), new Date(e.rec).toISOString(), isLate(e) ? 'yes' : '', e.sev || '', e.dur || '', e.tags.join(' '), e.witness, e.reported ? 'yes' : '', e.text, addenda(c.entries, e.id).map(function (n) { return n.text; }).join(' | '), e.hash.slice(0, 16)]);
+    var rows = [['when', 'recorded', 'late', 'severity', 'minutes', 'tags', 'witness', 'reported', 'text', 'notes', 'voided', 'hash']], vd = voidedIds(c.entries);
+    c.entries.filter(function (e) { return e.type === 'event'; }).slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; }).forEach(function (e) {
+      rows.push([e.at.replace('T', ' '), new Date(e.rec).toISOString(), isLate(e) ? 'yes' : '', e.sev || '', e.dur || '', e.tags.join(' '), e.witness, e.reported ? 'yes' : '', e.text, addenda(c.entries, e.id).map(function (n) { return n.text; }).join(' | '), vd[e.id] ? vd[e.id].text : '', e.hash.slice(0, 16)]);
     });
     return rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n') + '\r\n';
   }
   function reportMarkdown(c, L, nowTs, chain) {
-    var st = stats(c, nowTs), evs = events(c.entries).slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; });
+    var st = stats(c, nowTs), vd = voidedIds(c.entries), evs = events(c.entries), all = c.entries.filter(function (e) { return e.type === 'event'; }).slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; });
     var out = ['# ' + c.name, ''];
     if (c.counterpart) out.push(L.counterpart + ': ' + c.counterpart);
     if (c.goal) out.push(L.goal + ': ' + c.goal);
@@ -186,15 +186,17 @@
     if (st.avgSev) out.push('- ' + L.avgSev + ': ' + st.avgSev + ' / 5');
     if (st.minutes) out.push('- ' + L.minutes + ': ' + st.minutes);
     if (c.quiet) out.push('- ' + L.quietHits + ' (' + pad(c.quiet[0]) + ':00–' + pad(c.quiet[1]) + ':00): ' + st.quiet);
+    var nv = all.length - evs.length; if (nv) out.push('- ' + L.voidedBadge + ': ' + nv);
     var tb = topBand(evs); if (tb) out.push('- ' + L.pattern + ': ' + L.days[tb.dow] + ' ' + tb.dowShare + '%, ' + pad(tb.from) + ':00–' + pad(tb.to) + ':00 ' + tb.hourShare + '%');
     out.push('', '## ' + L.timeline, '');
-    evs.forEach(function (e, i) {
-      var tags = e.tags.length ? ' [' + e.tags.join(', ') + ']' : '';
-      out.push((i + 1) + '. **' + e.at.replace('T', ' ') + '**' + (e.sev ? ' · ' + L.sev + ' ' + e.sev + '/5' : '') + (e.dur ? ' · ' + e.dur + ' min' : '') + tags + (isLate(e) ? ' · ' + L.late : ''));
+    all.forEach(function (e, i) {
+      var isV = !!vd[e.id], tags = e.tags.length ? ' [' + e.tags.join(', ') + ']' : '';
+      out.push((i + 1) + '. **' + e.at.replace('T', ' ') + '**' + (e.sev ? ' · ' + L.sev + ' ' + e.sev + '/5' : '') + (e.dur ? ' · ' + e.dur + ' min' : '') + tags + (isLate(e) ? ' · ' + L.late : '') + (isV ? ' · ' + L.voidedBadge.toUpperCase() : ''));
       out.push('   ' + e.text.replace(/\n+/g, ' '));
       if (e.witness) out.push('   ' + L.witness + ': ' + e.witness);
       if (e.photos.length) out.push('   ' + L.photos + ': ' + e.photos.length);
       if (e.reported) out.push('   ' + L.reportedTo);
+      if (isV) out.push('   ' + L.voidedBadge.toUpperCase() + ' (' + vd[e.id].at.replace('T', ' ') + '): ' + vd[e.id].text.replace(/\n+/g, ' '));
       addenda(c.entries, e.id).forEach(function (n) { out.push('   + ' + n.at.replace('T', ' ') + ': ' + n.text.replace(/\n+/g, ' ')); });
     });
     if ((c.steps || []).length) {

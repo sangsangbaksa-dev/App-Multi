@@ -59,3 +59,7 @@ button.link{background:none;border:0;padding:0 2px;min-height:0;text-decoration:
 @media (max-width:420px){.mini{grid-template-columns:repeat(2,1fr)}.actions{grid-template-columns:1fr}}
 @media print{body{background:#fff;color:#000}.top,.caserow,.hero,.actions,.live,.tabs,.btns,.hint,.foot,.toast,#chainline+button{display:none!important}.rep{max-height:none;border:0;color:#000}.chain{color:#000}}
 .hmrow i.qb{background:none;border-bottom:3px solid transparent;height:6px;border-radius:0}.hmrow i.qb.on{border-color:var(--warn)}.hmrow .hc.q{outline:0}
+button.link{min-height:44px;padding:0 8px;display:inline-flex;align-items:center}
+.pv{position:relative;display:inline-block}.rm{position:absolute;top:-6px;right:-6px;width:28px;height:28px;min-height:0;padding:0;border-radius:50%;line-height:1}
+button.link{min-height:44px;padding:0 8px;display:inline-flex;align-items:center}
+.pv{position:relative;display:inline-block}.rm{position:absolute;top:-6px;right:-6px;width:28px;height:28px;min-height:0;padding:0;border-radius:50%;line-height:1}
