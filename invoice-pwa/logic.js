@@ -7,14 +7,20 @@ export function round2(n) {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
-export function calcTotals(items, taxRate = 0, discount = 0) {
+// withholdingRate: tax the client holds back and pays to the tax office for you (e.g. 3.3% in Korea, 10.21% in Japan).
+// It is a share of the amount before tax, so it never changes `total`; `payable` is what actually reaches you.
+export const MAX_WITHHOLDING = 50;
+export function calcTotals(items, taxRate = 0, discount = 0, withholdingRate = 0) {
   const subtotal = round2(
     items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.price) || 0), 0)
   );
   const disc = Math.min(Math.max(Number(discount) || 0, 0), subtotal);
   const taxable = subtotal - disc;
   const tax = round2(taxable * ((Number(taxRate) || 0) / 100));
-  return { subtotal, discount: round2(disc), tax, total: round2(taxable + tax) };
+  const wr = Math.min(Math.max(Number(withholdingRate) || 0, 0), MAX_WITHHOLDING);
+  const withholding = round2(taxable * (wr / 100));
+  const total = round2(taxable + tax);
+  return { subtotal, discount: round2(disc), tax, total, withholding, payable: round2(total - withholding) };
 }
 
 export function nextInvoiceNumber(invoices, prefix = "INV") {
@@ -38,10 +44,10 @@ export function formatMoney(n, currency = "USD", locale = "en-US") {
 
 const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 export function toCSV(invoices) {
-  const head = ["type", "number", "client", "issueDate", "dueDate", "status", "currency", "total", "paid", "balance"];
+  const head = ["type", "number", "client", "issueDate", "dueDate", "status", "currency", "total", "withheld", "paid", "balance"];
   const rows = invoices.map((i) =>
     [i.type === "quote" ? "quote" : "invoice", i.number, i.client, i.issueDate, i.dueDate, i.status, i.currency,
-     totalOf(i), Number(i.paid) || 0, balanceOf(i)].map(esc).join(",")
+     totalOf(i), withheldOf(i), Number(i.paid) || 0, balanceOf(i)].map(esc).join(",")
   );
   return [head.join(","), ...rows].join("\n");
 }
@@ -63,8 +69,18 @@ export function validLicense(key) {
 }
 
 export const isQuote = (i) => i.type === "quote";
-export const totalOf = (i) => calcTotals(i.items || [], i.taxRate, i.discount).total;
-export const balanceOf = (i) => Math.max(0, round2(totalOf(i) - (Number(i.paid) || 0)));
+const totalsOf = (i) => calcTotals(i.items || [], i.taxRate, i.discount, i.withholdingRate);
+export const totalOf = (i) => totalsOf(i).total;
+export const withheldOf = (i) => totalsOf(i).withholding;
+// What the client actually pays: the total minus tax they withhold. `paid` and the balance are measured against this.
+export const payableOf = (i) => totalsOf(i).payable;
+export const balanceOf = (i) => Math.max(0, round2(payableOf(i) - (Number(i.paid) || 0)));
+// The part of the invoice total that counts as received: cash paid plus the matching share of withheld tax.
+export function grossPaidOf(i) {
+  const t = totalsOf(i);
+  if (!(t.payable > 0)) return 0;
+  return round2((Math.min(Number(i.paid) || 0, t.payable) / t.payable) * t.total);
+}
 
 export function overdue(inv, today = new Date().toISOString().slice(0, 10)) {
   return !isQuote(inv) && inv.status !== "paid" && inv.status !== "draft" && balanceOf(inv) > 0 &&
@@ -74,7 +90,7 @@ export function overdue(inv, today = new Date().toISOString().slice(0, 10)) {
 // Makes status and paid amount agree: fully paid means status "paid" and vice versa.
 export function settle(inv) {
   if (isQuote(inv)) return { ...inv, paid: 0, payments: [] };
-  const total = totalOf(inv);
+  const total = payableOf(inv);
   let paid = Math.min(Math.max(Number(inv.paid) || 0, 0), total);
   let status = inv.status;
   if (status === "paid") paid = total;
@@ -267,7 +283,7 @@ export function monthlyFlow(invoices, today, months = 12, currency = "USD") {
     const r = rows[monthKey(i.issueDate)];
     if (!r) continue;
     r.billed = round2(r.billed + totalOf(i));
-    r.collected = round2(r.collected + Math.min(totalOf(i), Number(i.paid) || 0));
+    r.collected = round2(r.collected + grossPaidOf(i));
   }
   return keys.map((k) => rows[k]);
 }
@@ -323,17 +339,19 @@ export const EXPENSE_CATEGORIES = ["software", "equipment", "travel", "meals", "
 // Income is what has been paid on invoices issued in `year`; expenses are dated expenses in `year`. Both in one currency.
 export function yearSummary(invoices, expenses, year, currency = "USD") {
   const y = String(year);
-  let income = 0, spent = 0;
+  let income = 0, spent = 0, withheld = 0;
   for (const i of invoices) {
     if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency || !String(i.issueDate).startsWith(y)) continue;
-    income = round2(income + Math.min(totalOf(i), Number(i.paid) || 0));
+    const g = grossPaidOf(i);
+    income = round2(income + g);
+    withheld = round2(withheld + (g - Math.min(Number(i.paid) || 0, payableOf(i))));
   }
   for (const e of expenses) {
     if ((e.currency || "USD") !== currency || !String(e.date).startsWith(y)) continue;
     spent = round2(spent + Number(e.amount));
   }
   const profit = round2(income - spent);
-  return { income, expenses: spent, profit };
+  return { income, expenses: spent, profit, withheld };
 }
 // Years that have any invoice or expense, newest first; the current year is always offered.
 export function taxYears(invoices, expenses, today) {
@@ -350,7 +368,7 @@ export function quarterlySummary(invoices, expenses, year, currency = "USD") {
   for (const i of invoices) {
     if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency || !String(i.issueDate).startsWith(y)) continue;
     const r = q[quarterOf(i.issueDate)];
-    r.income = round2(r.income + Math.min(totalOf(i), Number(i.paid) || 0));
+    r.income = round2(r.income + grossPaidOf(i));
   }
   for (const e of expenses) {
     if ((e.currency || "USD") !== currency || !String(e.date).startsWith(y)) continue;
@@ -385,6 +403,7 @@ export function taxReportCSV(invoices, expenses, year, currency, pct) {
   const rows = [["section", "label", "income", "expenses", "profit"],
     ...q.map((r) => ["quarter", `Q${r.quarter} ${year}`, r.income, r.expenses, r.profit]),
     ["total", `${year} ${currency}`, sum.income, sum.expenses, sum.profit],
+    ...(sum.withheld > 0 ? [["tax-withheld-by-clients", `${year} ${currency}`, sum.withheld, "", ""]] : []),
     ...expensesByCategory(expenses, year, currency).map((c) => ["category", c.category, "", c.total, ""]),
     ["tax-set-aside", `${Number(pct) || 0}%`, "", "", tax ?? ""]];
   return rows.map((r) => r.map(safeCell).join(",")).join("\n");
@@ -435,6 +454,46 @@ export function paymentStats(invoices) {
     onTimePct: rows.length ? Math.round((100 * rows.filter((r) => r.onTime).length) / rows.length) : 0,
     byClient: [...by].map(([client, d]) => ({ client, count: d.length, avgDays: avg(d) })).sort((a, b) => b.avgDays - a.avgDays),
   };
+}
+
+// Per-client payment habit from fully paid invoices with dated payments: days from issue to last payment, and how often on time.
+export function clientHabits(invoices) {
+  const m = new Map();
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || !(payableOf(i) > 0) || balanceOf(i) > 0) continue;
+    const dates = (i.payments || []).map((p) => p.date).filter(validDate);
+    if (!dates.length) continue;
+    const last = dates.sort().at(-1);
+    const r = m.get(i.client) ?? { days: [], onTime: 0 };
+    r.days.push(Math.max(0, dayDiff(i.issueDate, last)));
+    if (last <= i.dueDate) r.onTime++;
+    m.set(i.client, r);
+  }
+  const out = {};
+  for (const [client, r] of m) out[client] = { count: r.days.length, avgDays: Math.round(r.days.reduce((a, b) => a + b, 0) / r.days.length), onTimePct: Math.round((100 * r.onTime) / r.days.length) };
+  return out;
+}
+
+// When open invoices will probably be paid: issue date plus that client's usual days to pay (never in the past),
+// or the due date for a client with no history. Grouped into months for the next `months` months, plus a flag for
+// invoices expected after their due date. An estimate from your own records, nothing is fetched.
+export function expectedCash(invoices, today, currency = "USD", months = 3) {
+  const habits = clientHabits(invoices);
+  const rows = [];
+  for (const i of invoices) {
+    if (isQuote(i) || i.status === "draft" || (i.currency || "USD") !== currency) continue;
+    const bal = balanceOf(i);
+    if (!(bal > 0) || !validDate(i.issueDate) || !validDate(i.dueDate)) continue;
+    const h = habits[i.client];
+    let when = h ? addDays(i.issueDate, h.avgDays) : i.dueDate;
+    if (when < today) when = today;
+    rows.push({ id: i.id, number: i.number, client: i.client, balance: bal, due: i.dueDate, expected: when, basis: h ? "history" : "due", slow: when > i.dueDate && when > today });
+  }
+  rows.sort((a, b) => a.expected.localeCompare(b.expected) || String(a.number).localeCompare(String(b.number)));
+  const keys = monthsBack(addMonthsIso(today, months - 1), months);
+  const byMonth = keys.map((month) => ({ month, amount: round2(rows.filter((r) => r.expected.slice(0, 7) === month).reduce((s, r) => s + r.balance, 0)) }));
+  const later = round2(rows.filter((r) => r.expected.slice(0, 7) > keys.at(-1)).reduce((s, r) => s + r.balance, 0));
+  return { rows, byMonth, later, total: round2(rows.reduce((s, r) => s + r.balance, 0)) };
 }
 
 // Cash that arrived per payment month (by the payment's own date), one currency.

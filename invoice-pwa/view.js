@@ -48,8 +48,8 @@ function paint() {
     ${I.t("issuedL")} ${esc(I.formatDate(inv.issueDate))} · ${I.t(quote ? "validUntil" : "dueL")} ${esc(I.formatDate(inv.dueDate))}</p>
     <table><tr><th>${I.t("desc")}</th><th class="r">${I.t("qty")}</th><th class="r">${I.t("price")}</th><th class="r">${I.t("total")}</th></tr>
     ${inv.items.map((x) => `<tr><td>${esc(x.desc)}</td><td class="r">${x.qty}</td><td class="r">${m(x.price)}</td><td class="r">${m(x.qty * x.price)}</td></tr>`).join("")}</table>
-    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b>${!quote && inv.paid > 0
-      ? `<br>${I.t("vwPaidSoFar")} ${m(Math.min(inv.paid, t.total))}<br><b>${I.t("balance")} ${m(L.balanceOf(inv))}</b>` : ""}</p>
+    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b>${t.withholding ? `<br>${I.t("whL")} (${inv.withholdingRate}%) −${m(t.withholding)}<br><b>${I.t("payableL")} ${m(t.payable)}</b>` : ""}${!quote && inv.paid > 0
+      ? `<br>${I.t("vwPaidSoFar")} ${m(Math.min(inv.paid, t.payable))}<br><b>${I.t("balance")} ${m(L.balanceOf(inv))}</b>` : ""}</p>
     <p>${esc(inv.notes).replace(/\n/g, "<br>")}</p>${inv.payinfo ? `<p><b>${I.t("payinfo").replace(/\s*[（(].*$/, "")}</b><br>${esc(inv.payinfo).replace(/\n/g, "<br>")}</p>` : ""}`;
 }
 

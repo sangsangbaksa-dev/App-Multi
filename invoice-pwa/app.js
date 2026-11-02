@@ -204,6 +204,7 @@ function readForm() {
   delete inv[""];
   inv.taxRate = Number(inv.taxRate) || 0;
   inv.discount = Number(inv.discount) || 0;
+  inv.withholdingRate = Math.min(Math.max(Number(inv.withholdingRate) || 0, 0), L.MAX_WITHHOLDING);
   inv.recur = inv.recur || "";
   inv.paid = Number(inv.paid) || 0;
   inv.lateFeePct = Number(inv.lateFeePct) || 0;
@@ -219,7 +220,7 @@ function readForm() {
 function renderPreview() {
   if (!editing) return;
   const i = readForm();
-  const t = L.calcTotals(i.items, i.taxRate, i.discount);
+  const t = L.calcTotals(i.items, i.taxRate, i.discount, i.withholdingRate);
   const m = (n) => money(n, i.currency);
   const late = L.overdue({ ...i, paid: L.isQuote(i) ? 0 : i.paid }, today());
   $("#btn-latefee").hidden = !late;
@@ -233,7 +234,7 @@ function renderPreview() {
     ${I.t("issuedL")} ${esc(I.formatDate(i.issueDate))} · ${I.t(L.isQuote(i) ? "validUntil" : "dueL")} ${esc(I.formatDate(i.dueDate))}${i.convertedFrom ? `<br><small>${esc(I.t("quoteOf", { n: i.convertedFrom }))}</small>` : ""}</p>
     <table><tr><th>${I.t("desc")}</th><th class="r">${I.t("qty")}</th><th class="r">${I.t("price")}</th><th class="r">${I.t("total")}</th></tr>
     ${i.items.map((x) => `<tr><td>${esc(x.desc)}</td><td class="r">${x.qty}</td><td class="r">${m(x.price)}</td><td class="r">${m(x.qty * x.price)}</td></tr>`).join("")}</table>
-    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b>${!L.isQuote(i) && i.paid > 0 ? `<br>− ${m(Math.min(i.paid, t.total))}<br><b>${I.t("balance")} ${m(L.balanceOf(i))}</b>` : ""}</p>
+    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b>${t.withholding ? `<br>${I.t("whL")} (${i.withholdingRate}%) −${m(t.withholding)}<br><b>${I.t("payableL")} ${m(t.payable)}</b>` : ""}${!L.isQuote(i) && i.paid > 0 ? `<br>− ${m(Math.min(i.paid, t.payable))}<br><b>${I.t("balance")} ${m(L.balanceOf(i))}</b>` : ""}</p>
     <p>${esc(i.notes)}</p>${i.payinfo ? `<p><b>${I.t("payinfo").replace(/\s*[（(].*$/, "")}</b><br>${esc(i.payinfo).replace(/\n/g, "<br>")}</p>` : ""}
     ${isPro() ? "" : `<p class="wm">${I.t("watermark")}</p>`}`;
 }
@@ -337,7 +338,7 @@ function newDoc(type, extra = {}) {
   const doc = {
     id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
     currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
-    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", clientEmail: "", recur: "", nextRun: "",
+    taxRate: last?.taxRate ?? 0, withholdingRate: last?.withholdingRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", clientEmail: "", recur: "", nextRun: "",
     items: [{ desc: "", qty: 1, price: 0 }], lateFeePct: last?.lateFeePct ?? 0, ...extra,
   };
   openEditor(doc);
@@ -393,7 +394,7 @@ $("#form").elements.client.addEventListener("change", () => {
   const p = profiles[CL.keyOf($("#form").elements.client.value)];
   if (!p || !editing || invoices.some((x) => x.id === editing.id) || !isPro()) return;
   const next = CL.applyDefaults(readForm(), p);
-  for (const k of ["currency", "taxRate", "dueDate", "clientEmail", "payinfo", "payLink"]) $("#form").elements[k].value = next[k] ?? "";
+  for (const k of ["currency", "taxRate", "withholdingRate", "dueDate", "clientEmail", "payinfo", "payLink"]) $("#form").elements[k].value = next[k] ?? "";
   renderPreview();
   toast(I.t("clientApplied", { client: next.client }));
 });
@@ -447,7 +448,7 @@ $("#f").onchange = (e) => { filters.f = e.target.value; renderList(); };
 $("#btn-dup").onclick = () => {
   const src = readForm();
   const copy = newDoc(src.type, {
-    from: src.from, client: src.client, currency: src.currency, taxRate: src.taxRate, discount: src.discount,
+    from: src.from, client: src.client, currency: src.currency, taxRate: src.taxRate, withholdingRate: src.withholdingRate, discount: src.discount,
     notes: src.notes, payinfo: src.payinfo, payLink: src.payLink, clientEmail: src.clientEmail, lateFeePct: src.lateFeePct,
     items: src.items.filter((x) => !x.lateFee).map((x) => ({ ...x })),
   });

@@ -102,3 +102,13 @@ test("an existing late-fee line is not charged twice", () => {
 test("totals helper matches the sender's totals", () => {
   assert.equal(S.shareTotals(inv()).total, L.totalOf(inv()));
 });
+
+test("withholding tax survives the client link and lowers the amount due", () => {
+  const inv = { type: "invoice", number: "INV-1", from: "Me", client: "Co", currency: "KRW", issueDate: "2026-11-01", dueDate: "2026-11-15", taxRate: 0, discount: 0, withholdingRate: 3.3, paid: 0, status: "sent", items: [{ desc: "Work", qty: 1, price: 1000000 }] };
+  const r = S.decodeShare(S.encodeShare(inv, "ko"));
+  assert.equal(r.ok, true);
+  assert.equal(r.inv.withholdingRate, 3.3);
+  assert.equal(S.shareTotals(r.inv).payable, 967000);
+  assert.equal(S.shareStatus(r.inv, "2026-11-02").balance, 967000);
+  assert.equal(L.totalOf(r.inv), 1000000);
+});

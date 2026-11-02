@@ -85,6 +85,7 @@
         <label><span id="due-lbl" data-i18n="due"></span><input type="date" name="dueDate" required></label>
         <label><span data-i18n="tax"></span><input type="number" step="0.01" min="0" name="taxRate" value="0"></label>
         <label><span data-i18n="discount"></span><input type="number" step="0.01" min="0" name="discount" value="0"></label>
+        <label class="wide"><span data-i18n="whLabel"></span><input type="number" step="0.01" min="0" max="50" name="withholdingRate" value="0" list="whpresets" inputmode="decimal" aria-describedby="wh-hint"><datalist id="whpresets"><option value="0"></option><option value="3.3"></option><option value="10.21"></option></datalist><small id="wh-hint" class="muted" data-i18n="whHint"></small></label>
         <label><span data-i18n="status"></span>
           <select name="status"><option value="draft" data-i18n="draft"></option><option value="sent" data-i18n="sent"></option><option value="paid" data-i18n="paid"></option><option value="accepted" data-i18n="accepted"></option></select></label>
         <label id="paid-wrap"><span data-i18n="paidAmt"></span><input type="number" step="0.01" min="0" name="paid" value="0"></label>
@@ -205,6 +206,11 @@
     <div id="pay-cards" class="cards" hidden></div>
     <p id="pay-based" class="muted" hidden></p>
     <div id="pay-clients"></div>
+    <h3 class="h" id="cash-h" data-i18n="insCashHead"></h3>
+    <p class="muted" data-i18n="insCashNote"></p>
+    <p id="cash-empty" class="muted" data-i18n="insCashNone" hidden></p>
+    <div id="cash-cards" class="cards" hidden></div>
+    <table class="mini" id="cash-table" hidden></table>
     <div class="row"><button type="button" id="pay-csv" data-pro data-i18n="payCsv"></button></div>
   </section>
   <section aria-labelledby="calc-h">

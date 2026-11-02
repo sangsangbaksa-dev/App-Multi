@@ -38,7 +38,7 @@ function fromB64Url(s) {
 export function toSnapshot(inv, lang = "en") {
   return {
     v: SHARE_VERSION, t: isQuote(inv) ? "q" : "i", n: clip(inv.number, 40), f: clip(inv.from, 120), c: clip(inv.client, 120),
-    cur: inv.currency, is: inv.issueDate, du: inv.dueDate, tx: num(inv.taxRate), ds: num(inv.discount),
+    cur: inv.currency, is: inv.issueDate, du: inv.dueDate, tx: num(inv.taxRate), ds: num(inv.discount), wh: num(inv.withholdingRate),
     pd: isQuote(inv) ? 0 : num(inv.paid), st: inv.status, no: clip(inv.notes, 600), pi: clip(inv.payinfo, 600),
     pl: safeLink(inv.payLink), fe: num(inv.lateFeePct), l: LANGS.includes(lang) ? lang : "en",
     it: (inv.items || []).slice(0, MAX_ITEMS).map((x) => [clip(x.desc, 160), num(x.qty), num(x.price), x.lateFee ? 1 : 0]),
@@ -67,7 +67,7 @@ export function decodeShare(payload) {
     ok: true,
     inv: {
       type: quote ? "quote" : "invoice", number: clip(d.n, 40), from: clip(d.f, 120), client: clip(d.c, 120), currency: d.cur,
-      issueDate: d.is, dueDate: d.du, taxRate: num(d.tx), discount: num(d.ds), paid: quote ? 0 : num(d.pd), status,
+      issueDate: d.is, dueDate: d.du, taxRate: num(d.tx), discount: num(d.ds), withholdingRate: Math.min(num(d.wh), 50), paid: quote ? 0 : num(d.pd), status,
       notes: clip(d.no, 600), payinfo: clip(d.pi, 600), payLink: safeLink(d.pl), lateFeePct: num(d.fe), items,
       lang: LANGS.includes(d.l) ? d.l : "en",
     },
@@ -104,4 +104,4 @@ export function shareStatus(inv, today) {
 }
 
 // Totals for the page; late-fee lines the sender already added are part of the items, so nothing is double counted.
-export const shareTotals = (inv) => calcTotals(inv.items, inv.taxRate, inv.discount);
+export const shareTotals = (inv) => calcTotals(inv.items, inv.taxRate, inv.discount, inv.withholdingRate);
