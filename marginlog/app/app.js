@@ -366,14 +366,15 @@
         for (var i = 0; i < cs.length; i++) { var v = await C.verifyChain(cs[i].entries, fcp[cs[i].id]); vok.push(v.ok); }
         var before = S.cases.slice(), keep = [], has = function (list, h) { return list.some(function (e) { return e.hash === h; }); };
         cs.forEach(function (c, ci) {
-          if (!c.entries.length) { skipped++; return; }
           var origId = c.id, ex = before.filter(function (x) { return x.id === origId; })[0], cl = c.entries.length ? c.entries[c.entries.length - 1].hash : '';
           if (ex) {
             var el = ex.entries.length ? ex.entries[ex.entries.length - 1].hash : '';
-            if (cl === el || has(ex.entries, cl)) { skipped++; return; }          /* same or older copy of a case we already hold */
+            if (cl === el || (cl && has(ex.entries, cl)) || (!cl && !ex.entries.length)) { skipped++; return; }
+            if (!cl) { c.id = C.uid(); } else {          /* same or older copy of a case we already hold */
             if (!vok[ci]) { rejected++; return; }                                         /* never let an unverifiable copy replace local data */
             if (el && has(c.entries, el)) { S.cases.splice(S.cases.indexOf(ex), 1); }       /* backup is a verified newer copy: replace */
             else c.id = C.uid();                                                          /* diverged history: keep both */
+            }
           }
           if (!vok[ci]) broken++;
           if (fcp[origId]) newCp[c.id] = fcp[origId];
