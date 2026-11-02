@@ -287,3 +287,14 @@ test('statsCsv has one row per student and neutralises formulas', () => {
   assert.ok(lines[1].startsWith('Mina,1,4,1,1,75,'), lines[1]); assert.ok(lines.join('\n').includes('"\'=HYPERLINK(""x"")"'));
   assert.equal(C.statsCsv([], '2026-11-05').split('\n').length, 1);
 });
+
+test('incomeByMonth sums paid packs by start month and currency, skips unpaid', () => {
+  const mk = (id, start, price, cur, paid) => ({ id, student: id, total: 5, price, currency: cur, start, expires: '', stamps: [], paid });
+  const packs = [mk('a', '2026-11-03', 100, 'USD'), mk('b', '2026-11-20', 50.5, 'USD', true), mk('c', '2026-10-01', 80, 'EUR'),
+    mk('d', '2026-11-05', 999, 'USD', false), mk('e', '2025-01-01', 70, 'USD')];
+  const r = C.incomeByMonth(packs, '2026-11', 3);
+  assert.deepEqual(r.map(x => x.ym), ['2026-09', '2026-10', '2026-11']);
+  assert.deepEqual(r[2].byCur, { USD: 150.5 }); assert.equal(r[2].packs, 2);
+  assert.deepEqual(r[1].byCur, { EUR: 80 }); assert.equal(r[0].packs, 0);
+  assert.equal(C.incomeCsv(packs, '2026-11', 3), 'month,packs,income,currency\n2026-10,1,80,EUR\n2026-11,2,150.5,USD');
+});

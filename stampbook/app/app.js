@@ -212,6 +212,16 @@
         : h('p', { class: 'note' }, T('insQuietNone'))]));
     var fc = C.forecast(state.packs, today, 30);
     if (fc.lessons) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('fcH')), h('p', {}, T('fcB', { n: fc.lessons, v: sumByCur(function (ps) { return C.forecast(ps, today, 30).value; }) }))]));
+    var inc = C.incomeByMonth(state.packs, today.slice(0, 7), 6), tot = {};
+    inc.forEach(function (r) { Object.keys(r.byCur).forEach(function (c) { tot[c] = (tot[c] || 0) + r.byCur[c]; }); });
+    var cks = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
+    if (cks.length) {
+      var main = cks[0], imax = Math.max.apply(null, inc.map(function (r) { return r.byCur[main] || 0; }));
+      box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('incH')),
+        bars(inc.map(function (r, i) { return { v: r.byCur[main] || 0, l: fmt({ month: 'short' }, r.ym + '-01'), hot: i === inc.length - 1 }; }), imax),
+        h('p', { class: 'note' }, cks.map(function (c) { return money(Math.round(tot[c] * 100) / 100, c); }).join(' + ')),
+        h('button', { class: 'ghost sm', onclick: function () { if (!state.pro) return needPro(); download('stampbook-income.csv', C.incomeCsv(state.packs, today.slice(0, 7), 6), 'text/csv'); } }, T('incCsv'))]));
+    }
     var up = C.unpaid(state.packs);
     if (up.length) box.appendChild(h('div', { class: 'card' }, [h('h3', {}, T('owedH') + ' · ' + sumByCur(C.outstanding)), h('ul', { class: 'evs' }, up.map(function (p) {
       return h('li', {}, [h('b', {}, p.student), h('span', { class: 'ln' }, money(p.price, p.currency) + ' · ' + (p.start || ''))]); }))]));
@@ -285,6 +295,7 @@
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
+    if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
       h('button', { class: 'ghost', onclick: function () { if (confirm(T('confDel'))) { state.packs = state.packs.filter(function (x) { return x.id !== p.id; }); save(); render(); } } }, T('del')));
