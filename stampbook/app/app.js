@@ -402,6 +402,7 @@
     if (!state.pro) return needPro();
     if (!window.qrcode) return toast(T('qrErr'));
     var url = location.origin + location.pathname + '#c=' + C.encodeCard(p, state.teacher), img;
+    if (url.length > 2000) return toast(T('qrErr'));
     try { var q = window.qrcode(0, 'L'); q.addData(url); q.make(); img = h('img', { src: q.createDataURL(6, 2), alt: T('qrAlt', { name: p.student }) }); }
     catch (e) { return toast(T('qrErr')); }
     var old = document.getElementById('qrdlg'); if (old) old.remove();

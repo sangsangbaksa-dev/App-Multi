@@ -345,15 +345,23 @@
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new TextDecoder().decode(bytes);
   }
+  /* lesson dates packed as [first day number, then gaps in days] so a long pack still fits in a QR code */
+  var EPOCH = '2000-01-01';
+  function packDates(ds) { var out = [], prev = 0; ds.forEach(function (d, i) { var n = daysBetween(EPOCH, d); out.push(i ? n - prev : n); prev = n; }); return out; }
+  function unpackDates(z) { var out = [], n = 0; z.forEach(function (x, i) { n = i ? n + x : x; out.push(addDays(EPOCH, n)); }); return out; }
   function encodeCard(p, teacher) {
     return b64e(JSON.stringify({
       v: 1, t: teacher || '', n: p.student, T: p.total, x: p.expires || '',
-      s: counted(p).map(function (s) { return s.date; }), m: makeupsOwed(p) || undefined, q: p.next ? String(p.next).slice(0, 120) : undefined, u: p.paid === false ? 1 : undefined, d: todayStr()
+      z: packDates(counted(p).map(function (s) { return s.date; })), m: makeupsOwed(p) || undefined, q: p.next ? String(p.next).slice(0, 120) : undefined, u: p.paid === false ? 1 : undefined, d: todayStr()
     }));
   }
   function decodeCard(str) {
     try {
       var o = JSON.parse(b64d(str));
+      if (o && Array.isArray(o.z) && !Array.isArray(o.s)) {
+        if (o.z.length > 1000 || !o.z.every(function (x) { return x % 1 === 0 && x >= 0 && x < 100000; })) return null;
+        o.s = unpackDates(o.z);
+      }
       if (!o || o.v !== 1 || typeof o.n !== 'string' || !(o.T > 0) || !Array.isArray(o.s)) return null;
       if (o.T > 1000 || o.s.length > 1000) return null;
       var re = /^\d{4}-\d{2}-\d{2}$/;
