@@ -236,7 +236,7 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
     for (const cur of new Set(open.map((i) => i.currency || "USD"))) for (const r of L.expectedCash(invoices, today(), cur, 3).rows) expected.set(r.id, r);
     $("#rem-list").innerHTML = open.map((i) => `<article class="tip">
       <h3 class="h tip-h">${esc(i.number)} · ${esc(i.client || "")}</h3>
-      <p class="muted">${esc(money(L.balanceOf(i), i.currency))} · ${esc(I.formatDate(i.dueDate))}${expected.get(i.id) ? ` · ${esc(I.t("cashColExpected"))} ${esc(I.formatDate(expected.get(i.id).expected))}${expected.get(i.id).slow ? " ⚠" : ""}` : ""}</p>
+      <p class="muted">${esc(money(L.balanceOf(i), i.currency))} · ${esc(I.formatDate(i.dueDate))}${expected.get(i.id) ? ` · ${esc(I.t("cashColExpected"))} ${esc(I.formatDate(expected.get(i.id).expected))}${expected.get(i.id).slow ? ` <span class="late"><span aria-hidden="true">⚠</span><span class="sr">${esc(I.t("insCashSlow"))}</span></span>` : ""}` : ""}</p>
       <button type="button" data-rem="${esc(i.id)}">${esc(I.t("remCopy"))}</button></article>`).join("");
   }
   $("#rem-list").addEventListener("click", async (e) => {
@@ -254,7 +254,7 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
     render() {
       // One broken section must not blank the others.
       for (const fn of [renderInsights, renderPaySpeed, renderCash, renderUpcoming, renderExpenses, renderReminders, calcRate, calcNet, renderTips]) {
-        try { fn(); } catch (e) { console.error(e); }
+        try { fn(); } catch (e) { console.error(e); const n = document.querySelector("#sec-err"); if (n) { n.hidden = false; n.textContent = I.t("secErr"); } }
       }
     },
   };

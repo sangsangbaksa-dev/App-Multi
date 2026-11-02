@@ -74,7 +74,7 @@
     <form id="form" class="noprint">
       <div class="grid">
         <label><span data-i18n="from"></span><input name="from" required></label>
-        <label><span data-i18n="client"></span><input name="client" list="clients" required></label>
+        <label><span data-i18n="client"></span><input name="client" list="clients" required aria-describedby="client-hint"><small id="client-hint" class="muted" aria-live="polite"></small></label>
         <label data-pro><span data-i18n="clientEmail"></span><input type="email" name="clientEmail" maxlength="190" autocomplete="off"></label>
         <datalist id="clients"></datalist>
         <datalist id="catalog"></datalist>
@@ -180,6 +180,7 @@
   </section>
 </div>
 <div id="tab-insights" class="noprint" hidden>
+  <p id="sec-err" class="muted" role="alert" hidden></p>
   <section aria-labelledby="ins-h">
     <h2 class="h" id="ins-h" data-i18n="insHead"></h2>
     <p class="muted" data-i18n="insNote"></p>
