@@ -24,7 +24,7 @@
     if (d === undefined || (d && !Array.isArray(d.cases))) {
       /* unreadable data: keep a copy first and refuse to overwrite it if the copy fails */
       try { var k0 = KEY + ':corrupt', k1 = KEY + ':corrupt-b', v0 = localStorage.getItem(k0), v1 = localStorage.getItem(k1); corruptKey = v0 === raw ? k0 : v1 === raw ? k1 : v0 === null ? k0 : v1 === null ? k1 : null; if (!corruptKey) blocked = true; else if (localStorage.getItem(corruptKey) !== raw) localStorage.setItem(corruptKey, raw); } catch (e2) { corruptKey = null; blocked = true; }
-    } else if (d) { S.cases = d.cases.map(C.sanitizeCase).filter(Boolean); S.cur = d.cur; S.lang = I.L[d.lang] ? d.lang : S.lang; }
+    } else if (d) { S.cases = d.cases.map(C.sanitizeCase).filter(Boolean); S.cur = d.cur; S.lang = Object.prototype.hasOwnProperty.call(I.L, d.lang) ? d.lang : S.lang; }
     if (!S.cases.some(function (c) { return c.id === S.cur; })) S.cur = (S.cases.filter(function (c) { return !c.archived; })[0] || S.cases[0] || {}).id || null;
   }
   function saveMsg() { return blocked ? t('corruptBlocked') : stale ? t('otherTabBusy') : t('saveFail'); }
@@ -83,7 +83,8 @@
     var ae = document.activeElement, fkey = null;
     if (ae && ae !== document.body && root.contains(ae) && !(dlg && dlg.contains(ae))) fkey = ae.id ? '#' + ae.id : ae.getAttribute('data-act') ? '[data-act="' + ae.getAttribute('data-act') + '"]' + (ae.getAttribute('data-id') ? '[data-id="' + ae.getAttribute('data-id') + '"]' : ae.getAttribute('data-tab') ? '[data-tab="' + ae.getAttribute('data-tab') + '"]' : '') : null;
     renderInner();
-    if (fkey && !dlg) { var nf = $(fkey); if (nf) nf.focus(); }
+    if (fkey && !dlg) { var nf = $(fkey) || $('#panel') || $('#main'); if (nf) { if (!/^(BUTTON|SELECT|INPUT|A)$/.test(nf.tagName)) nf.setAttribute('tabindex', '-1'); nf.focus(); } }
+    if (S.tab === 'report' && cur()) fillReport();
   }
   function renderInner() {
     document.documentElement.lang = S.lang; document.title = 'Marginlog';
@@ -379,7 +380,7 @@
             if (cl === el || has(ex.entries, cl)) { skipped++; return; }
             {          /* same or older copy of a case we already hold is skipped above */
             if (!vok[ci]) { rejected++; return; }                                         /* never let an unverifiable copy replace local data */
-            if (el && has(c.entries, el)) { S.cases.splice(S.cases.indexOf(ex), 1); }       /* backup is a verified newer copy: replace */
+            if (!el || has(c.entries, el)) { (ex.steps || []).forEach(function (st3) { if (!(c.steps || []).some(function (y) { return y.id === st3.id; })) (c.steps = c.steps || []).push(st3); }); S.cases.splice(S.cases.indexOf(ex), 1); }       /* backup is a verified newer copy: replace */
             else c.id = C.uid();                                                          /* diverged history: keep both */
             }
           }
@@ -479,7 +480,7 @@
 
   var tel = document.createElement('div'); tel.id = 'toast'; tel.className = 'toast'; tel.setAttribute('role', 'status'); tel.setAttribute('aria-live', 'polite'); tel.addEventListener('click', function (ev) { if (ev.target.tagName !== 'BUTTON') tel.innerHTML = ''; }); document.body.appendChild(tel);
   /* ---------- boot ---------- */
-  var nl = (navigator.language || 'en').slice(0, 2); if (I.L[nl]) S.lang = nl;
+  var nl = (navigator.language || 'en').slice(0, 2); if (Object.prototype.hasOwnProperty.call(I.L, nl)) S.lang = nl;
   load(); render(); if (S.tab === 'report') fillReport();
   if (blocked) toast(t('corruptBlocked'));
   else if (corruptKey) toast(t('corrupt', { k: corruptKey }));

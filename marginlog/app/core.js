@@ -216,7 +216,7 @@
   /* ---------- import / sanitise ---------- */
   function sanitizeCase(c) {
     if (!c || typeof c !== 'object') return null;
-    var kind = KINDS[c.kind] ? c.kind : 'other', q = Array.isArray(c.quiet) && c.quiet.length === 2 ? [clampInt(c.quiet[0], 0, 23), clampInt(c.quiet[1], 0, 23)] : null;
+    var kind = Object.prototype.hasOwnProperty.call(KINDS, c.kind) ? c.kind : 'other', q = Array.isArray(c.quiet) && c.quiet.length === 2 ? [clampInt(c.quiet[0], 0, 23), clampInt(c.quiet[1], 0, 23)] : null;
     /* Never drop a damaged record silently: keep it (coerced) so the chain check fails visibly. */
     var entries = (Array.isArray(c.entries) ? c.entries : []).filter(function (e) { return e && typeof e === 'object'; }).map(function (e) {
       var okShape = typeof e.id === 'string' && typeof e.hash === 'string' && typeof e.prev === 'string' && ['event', 'note', 'void'].indexOf(e.type) >= 0 && parseAt(e.at) && isFinite(e.rec) && typeof e.text === 'string';

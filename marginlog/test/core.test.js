@@ -123,3 +123,6 @@ test('suggestNext reports an exhausted ladder', async () => {
   for (const k of C.ladder(c)) c.steps.push({ id: k, kind: k, at: '2026-11-01', due: '', done: false });
   assert.equal(C.suggestNext(c, NOW).key, 'exhausted');
 });
+test('sanitizeCase rejects inherited property names as kind', () => {
+  assert.equal(C.sanitizeCase({ name: 'x', kind: 'constructor' }).kind, 'other'); assert.equal(C.sanitizeCase({ name: 'x', kind: '__proto__' }).kind, 'other');
+});
