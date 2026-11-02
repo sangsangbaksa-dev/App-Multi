@@ -43,7 +43,7 @@
     var t = h('div', { class: 'toast', role: 'status', 'data-keep': keep ? '1' : false }, kids); document.body.appendChild(t);
     /* the timer waits while the pointer or keyboard focus is on the toast, so Undo cannot vanish under a finger or a focused button */
     var ms = action ? 6000 : 2200, timer = setTimeout(done, ms), hold = false, hov = false, foc = false;
-    function done() { if (hold) { timer = setTimeout(done, 1500); return; } if (t.contains(document.activeElement) && document.body) document.body.focus(); t.remove(); }
+    function done() { if (hold || (t.matches && t.matches(':hover'))) { timer = setTimeout(done, 1500); return; } if (t.contains(document.activeElement) && document.body) document.body.focus(); t.remove(); }
     function upd() { hold = hov || foc; }
     t.addEventListener('mouseenter', function () { hov = true; upd(); }); t.addEventListener('mouseleave', function () { hov = false; upd(); });
     t.addEventListener('pointerdown', function () { hov = true; upd(); setTimeout(function () { hov = false; upd(); }, 4000); });
@@ -367,7 +367,8 @@
     /* afterprint is unreliable on some mobile browsers, so a timer cleans up too */
     var end = function () { box.remove(); document.body.classList.remove('printing'); window.removeEventListener('afterprint', end); };
     window.addEventListener('afterprint', end); setTimeout(end, 60000);
-    try { window.print(); } catch (e) { end(); }
+    try { window.print(); } catch (e) { end(); return; }
+    document.body.classList.remove('printing'); /* print() blocks until the dialog closes on desktop; the page is normal again at once */
   }
   /* delete is undoable for a few seconds instead of asking first: a mistaken tap loses nothing */
   function deletePack(p) {
