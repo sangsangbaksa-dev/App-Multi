@@ -108,3 +108,31 @@ test("topClients ranks by billed in the window, skips quotes, drafts, other curr
   assert.equal(L.topClients(list, "2026-10-15", "USD", 1).length, 1);
   assert.deepEqual(L.topClients([], "2026-10-15"), []);
 });
+
+test("expense categories, quarters, year list and exports", () => {
+  const list = [
+    inv({ issueDate: "2026-02-01", items: [{ qty: 1, price: 1000 }], paid: 1000 }),
+    inv({ issueDate: "2026-08-01", items: [{ qty: 1, price: 500 }], paid: 200 }),
+    inv({ issueDate: "2025-12-01", items: [{ qty: 1, price: 900 }], paid: 900 }),
+  ];
+  const ex = [
+    { id: "a", date: "2026-03-31", desc: "Figma", amount: 150, currency: "USD", category: "software" },
+    { id: "b", date: "2026-04-01", desc: "=cmd", amount: 40, currency: "USD" },
+    { id: "c", date: "2026-05-01", desc: "Train", amount: 60, currency: "USD", category: "travel" },
+    { id: "d", date: "2024-05-01", desc: "Old", amount: 5, currency: "USD", category: "travel" },
+  ];
+  assert.equal(L.validExpense({ ...ex[0], category: "nope" }), false);
+  assert.equal(L.validExpense(ex[1]), true);
+  assert.deepEqual(L.taxYears(list, ex, "2026-06-01"), ["2026", "2025", "2024"]);
+  const q = L.quarterlySummary(list, ex, 2026, "USD");
+  assert.deepEqual(q.map((r) => r.income), [1000, 0, 200, 0]);
+  assert.deepEqual(q.map((r) => r.expenses), [150, 100, 0, 0]);
+  const y = L.yearSummary(list, ex, 2026, "USD");
+  assert.equal(q.reduce((s, r) => s + r.profit, 0), y.profit);
+  assert.deepEqual(L.expensesByCategory(ex, 2026, "USD"), [{ category: "software", total: 150 }, { category: "travel", total: 60 }, { category: "other", total: 40 }]);
+  const csv = L.expensesCSV(ex, 2026).split("\n");
+  assert.equal(csv.length, 4);
+  assert.match(csv[2], /"'=cmd","other"/);
+  const rep = L.taxReportCSV(list, ex, 2026, "USD", 20).split("\n");
+  assert.match(rep.at(-1), /"tax-set-aside","20%","","","190"/);
+});

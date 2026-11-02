@@ -233,15 +233,20 @@
         <label><span data-i18n="expDate"></span><input id="exp-date" type="date" required></label>
         <label><span data-i18n="expDesc"></span><input id="exp-desc" maxlength="120" required autocomplete="off"></label>
         <label><span data-i18n="expAmount"></span><input id="exp-amount" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <label><span data-i18n="expCat"></span><select id="exp-cat"></select></label>
         <div class="row"><button class="primary" type="submit" data-i18n="expAdd"></button></div>
         <p id="exp-err" class="late" role="alert"></p>
       </form>
+      <label class="inline calc"><span data-i18n="expYear"></span><select id="exp-year"></select></label>
       <p id="exp-empty" class="muted" data-i18n="expEmpty" hidden></p>
       <table class="mini" id="exp-table" hidden></table>
+      <table class="mini" id="exp-q"></table>
+      <table class="mini" id="exp-cats" hidden></table>
       <p id="exp-sum" class="calc-out" aria-live="polite"></p>
       <label class="inline calc"><span data-i18n="taxRateLabel"></span><input id="tax-pct" type="number" min="0" max="99" step="any" inputmode="decimal" value="15"></label>
       <p id="tax-out" class="calc-out" aria-live="polite"></p>
       <p class="muted" data-i18n="taxNote"></p>
+      <div class="row"><button type="button" id="exp-csv" data-i18n="expCsv"></button><button type="button" id="tax-csv" data-i18n="taxCsv"></button></div>
     </div>
   </section>
   <section aria-labelledby="rem-h">
