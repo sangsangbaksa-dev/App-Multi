@@ -79,7 +79,7 @@
       h('div', { class: 'note' }, T('cardH') + (card.teacher ? ' · ' + T('cardFrom', { t: card.teacher }) : '')),
       h('h2', { style: 'font:700 22px var(--serif);margin:6px 0' }, card.student),
       h('div', { class: 'big' }, String(left)),
-      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), card.owed ? h('div', { class: 'meta' }, T('cardOwed', { n: card.owed })) : null, grid,
+      h('div', {}, T('cardLeft', { n: left, total: card.total })), h('div', { class: 'meta' }, exp), card.owed ? h('div', { class: 'meta' }, T('cardOwed', { n: card.owed })) : null, card.unpaid ? h('div', { class: 'meta' }, T('cardUnpaid')) : null, card.next ? h('div', { class: 'nextnote' }, [h('b', {}, T('cardNext') + ': '), card.next]) : null, grid,
       h('p', { class: 'note' }, T('cardNote'))
     ]));
   }
@@ -316,6 +316,7 @@
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { var v = prompt(T('nextPh'), p.next || ''); if (v !== null) { C.setNext(p, v); save(); render(); toast(T('nextSaved')); } } }, T('nextBtn') + (p.next ? ' ✓' : '')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(receiptText(p), T('receiptCopied')); } }, T('receiptBtn')), h('button', { class: 'ghost', onclick: function () { printReceipt(p); } }, T('printBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { shareLink(p); } }, T('share') + (state.pro ? '' : ' · ' + T('pro'))),
       h('button', { class: 'ghost', onclick: function () { renewNote(p); } }, T('renew')),
@@ -389,7 +390,8 @@
   function shareLink(p) {
     if (!state.pro) return needPro();
     var url = location.origin + location.pathname + '#c=' + C.encodeCard(p, state.teacher);
-    copy(url, T('linkCopied'));
+    if (navigator.share && /Mobi|Android/i.test(navigator.userAgent || '')) navigator.share({ title: p.student, text: T('cardH') + ': ' + p.student, url: url }).catch(function (e) { if (e && e.name !== 'AbortError') copy(url, T('linkCopied')); });
+    else copy(url, T('linkCopied'));
   }
   function renewNote(p) {
     var exp = p.expires ? T('renewExp', { date: p.expires }) : '';

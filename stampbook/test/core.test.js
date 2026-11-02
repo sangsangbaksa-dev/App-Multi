@@ -357,3 +357,11 @@ test('waiving make-ups is tied to specific lessons', () => {
   C.removeStamp(p, p.stamps[0].id); C.addStamp(p, '2026-10-05', '', 'excused');
   assert.equal(C.makeupsOwed(p), 1, 'a new excused lesson after a waive is still owed');
 });
+
+test('balance card carries the next-lesson note and unpaid flag', () => {
+  const p = { id: 'n', student: 'Nia', total: 4, price: 40, paid: false, stamps: [] };
+  C.setNext(p, '  Bring the red book  '); const c = C.decodeCard(C.encodeCard(p, 'T'));
+  assert.equal(c.next, 'Bring the red book'); assert.equal(c.unpaid, true);
+  const q = C.decodeCard(C.encodeCard({ student: 'Q', total: 2, stamps: [] }, '')); assert.equal(q.next, ''); assert.equal(q.unpaid, false);
+  assert.equal(C.setNext(p, 'x'.repeat(300)).length, 120);
+});

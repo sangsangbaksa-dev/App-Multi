@@ -44,6 +44,10 @@ const srv = http.createServer((q, r) => {
   assert.equal(await pg.locator('section.card').count(), 1); await pg.locator('.toast button').click();
   assert.equal(await pg.locator('section.card').count(), 2, 'undo brings the pack back');
   assert.equal(await pg.evaluate(() => JSON.parse(localStorage['stampbook.v1']).packs.length), 2);
+  // student card shows the next-lesson note and unpaid state
+  const core = require('../app/core.js'), np = { student: 'Zed', total: 3, stamps: [], paid: false, next: 'Bring the red book' };
+  const pg2 = await ctx.newPage(); await pg2.goto(base + '/app/#c=' + core.encodeCard(np, 'Prof. Park')); await pg2.waitForSelector('.bal');
+  const bt = await pg2.locator('.bal').textContent(); assert.ok(bt.includes('Bring the red book') && bt.includes('Payment still due'), bt);
   // every language renders the new strings without leftovers
   for (const l of ['ko', 'ja', 'zh', 'es']) { await pg.selectOption('header select', l); assert.ok(!(await pg.locator('#root').textContent()).includes('undefined'), l); }
   console.log(errs.length ? 'ERRORS: ' + errs.join('\n') : 'FEATURES E2E OK'); await b.close(); srv.close(); process.exit(errs.length ? 1 : 0);
