@@ -71,7 +71,9 @@
     persistNo: 'Browsers can clear site data when storage runs low. A backup file is the only real safety net.',
     backupNudge: 'You have entries but no recent backup. Tap Backup to save a copy.',
     restoredRejected: '{n} copies were not restored because their seal check failed and you already have that case.',
-    allVoided: 'Every entry here is voided. Tick “Show voided” to see them.'
+    allVoided: 'Every entry here is voided. Tick “Show voided” to see them.',
+    recordedAt: 'recorded',
+    liveDropped: 'Timer discarded.'
   };
   L.ko = {
     name: '한국어', language: '언어', dataBtn: '백업', close: '닫기', cancel: '취소', save: '저장', delete: '삭제', undo: '되돌리기',
@@ -143,7 +145,9 @@
     persistNo: '저장 공간이 부족하면 브라우저가 사이트 데이터를 지울 수 있습니다. 백업 파일이 유일한 안전망입니다.',
     backupNudge: '기록은 있는데 최근 백업이 없습니다. 백업을 눌러 사본을 저장하세요.',
     restoredRejected: '봉인 검사에 실패했고 이미 같은 사건이 있어 {n}개는 복원하지 않았습니다.',
-    allVoided: '여기 있는 기록은 모두 무효 처리되었습니다. “무효 처리된 기록 보기”를 체크하세요.'
+    allVoided: '여기 있는 기록은 모두 무효 처리되었습니다. “무효 처리된 기록 보기”를 체크하세요.',
+    recordedAt: '기록 시각',
+    liveDropped: '타이머를 버렸습니다.'
   };
   L.ja = {
     name: '日本語', language: '言語', dataBtn: 'バックアップ', close: '閉じる', cancel: 'キャンセル', save: '保存', delete: '削除', undo: '元に戻す',
@@ -215,7 +219,9 @@
     persistNo: '空き容量が減るとブラウザはサイトデータを消すことがあります。バックアップファイルだけが本当の保険です。',
     backupNudge: '記録はありますが最近のバックアップがありません。バックアップを押してコピーを保存してください。',
     restoredRejected: '封印チェックに失敗し、同じ案件がすでにあるため {n} 件は復元しませんでした。',
-    allVoided: 'ここにある記録はすべて無効です。「無効の記録も表示」にチェックを入れてください。'
+    allVoided: 'ここにある記録はすべて無効です。「無効の記録も表示」にチェックを入れてください。',
+    recordedAt: '記録日時',
+    liveDropped: 'タイマーを破棄しました。'
   };
   L.zh = {
     name: '中文', language: '语言', dataBtn: '备份', close: '关闭', cancel: '取消', save: '保存', delete: '删除', undo: '撤销',
@@ -287,7 +293,9 @@
     persistNo: '存储空间不足时，浏览器可能清除网站数据。备份文件才是真正的保险。',
     backupNudge: '你已有记录但最近没有备份。点“备份”保存一份副本。',
     restoredRejected: '有 {n} 份因封存校验失败且本地已有该事项，未予恢复。',
-    allVoided: '这里的记录都已作废。勾选“显示已作废”即可查看。'
+    allVoided: '这里的记录都已作废。勾选“显示已作废”即可查看。',
+    recordedAt: '记录于',
+    liveDropped: '已放弃计时。'
   };
   L.es = {
     name: 'Español', language: 'Idioma', dataBtn: 'Respaldo', close: 'Cerrar', cancel: 'Cancelar', save: 'Guardar', delete: 'Borrar', undo: 'Deshacer',
@@ -359,7 +367,9 @@
     persistNo: 'Los navegadores pueden borrar los datos del sitio si falta espacio. Un archivo de copia es la única red de seguridad real.',
     backupNudge: 'Tienes entradas pero ninguna copia reciente. Pulsa Respaldo para guardar una.',
     restoredRejected: '{n} copias no se restauraron porque falló su comprobación del sello y ya tienes ese caso.',
-    allVoided: 'Todas las entradas están anuladas. Marca «Mostrar anuladas» para verlas.'
+    allVoided: 'Todas las entradas están anuladas. Marca «Mostrar anuladas» para verlas.',
+    recordedAt: 'registrado',
+    liveDropped: 'Cronómetro descartado.'
   };
   var STEPS = {
     en: { talk: 'Talk', written: 'Written notice', complaint: 'Formal complaint', mediation: 'Mediation', authority: 'Authority', legal: 'Legal action' },

@@ -12,7 +12,7 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   const base = `http://localhost:${srv.address().port}`, out = process.argv[2] || '/tmp/ml-shots'; fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch(), errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', timezoneId: 'UTC', permissions: ['clipboard-read', 'clipboard-write'], acceptDownloads: true });
-  const pg = await ctx.newPage(); pg.on('pageerror', e => { console.log('PAGEERR', e.message); errs.push(e.message); }); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
+  const pg = await ctx.newPage(); pg.on('pageerror', e => { console.log('PAGEERR', e.message); errs.push(e.message); }); pg.on('console', m => m.type() === 'error' && console.log('CONSOLEERR', m.text())); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
   const log = async (o) => {
     await pg.click('[data-act=log]'); await pg.fill('#e-at', o.at); await pg.fill('#e-text', o.text);
     if (o.sev) await pg.check(`input[name=sev][value="${o.sev}"]`, { force: true });
@@ -92,6 +92,9 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   await pg.click('#tab-report'); await pg.waitForFunction(() => document.querySelector('#chainline').classList.contains('good')); assert.equal(await pg.locator('#repphotos img').count(), 1);
   // backup + restore into a fresh context
   await pg.click('[data-act=data]'); const [bk] = await Promise.all([pg.waitForEvent('download'), pg.click('#d-exp')]); const bkPath = out + '/backup.json'; await bk.saveAs(bkPath); await pg.click('dialog [data-close]');
+  // restoring the same backup into the same profile merges instead of duplicating
+  const nCases = await pg.locator('#casesel option').count();
+  await pg.click('[data-act=data]'); await pg.setInputFiles('#d-imp', bkPath); await pg.waitForFunction(() => /skipped/.test(document.querySelector('#toast').textContent)); assert.equal(await pg.locator('#casesel option').count(), nCases, 'no duplicate case');
   const ctx2 = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR' }); const p2 = await ctx2.newPage(); p2.on('pageerror', e => errs.push(e.message));
   await p2.goto(base + '/app/'); await p2.waitForSelector('.empty'); assert.equal(await p2.locator('html').getAttribute('lang'), 'ko', 'browser language picked');
   await p2.click('[data-act=data]'); await p2.setInputFiles('#d-imp', bkPath); await p2.waitForSelector('.hero'); assert.ok((await p2.locator('.entry').count()) >= 5);
@@ -100,6 +103,7 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   // bad backup is rejected
   fs.writeFileSync(out + '/bad.json', '{"nope":1}'); await p2.click('[data-act=data]'); await p2.setInputFiles('#d-imp', out + '/bad.json'); await p2.waitForSelector('dialog .err:not([hidden])'); await p2.click('dialog [data-close]');
   // language switch on first page, all 5 render the same screen without raw keys
+  await pg.focus('#lang'); await pg.selectOption('#lang', 'es'); assert.equal(await pg.evaluate(() => document.activeElement.id), 'lang', 'focus stays on the language select'); await pg.selectOption('#lang', 'en');
   for (const l of ['ko', 'ja', 'zh', 'es', 'en']) { await pg.selectOption('#lang', l); const txt = await pg.textContent('body'); assert.ok(!/\b(tab_|sg_|kind_|stepHint_)/.test(txt), l + ' raw key'); assert.equal(await pg.locator('html').getAttribute('lang'), l); }
   // delete case + undo
   await pg.click('#tab-case'); await pg.click('[data-act=delcase]'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.empty .kind'); await pg.click('#toast-act'); await pg.waitForSelector('.hero');

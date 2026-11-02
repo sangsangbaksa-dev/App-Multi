@@ -75,3 +75,4 @@ label.btn:has(+ input:focus-visible){outline:3px solid var(--focus);outline-offs
 .toast button{min-height:44px;padding:0 12px}.tab{min-height:44px}
 .toast{top:auto;bottom:max(12px,env(safe-area-inset-bottom));cursor:pointer}.hl,.dl{font-size:.75rem}.wd{font-size:.75rem}.wn{font-size:.8rem}
 .mini dt,.pill,.meter,.sev,.tips,.hint,.cap,.count{font-size:max(.75rem,12px)}.hint,.cap,.count{font-size:.85rem}.meter{font-size:.8rem}
+.toast:empty{opacity:0;pointer-events:none;padding:0}

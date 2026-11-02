@@ -197,7 +197,7 @@
       var isV = !!vd[e.id], tags = e.tags.length ? ' [' + e.tags.join(', ') + ']' : '';
       out.push((i + 1) + '. **' + e.at.replace('T', ' ') + '**' + (e.sev ? ' · ' + L.sev + ' ' + e.sev + '/5' : '') + (e.dur ? ' · ' + e.dur + ' min' : '') + tags + (isLate(e) ? ' · ' + L.late : '') + (isV ? ' · ' + L.voidedBadge.toUpperCase() : ''));
       out.push('   ' + e.text.replace(/\n+/g, ' '));
-      out.push('   #' + e.hash.slice(0, 16));
+      out.push('   ' + L.recordedAt + ' ' + toLocalStamp(new Date(e.rec)).replace('T', ' ') + ' · #' + e.hash.slice(0, 16));
       if (e.witness) out.push('   ' + L.witness + ': ' + e.witness);
       if (e.photos.length) out.push('   ' + L.photos + ': ' + e.photos.length);
       if (e.reported) out.push('   ' + L.reportedTo);

@@ -65,21 +65,27 @@
   function toast(msg, action, fn) {
     var el = $('#toast'); if (!el) return;
     el.innerHTML = '<span>' + esc(msg) + '</span>' + (action ? ' <button type="button" id="toast-act">' + esc(action) + '</button>' : '');
-    el.hidden = false; clearTimeout(toastTimer);
-    if (action) $('#toast-act').addEventListener('click', function () { fn(); el.hidden = true; });
-    toastTimer = setTimeout(function () { el.hidden = true; undoBuf = null; }, action ? 9000 : 6000);
+    clearTimeout(toastTimer);
+    if (action) $('#toast-act').addEventListener('click', function () { fn(); el.innerHTML = ''; });
+    toastTimer = setTimeout(function () { el.innerHTML = ''; undoBuf = null; }, action ? 9000 : 6000);
   }
   function download(name, mime, text) {
     var a = document.createElement('a'), u = URL.createObjectURL(new Blob([text], { type: mime }));
     a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 500);
   }
   function labels() {
-    return { counterpart: t('counterpart'), goal: t('goal'), generated: t('generated'), summary: t('summary'), total: t('stTotal'), last30: t('stLast30'), prev30: t('stPrev30'), avgSev: t('stAvg'), minutes: t('stMinutes'), quietHits: t('stQuiet'), pattern: t('pattern'), days: t('days'), timeline: t('timeline'), sev: t('sevWord'), late: t('lateBadge'), witness: t('witness'), photos: t('photos'), reportedTo: t('reportedBadge'), voidedBadge: t('voidedBadge'), steps: t('stepsH'), stepNames: I.stepNames(S.lang), due: t('dueWord'), answered: t('answered'), integrity: t('integrity'), chainOk: t('chainOk'), chainBad: t('chainBad') };
+    return { counterpart: t('counterpart'), goal: t('goal'), generated: t('generated'), summary: t('summary'), total: t('stTotal'), last30: t('stLast30'), prev30: t('stPrev30'), avgSev: t('stAvg'), minutes: t('stMinutes'), quietHits: t('stQuiet'), pattern: t('pattern'), days: t('days'), timeline: t('timeline'), sev: t('sevWord'), late: t('lateBadge'), witness: t('witness'), photos: t('photos'), reportedTo: t('reportedBadge'), voidedBadge: t('voidedBadge'), recordedAt: t('recordedAt'), steps: t('stepsH'), stepNames: I.stepNames(S.lang), due: t('dueWord'), answered: t('answered'), integrity: t('integrity'), chainOk: t('chainOk'), chainBad: t('chainBad') };
   }
   function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9぀-ヿ㐀-鿿가-힯]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'case'; }
 
   /* ---------- render ---------- */
   function render() {
+    var ae = document.activeElement, fkey = null;
+    if (ae && ae !== document.body && root.contains(ae) && !(dlg && dlg.contains(ae))) fkey = ae.id ? '#' + ae.id : ae.getAttribute('data-act') ? '[data-act="' + ae.getAttribute('data-act') + '"]' + (ae.getAttribute('data-id') ? '[data-id="' + ae.getAttribute('data-id') + '"]' : ae.getAttribute('data-tab') ? '[data-tab="' + ae.getAttribute('data-tab') + '"]' : '') : null;
+    renderInner();
+    if (fkey && !dlg) { var nf = $(fkey); if (nf) nf.focus(); }
+  }
+  function renderInner() {
     document.documentElement.lang = S.lang; document.title = 'Marginlog';
     var c = cur(), h = '<header class="top"><h1>Marginlog</h1><div class="topbtns"><label class="sr" for="lang">' + esc(t('language')) + '</label><select id="lang">' +
       Object.keys(I.L).map(function (k) { return '<option value="' + k + '"' + (k === S.lang ? ' selected' : '') + '>' + esc(I.L[k].name) + '</option>'; }).join('') +
@@ -202,7 +208,7 @@
   /* ---------- photos ---------- */
   function hydratePhotos() {
     var imgs = root.querySelectorAll('img[data-pid]');
-    Array.prototype.forEach.call(imgs, function (img) { photoGet(img.getAttribute('data-pid')).then(function (d) { if (d) img.src = d; else img.alt = t('photoMissing'); }); });
+    return Promise.all(Array.prototype.map.call(imgs, function (img) { return photoGet(img.getAttribute('data-pid')).then(function (d) { if (d) img.src = d; else img.alt = t('photoMissing'); }); }));
   }
   function readPhoto(file) {
     return new Promise(function (res, rej) {
@@ -369,8 +375,9 @@
           var origId = c.id, ex = before.filter(function (x) { return x.id === origId; })[0], cl = c.entries.length ? c.entries[c.entries.length - 1].hash : '';
           if (ex) {
             var el = ex.entries.length ? ex.entries[ex.entries.length - 1].hash : '';
-            if (cl === el || (cl && has(ex.entries, cl)) || (!cl && !ex.entries.length)) { skipped++; return; }
-            if (!cl) { c.id = C.uid(); } else {          /* same or older copy of a case we already hold */
+            if (!cl) { (c.steps || []).forEach(function (st2) { if (!(ex.steps || []).some(function (y) { return y.id === st2.id; })) (ex.steps = ex.steps || []).push(st2); }); skipped++; return; }
+            if (cl === el || has(ex.entries, cl)) { skipped++; return; }
+            {          /* same or older copy of a case we already hold is skipped above */
             if (!vok[ci]) { rejected++; return; }                                         /* never let an unverifiable copy replace local data */
             if (el && has(c.entries, el)) { S.cases.splice(S.cases.indexOf(ex), 1); }       /* backup is a verified newer copy: replace */
             else c.id = C.uid();                                                          /* diverged history: keep both */
@@ -402,7 +409,7 @@
     var ok = chain.ok && !bad, md = C.reportMarkdown(c, labels(), now(), ok ? chain : { ok: false });
     pre.textContent = md; var line = $('#chainline'); if (line) { line.textContent = ok ? t('chainOk', { n: c.entries.length, h: chain.head }) : (chain.ok ? t('photoHashBad', { n: bad }) : t(chain.truncated ? 'chainTrunc' : 'chainBadAt', { n: chain.bad + 1 })); line.className = 'chain ' + (ok ? 'good' : 'bad'); }
     var box = $('#repphotos'); if (box) {
-      var h = ''; C.events(c.entries).forEach(function (e) { e.photos.forEach(function (p2) { h += '<figure><img alt="" data-pid="' + esc(p2.id) + '"><figcaption>' + esc(fmtAt(e.at)) + '</figcaption></figure>'; }); }); box.innerHTML = h; hydratePhotos();
+      var h = ''; C.events(c.entries).forEach(function (e) { e.photos.forEach(function (p2) { h += '<figure><img alt="" data-pid="' + esc(p2.id) + '"><figcaption>' + esc(fmtAt(e.at)) + '</figcaption></figure>'; }); }); box.innerHTML = h; await hydratePhotos(); await Promise.all(Array.prototype.map.call(box.querySelectorAll('img[src]'), function (im) { return im.decode ? im.decode().catch(function () { /* broken image */ }) : null; }));
     }
     return md;
   }
@@ -424,7 +431,7 @@
     if (act === 'tab') { S.tab = b.getAttribute('data-tab'); render(); var tb = $('#tab-' + S.tab); tb && tb.focus(); if (S.tab === 'report') fillReport(); return; }
     if (act === 'log') return entryDialog(c);
     if (act === 'livestart') { c.live = { start: now() }; save(); render(); return; }
-    if (act === 'livedrop') { c.live = null; save(); render(); return; }
+    if (act === 'livedrop') { var lv = c.live; c.live = null; if (!save()) { c.live = lv; return; } render(); toast(t('liveDropped'), t('undo'), function () { c.live = lv; save(); render(); }); return; }
     if (act === 'livestop') { var st = new Date(c.live.start); return entryDialog(c, { at: C.toLocalStamp(st), dur: Math.max(1, Math.ceil((now() - c.live.start) / 6e4)), live: true }); }
     if (act === 'note') return noteDialog(c, id);
     if (act === 'void') return voidDialog(c, id);
@@ -470,7 +477,7 @@
   });
   root.addEventListener('submit', function (ev) { ev.preventDefault(); });
 
-  var tel = document.createElement('div'); tel.id = 'toast'; tel.className = 'toast'; tel.setAttribute('role', 'status'); tel.setAttribute('aria-live', 'polite'); tel.hidden = true; tel.addEventListener('click', function (ev) { if (ev.target.tagName !== 'BUTTON') tel.hidden = true; }); document.body.appendChild(tel);
+  var tel = document.createElement('div'); tel.id = 'toast'; tel.className = 'toast'; tel.setAttribute('role', 'status'); tel.setAttribute('aria-live', 'polite'); tel.addEventListener('click', function (ev) { if (ev.target.tagName !== 'BUTTON') tel.innerHTML = ''; }); document.body.appendChild(tel);
   /* ---------- boot ---------- */
   var nl = (navigator.language || 'en').slice(0, 2); if (I.L[nl]) S.lang = nl;
   load(); render(); if (S.tab === 'report') fillReport();
