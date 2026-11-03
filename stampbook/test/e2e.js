@@ -1,6 +1,9 @@
 const { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..'), types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const licenseHandler = require('../api/license.js');
+// Never reach the real Lemon Squeezy from tests (offline sandboxes hang): unknown keys answer "not found" straight away.
+process.env.LEMONSQUEEZY_DISABLED = '1'; // the offline-key part runs as if no payment provider is configured
+global.fetch = async () => ({ status: 404, json: async () => ({ valid: false, error: 'license_key not found' }) });
 const srv = http.createServer((q, r) => {
   if (q.url === '/api/license') { let b = ''; q.on('data', c => b += c); q.on('end', () => { q.body = b; r.setHeader = r.setHeader.bind(r); licenseHandler(q, r); }); return; }
   let p = decodeURIComponent(q.url.split('?')[0].split('#')[0]); if (p.endsWith('/')) p += 'index.html'; if (p === '/privacy' || p === '/terms') p += '.html';
@@ -34,9 +37,9 @@ const srv = http.createServer((q, r) => {
   await pg.waitForTimeout(2300);
   await pg.locator('.foot button', { hasText: /Pro$/ }).first().click(); await pg.waitForSelector('#up[open]'); assert.ok(!(await pg.evaluate(() => navigator.clipboard.readText())).includes('#c=')); await pg.click('#up .ghost >> nth=0');
   const key = require('../app/core.js').makeKey('TESTKEY1');
-  await pg.fill('#lic', 'SB-AAAA-AAAA-ZZZ'); await pg.click('.settings .pri'); await pg.waitForSelector('.toast'); assert.equal(await pg.locator('.chip.c-active').count() >= 0, true);
+  await pg.fill('#lic', 'SB-AAAA-AAAA-ZZZ'); await pg.click('#act'); await pg.waitForSelector('.toast'); assert.equal(await pg.locator('.chip.c-active').count() >= 0, true);
   assert.equal(await pg.evaluate(() => JSON.parse(localStorage['stampbook.v1']).pro), false);
-  await pg.waitForTimeout(2300); await pg.fill('#lic', key); await pg.click('.settings .pri');
+  await pg.waitForTimeout(2300); await pg.fill('#lic', key); await pg.click('#act');
   await pg.waitForFunction(() => JSON.parse(localStorage['stampbook.v1']).pro === true);
   // new daily-use features
   const mina = pg.locator('.card', { hasText: 'Mina' });
@@ -88,13 +91,13 @@ const srv = http.createServer((q, r) => {
   assert.equal((await lp.goto(base + '/terms')).status(), 200); assert.ok((await lp.textContent('body')).includes('sangsangbaksa@gmail.com'));
   assert.equal((await lp.goto(base + '/sitemap.xml')).status(), 200); assert.equal((await lp.goto(base + '/manifest.webmanifest')).status(), 200); assert.equal((await lp.goto(base + '/og.png')).status(), 200);
   // server-side licence flow with a mocked Lemon Squeezy
-    const realFetch = global.fetch; global.fetch = async (u, o) => { const k = new URLSearchParams(o.body.toString()).get('license_key'); const ok = k === 'REAL-KEY-12345';
+    delete process.env.LEMONSQUEEZY_DISABLED; const realFetch = global.fetch; global.fetch = async (u, o) => { const k = new URLSearchParams(o.body.toString()).get('license_key'); const ok = k === 'REAL-KEY-12345';
     return { status: ok ? 200 : 404, json: async () => ok ? { valid: true, license_key: { status: 'active' }, meta: {} } : { valid: false, error: 'license_key not found' } }; };
   const c3 = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'en-US' }); const p3 = await c3.newPage(); p3.on('pageerror', e => errs.push(e.message));
   await p3.goto(base + '/app/'); await p3.waitForSelector('.empty');
-  await p3.fill('#lic', require('../app/core.js').makeKey('TESTKEY1')); await p3.click('.settings .pri'); await p3.waitForSelector('.toast'); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false, 'offline key refused once the server is configured');
-  await p3.waitForTimeout(2400); await p3.fill('#lic', 'WRONG-KEY-00000'); await p3.click('.settings .pri'); await p3.waitForTimeout(500); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false);
-  await p3.waitForTimeout(2400); await p3.fill('#lic', 'REAL-KEY-12345'); await p3.click('.settings .pri'); await p3.waitForFunction(() => (localStorage['stampbook.v1'] && JSON.parse(localStorage['stampbook.v1']).pro === true));
+  await p3.fill('#lic', require('../app/core.js').makeKey('TESTKEY1')); await p3.click('#act'); await p3.waitForSelector('.toast'); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false, 'offline key refused once the server is configured');
+  await p3.waitForTimeout(2400); await p3.fill('#lic', 'WRONG-KEY-00000'); await p3.click('#act'); await p3.waitForTimeout(500); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false);
+  await p3.waitForTimeout(2400); await p3.fill('#lic', 'REAL-KEY-12345'); await p3.click('#act'); await p3.waitForFunction(() => (localStorage['stampbook.v1'] && JSON.parse(localStorage['stampbook.v1']).pro === true));
   assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1']).licMode), 'server');
   global.fetch = realFetch;
   const pv = await ctx.newPage(); assert.equal((await pv.goto(base + '/privacy')).status(), 200);
