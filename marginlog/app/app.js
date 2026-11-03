@@ -181,11 +181,14 @@
       (c.quiet ? '<li>' + esc(t('fact_quiet', { n: st.quiet, a: C.pad(c.quiet[0]) + ':00', b: C.pad(c.quiet[1]) + ':00' })) + '</li>' : '') +
       (st.late ? '<li>' + esc(t('fact_late', { n: st.late })) + '</li>' : '') +
       '<li>' + esc(t('fact_trend_' + st.trend, { a: st.last30, b: st.prev30 })) + '</li></ul>';
+    var tc = C.tagCounts(evs, 6);
+    if (tc.length) h += '<h3>' + esc(t('tagsH')) + '</h3><ul class="tagbars">' + tc.map(function (x) { return '<li><span class="tn">#' + esc(x.tag) + '</span><span class="tbar" aria-hidden="true"><i style="width:' + Math.round(100 * x.n / tc[0].n) + '%"></i></span><span class="tc">' + x.n + '</span></li>'; }).join('') + '</ul>';
     return h;
   }
   function stepsTab(c) {
     var names = I.stepNames(S.lang), done = {}; (c.steps || []).forEach(function (s) { done[s.kind] = 1; });
     var h = '<h3>' + esc(t('ladderH')) + '</h3><ol class="ladder">' + C.ladder(c).map(function (k, i) { return '<li class="' + (done[k] ? 'dn' : '') + '"><span class="num">' + (done[k] ? '✓' : i + 1) + '</span><div><b>' + esc(names[k]) + '</b><span>' + esc(t('stepHint_' + k)) + '</span></div><button type="button" class="ghost" data-act="addstep" data-kind="' + k + '">' + esc(t('logStep')) + '</button></li>'; }).join('') + '</ol>';
+    h += '<div class="btns wrap"><button type="button" class="sec" data-act="letter">' + esc(t('ltrBtn')) + '</button>' + ((c.steps || []).some(function (s) { return s.due && !s.done; }) ? '<button type="button" class="ghost" data-act="dlics">' + esc(t('icsBtn')) + '</button>' : '') + '</div>';
     h += '<h3>' + esc(t('stepsH')) + '</h3>';
     if (!(c.steps || []).length) return h + '<div class="empty small"><p>' + esc(t('stepsEmpty')) + '</p></div>';
     h += '<ul class="steps">' + c.steps.slice().sort(function (a, b) { return a.at < b.at ? 1 : -1; }).map(function (s) {
@@ -196,7 +199,8 @@
   }
   function reportTab(c) {
     if (!c.entries.some(function (e) { return e.type === 'event'; })) return '<div class="empty small"><h3>' + esc(t('repEmptyH')) + '</h3><p>' + esc(t('repEmptyB')) + '</p></div>';
-    return '<div class="btns wrap"><button type="button" class="pri" data-act="copyrep">' + esc(t('copyRep')) + '</button><button type="button" class="sec" data-act="print">' + esc(t('printRep')) + '</button><button type="button" class="ghost" data-act="dlmd">' + esc(t('dlMd')) + '</button><button type="button" class="ghost" data-act="dlcsv">' + esc(t('dlCsv')) + '</button></div>' +
+    var rd = C.readiness(c, now()), rh = '<section class="ready" aria-labelledby="rd-h"><h3 id="rd-h">' + esc(t('rdH')) + '</h3><p class="cap">' + esc(t('rdScore', { n: rd.met, m: rd.total })) + '</p><ul class="rdl">' + rd.checks.map(function (x) { return '<li class="' + (x.ok ? 'ok' : 'no') + '"><span aria-hidden="true">' + (x.ok ? '✓' : '○') + '</span> ' + esc(t('rd_' + x.key)) + '</li>'; }).join('') + '</ul></section>';
+    return rh + '<div class="btns wrap"><button type="button" class="pri" data-act="copyrep">' + esc(t('copyRep')) + '</button><button type="button" class="sec" data-act="print">' + esc(t('printRep')) + '</button><button type="button" class="ghost" data-act="dlmd">' + esc(t('dlMd')) + '</button><button type="button" class="ghost" data-act="dlcsv">' + esc(t('dlCsv')) + '</button></div>' +
       '<p class="hint">' + esc(t('repHint')) + '</p><p id="chainline" class="chain" role="status">' + esc(t('verifying')) + '</p><button type="button" class="ghost" data-act="verify">' + esc(t('verifyNow')) + '</button><pre id="repview" class="rep" tabindex="0" aria-label="' + esc(t('tab_report')) + '"></pre><div id="repphotos" class="repphotos"></div>';
   }
   function caseTab(c) {
@@ -348,6 +352,27 @@
     });
     if (!c) $('#c-kind', dlg).addEventListener('change', function (ev) { var q2 = C.KINDS[ev.target.value].quiet; $('#c-qon', dlg).checked = !!q2; if (q2) { $('#c-qa', dlg).value = q2[0]; $('#c-qb', dlg).value = q2[1]; } });
   }
+  function letterLabels() { return Object.assign({}, I.L[S.lang], { stepNames: I.stepNames(S.lang) }); }
+  function letterDialog(c) {
+    if (!C.events(c.entries).length) return toast(t('ltrNone'));
+    var dirty = false, L = letterLabels();
+    var d = openDialog('<h2 id="dlg-h">' + esc(t('ltrH')) + '</h2><p class="hint">' + esc(t('ltrHelp')) + '</p>' +
+      '<label for="l-days">' + esc(t('ltrDays')) + '</label><select id="l-days">' + [7, 14, 21, 30].map(function (n) { return '<option value="' + n + '"' + (n === 14 ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select>' +
+      '<label class="sr" for="l-text">' + esc(t('ltrH')) + '</label><textarea id="l-text" class="letter" rows="14" maxlength="6000"></textarea>' +
+      '<p class="err" role="alert" hidden></p><div class="btns wrap"><button type="button" class="pri" id="l-copy">' + esc(t('ltrCopy')) + '</button><button type="button" class="ghost" id="l-dl">' + esc(t('ltrDl')) + '</button><button type="submit" class="sec">' + esc(t('ltrLog')) + '</button><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>',
+      function (form) {
+        var days = +$('#l-days', form).value, today = C.toLocalStamp(new Date(now())).slice(0, 10);
+        (c.steps = c.steps || []).push({ id: C.uid(), kind: 'written', at: today, note: t('ltrSubj', { name: c.name }).slice(0, 300), due: C.addDays(today, days), done: false });
+        if (!save()) { c.steps.pop(); return err(saveMsg()); } closeDialog(); S.tab = 'steps'; render(); toast(t('ltrLogged'));
+      });
+    function gen() { $('#l-text', d).value = C.noticeLetter(c, L, now(), +$('#l-days', d).value); }
+    gen();
+    $('#l-days', d).addEventListener('change', function () { if (!dirty) gen(); });
+    $('#l-text', d).addEventListener('input', function () { dirty = true; });
+    $('#l-copy', d).addEventListener('click', async function () { var ta = $('#l-text', d); try { await navigator.clipboard.writeText(ta.value); toast(t('ltrCopied')); } catch (e) { ta.focus(); ta.select(); } });
+    $('#l-dl', d).addEventListener('click', function () { download('marginlog-notice-' + slug(c.name) + '.txt', 'text/plain', '\ufeff' + $('#l-text', d).value); });
+    return d;
+  }
   function dataDialog() {
     openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(persisted === null ? '' : t(persisted ? 'persistYes' : 'persistNo')) + '</p><p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
     $('#d-exp', dlg).addEventListener('click', backup);
@@ -455,6 +480,8 @@
     if (act === 'verify') { var l = $('#chainline'); if (l) l.textContent = t('verifying'); return fillReport(); }
     if (act === 'copyrep') { var pv = $('#repview'), md = pv && pv.textContent ? pv.textContent : await fillReport(); try { await navigator.clipboard.writeText(md); toast(t('copied')); } catch (e) { var pre = $('#repview'); var r = document.createRange(); r.selectNodeContents(pre); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t('copyFail')); } return; }
     if (act === 'dlmd') { var md2 = await fillReport(); return download('marginlog-' + slug(c.name) + '.md', 'text/markdown', md2); }
+    if (act === 'letter') return letterDialog(c);
+    if (act === 'dlics') { var ics = C.toIcs(c, letterLabels(), now()); if (!ics) return toast(t('icsNone')); return download('marginlog-deadlines-' + slug(c.name) + '.ics', 'text/calendar', ics); }
     if (act === 'dlcsv') return download('marginlog-' + slug(c.name) + '.csv', 'text/csv', '﻿' + C.toCsv(c));
     if (act === 'print') { await fillReport(); return window.print(); }
   });
@@ -482,6 +509,7 @@
   /* ---------- boot ---------- */
   var nl = (navigator.language || 'en').slice(0, 2); if (Object.prototype.hasOwnProperty.call(I.L, nl)) S.lang = nl;
   load(); render(); if (S.tab === 'report') fillReport();
+  try { if (/[?&]log=1\b/.test(location.search) && cur() && !blocked && !cur().live) { history.replaceState(null, '', location.pathname); entryDialog(cur()); } } catch (e7) { /* optional */ }
   if (blocked) toast(t('corruptBlocked'));
   else if (corruptKey) toast(t('corrupt', { k: corruptKey }));
   else if (!(window.crypto && window.crypto.subtle)) toast(t('cryptoFail'));

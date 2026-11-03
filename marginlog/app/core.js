@@ -228,11 +228,69 @@
     return { id: String(c.id || uid()).slice(0, 40), name: String(c.name || 'Case').slice(0, 80), kind: kind, counterpart: String(c.counterpart || '').slice(0, 80), goal: String(c.goal || '').slice(0, 200), quiet: q, created: isFinite(c.created) ? +c.created : Date.now(), archived: !!c.archived, entries: entries, steps: steps, live: c.live && isFinite(c.live.start) ? { start: +c.live.start } : null };
   }
 
+  /* ---------- tags, readiness, letter, calendar ---------- */
+  function tagCounts(evs, limit) {
+    var m = {}; evs.forEach(function (e) { (e.tags || []).forEach(function (x) { m[x] = (m[x] || 0) + 1; }); });
+    return Object.keys(m).map(function (k) { return { tag: k, n: m[k] }; }).sort(function (a, b) { return b.n - a.n || (a.tag < b.tag ? -1 : 1); }).slice(0, limit || 6);
+  }
+  function readiness(c, nowTs) {
+    var evs = events(c.entries), st = stats(c, nowTs), spanDays = 0;
+    if (st.first && st.last) spanDays = dayNum(st.last) - dayNum(st.first);
+    var checks = [
+      { key: 'count', ok: evs.length >= 3 },
+      { key: 'span', ok: spanDays >= 7 },
+      { key: 'strength', ok: caseStrength(c) >= 60 },
+      { key: 'parties', ok: !!(c.counterpart && c.goal) },
+      { key: 'written', ok: (c.steps || []).some(function (s) { return s.kind === 'written'; }) },
+      { key: 'late', ok: evs.length > 0 && st.late * 5 < evs.length }
+    ];
+    return { checks: checks, met: checks.filter(function (x) { return x.ok; }).length, total: checks.length };
+  }
+  function addDays(day, n) { var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day); var d = new Date(Date.UTC(+p[1], +p[2] - 1, +p[3] + n)); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
+  function fill(s, v) { for (var x in v) s = s.split('{' + x + '}').join(v[x]); return s; }
+  /* A plain factual notice built only from what the log holds. L is the language table (ltr* keys). */
+  function noticeLetter(c, L, nowTs, days) {
+    var evs = events(c.entries).slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; }), st = stats(c, nowTs), today = toLocalStamp(new Date(nowTs)).slice(0, 10), out = [];
+    days = clampInt(days || 14, 1, 90);
+    out.push(fill(L.ltrDate, { d: today }));
+    out.push(fill(L.ltrTo, { who: c.counterpart || '[ ]' }), '');
+    out.push(fill(L.ltrSubj, { name: c.name }), '', L.ltrOpen, '');
+    if (evs.length) out.push(fill(L.ltrFacts, { a: st.first.slice(0, 10), b: st.last.slice(0, 10), n: evs.length }));
+    if (c.quiet && st.quiet) out.push(fill(L.ltrQuiet, { n: st.quiet, a: pad(c.quiet[0]) + ':00', b: pad(c.quiet[1]) + ':00' }));
+    if (st.minutes) out.push(fill(L.ltrMin, { n: st.minutes }));
+    out.push('', L.ltrList);
+    var shown = evs.slice(-12);
+    if (evs.length > shown.length) out.push(fill(L.ltrMore, { n: evs.length - shown.length }));
+    shown.forEach(function (e) { var t = e.text.replace(/\s+/g, ' ').trim(); out.push('- ' + e.at.replace('T', ' ') + (e.dur ? ' (' + e.dur + ' min)' : '') + ': ' + (t.length > 140 ? t.slice(0, 137) + '...' : t)); });
+    out.push('', c.goal ? fill(L.ltrAsk, { goal: c.goal }) : L.ltrAskDef, fill(L.ltrDue, { date: addDays(today, days) }), '', L.ltrPref, '', L.ltrClose, L.ltrYou);
+    return out.join('\n') + '\n';
+  }
+  function icsEsc(v) { return String(v).replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/[,;]/g, function (m) { return '\\' + m; }); }
+  function icsFold(line) {
+    var out = [], b = line, n = /[^\x00-\x7f]/.test(line) ? 24 : 70;
+    while (b.length > n) { var k = n; if (/[\ud800-\udbff]/.test(b.charAt(k - 1))) k--; out.push(b.slice(0, k)); b = ' ' + b.slice(k); }
+    out.push(b); return out.join('\r\n');
+  }
+  /* All-day calendar events for steps still waiting on an answer. */
+  function toIcs(c, L, nowTs) {
+    var names = L.stepNames || {}, d = new Date(nowTs), stamp = d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+    var open = (c.steps || []).filter(function (s) { return s.due && !s.done && /^\d{4}-\d{2}-\d{2}$/.test(s.due); });
+    if (!open.length) return '';
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Marginlog//EN', 'CALSCALE:GREGORIAN'];
+    open.forEach(function (s) {
+      lines.push('BEGIN:VEVENT', 'UID:' + String(s.id).replace(/[^A-Za-z0-9-]/g, '') + '@marginlog', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + s.due.replace(/-/g, ''), 'DTEND;VALUE=DATE:' + addDays(s.due, 1).replace(/-/g, ''),
+        'SUMMARY:' + icsEsc(fill(L.icsSummary, { step: names[s.kind] || s.kind, 'case': c.name })), 'END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    return lines.map(icsFold).join('\r\n') + '\r\n';
+  }
+
   var api = {
     KINDS: KINDS, STEP_KINDS: STEP_KINDS, LATE_HOURS: LATE_HOURS,
     uid: uid, pad: pad, toLocalStamp: toLocalStamp, parseAt: parseAt, dayNum: dayNum, sha256Hex: sha256Hex, seal: seal, verifyChain: verifyChain, cleanTags: cleanTags, clampInt: clampInt,
     events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
-    strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase
+    strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase,
+    tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.MLCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
