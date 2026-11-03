@@ -100,6 +100,27 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
       .map((c) => `<tr><td>${esc(c.client)}</td><td class="r">${esc(I.t("insPayDays", { d: c.avgDays, n: c.count }))}</td></tr>`).join("")}</table>`;
   }
 
+  // Expected cash-in: open invoices placed on the date each client usually pays (see L.expectedCash).
+  function renderCash() {
+    const invoices = getInvoices();
+    const { currency } = L.currencyOf(invoices);
+    const c = L.expectedCash(invoices, today(), currency, 3);
+    $("#cash-empty").hidden = c.rows.length > 0;
+    $("#cash-cards").hidden = !c.rows.length;
+    $("#cash-table").hidden = !c.rows.length;
+    if (!c.rows.length) return;
+    const habits = L.clientHabits(invoices);
+    $("#cash-cards").innerHTML = [
+      ...c.byMonth.map((r) => [L.monthLabel(r.month, I.locale()), r.amount]),
+      ...(c.later > 0 ? [[I.t("insCashLater"), c.later]] : []),
+      [I.t("insCashTotal"), c.total],
+    ].map(([label, v]) => `<div class="pc"><p>${esc(label)}</p><b>${esc(money(v, currency))}</b></div>`).join("");
+    $("#cash-table").innerHTML = `<caption class="sr">${esc(I.t("insCashHead"))}</caption><thead><tr><th scope="col">${esc(I.t("cashColExpected"))}</th><th>${esc(I.t("cashColInvoice"))}</th><th class="r">${esc(I.t("cashColAmount"))}</th></tr></thead><tbody>${c.rows.slice(0, 20).map((r) => {
+      const why = r.slow ? I.t("insCashSlow") : r.basis === "history" ? I.t("insCashHistory", { d: habits[L.habitKey(r.client)]?.avgDays ?? "" }) : I.t("insCashDue");
+      return `<tr><td>${esc(I.formatDate(r.expected))}</td><td>${esc(r.number)} · ${esc(r.client || "")}<br><span class="muted">${esc(why)}</span></td><td class="r">${esc(money(r.balance, currency))}</td></tr>`;
+    }).join("")}</tbody>`;
+  }
+
   // Calculators show amounts in the same currency as the charts: the one used most on the invoices.
   const cur = () => L.currencyOf(getInvoices()).currency;
   function calcRate() {
@@ -160,7 +181,8 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
     table.hidden = !list.length;
     table.innerHTML = list.length ? `<tbody>${list.map((e) => `<tr><td>${esc(e.date)}</td><td>${esc(e.desc)}${L.EXPENSE_CATEGORIES.includes(e.category) ? ` <span class="muted">· ${esc(I.t("cat" + e.category))}</span>` : ""}</td><td class="r">${esc(money(e.amount, e.currency))}</td><td class="r"><button type="button" data-exp-del="${esc(e.id)}" aria-label="${esc(I.t("expDelete"))}: ${esc(e.desc)}">${esc(I.t("expDelete"))}</button></td></tr>`).join("")}</tbody>` : "";
     const sum = L.yearSummary(invoices, getExpenses(), year, currency);
-    $("#exp-sum").textContent = fill(I.raw("expSummary"), { year, income: money(sum.income, currency), expenses: money(sum.expenses, currency), profit: money(sum.profit, currency) });
+    $("#exp-sum").textContent = fill(I.raw("expSummary"), { year, income: money(sum.income, currency), expenses: money(sum.expenses, currency), profit: money(sum.profit, currency) }) +
+      (sum.withheld > 0 ? " " + fill(I.raw("expWithheld"), { year, amount: money(sum.withheld, currency) }) : "");
     const tax = L.taxEstimate(sum.profit, $("#tax-pct").value);
     $("#tax-out").textContent = tax === null ? I.t("calcInvalid") : fill(I.raw("taxOut"), { tax: money(tax, currency) });
     const q = L.quarterlySummary(invoices, getExpenses(), year, currency);
@@ -210,9 +232,11 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
       .filter((i) => !L.isQuote(i) && i.status !== "draft" && L.balanceOf(i) > 0)
       .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""));
     $("#rem-empty").hidden = open.length > 0;
+    const expected = new Map();
+    for (const cur of new Set(open.map((i) => i.currency || "USD"))) for (const r of L.expectedCash(invoices, today(), cur, 3).rows) expected.set(r.id, r);
     $("#rem-list").innerHTML = open.map((i) => `<article class="tip">
       <h3 class="h tip-h">${esc(i.number)} · ${esc(i.client || "")}</h3>
-      <p class="muted">${esc(money(L.balanceOf(i), i.currency))} · ${esc(I.formatDate(i.dueDate))}</p>
+      <p class="muted">${esc(money(L.balanceOf(i), i.currency))} · ${esc(I.formatDate(i.dueDate))}${expected.get(i.id) ? ` · ${esc(I.t("cashColExpected"))} ${esc(I.formatDate(expected.get(i.id).expected))}${expected.get(i.id).slow ? ` <span class="late"><span aria-hidden="true">⚠</span><span class="sr">${esc(I.t("insCashSlow"))}</span></span>` : ""}` : ""}</p>
       <button type="button" data-rem="${esc(i.id)}">${esc(I.t("remCopy"))}</button></article>`).join("");
   }
   $("#rem-list").addEventListener("click", async (e) => {
@@ -228,14 +252,12 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
 
   return {
     render() {
-      renderInsights();
-      renderPaySpeed();
-      renderUpcoming();
-      renderExpenses();
-      renderReminders();
-      calcRate();
-      calcNet();
-      renderTips();
+      // One broken section must not blank the others. The banner clears on the next fully clean render.
+      let failed = false;
+      for (const fn of [renderInsights, renderPaySpeed, renderCash, renderUpcoming, renderExpenses, renderReminders, calcRate, calcNet, renderTips]) {
+        try { fn(); } catch (e) { failed = true; console.error(e); const n = document.querySelector("#sec-err"); if (n) { n.hidden = false; n.textContent = I.t("secErr"); } }
+      }
+      if (!failed) { const n = document.querySelector("#sec-err"); if (n) n.hidden = true; }
     },
   };
 }

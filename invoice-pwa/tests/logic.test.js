@@ -4,7 +4,7 @@ import * as L from "../logic.js";
 
 test("totals with tax and discount", () => {
   const t = L.calcTotals([{ qty: 2, price: 50.10 }, { qty: 1, price: 19.9 }], 10, 20);
-  assert.deepEqual(t, { subtotal: 120.1, discount: 20, tax: 10.01, total: 110.11 });
+  assert.deepEqual(t, { subtotal: 120.1, discount: 20, tax: 10.01, total: 110.11, withholding: 0, payable: 110.11 });
 });
 test("discount cannot exceed subtotal; bad input is safe", () => {
   assert.equal(L.calcTotals([{ qty: 1, price: 10 }], 0, 999).total, 0);
@@ -114,7 +114,7 @@ test("summarize and byClient ignore quotes and drafts, split by currency", () =>
 test("csv has type and balance", () => {
   const csv = L.toCSV([inv({ number: "INV-1", paid: 10 })]);
   assert.match(csv, /^"?type"?,/);
-  assert.match(csv, /"invoice","INV-1".*"110","10","100"/);
+  assert.match(csv, /"invoice","INV-1".*"110","0","10","100"/);
 });
 
 test("late fee grows per started month and is idempotent", () => {
@@ -245,4 +245,103 @@ test("paymentsCSV lists dated payments, oldest first, and defuses formulas", () 
   assert.equal(csv.length, 3);
   assert.match(csv[1], /^"2026-10-05","INV-0001","A","USD","40"/);
   assert.match(csv[2], /^"2026-10-09","INV-0002","'=HYPERLINK/);
+});
+
+test("withholding tax lowers what is payable, not the total", () => {
+  const t = L.calcTotals([{ qty: 1, price: 1000 }], 10, 0, 3.3);
+  assert.deepEqual([t.total, t.withholding, t.payable], [1100, 33, 1067]);
+  assert.equal(L.calcTotals([{ qty: 1, price: 100 }], 0, 0, 999).withholding, 50); // capped at 50%
+  assert.equal(L.calcTotals([{ qty: 1, price: 100 }], 0, 0, -5).withholding, 0);
+  const i = inv({ items: [{ qty: 1, price: 1000 }], taxRate: 0, withholdingRate: 3.3, status: "sent" });
+  assert.equal(L.balanceOf(i), 967);
+  const paid = L.settle({ ...i, paid: 967 });
+  assert.equal(paid.status, "paid");
+  assert.equal(L.balanceOf(paid), 0);
+  assert.equal(L.grossPaidOf(paid), 1000);   // counts as fully received income
+  assert.equal(L.grossPaidOf({ ...i, paid: 483.5 }), 500);
+  assert.equal(L.grossPaidOf(inv({ items: [{ qty: 1, price: 100 }], taxRate: 0, paid: 40 })), 40); // no withholding: unchanged
+});
+test("year summary reports tax withheld by clients", () => {
+  const i = inv({ items: [{ qty: 1, price: 1000 }], taxRate: 0, withholdingRate: 3.3, status: "sent", issueDate: "2024-03-01", paid: 967 });
+  const s = L.yearSummary([i], [], "2024", "USD");
+  assert.deepEqual([s.income, s.withheld], [1000, 33]);
+});
+test("expected cash-in uses each client's habit, else the due date", () => {
+  const mk = (o) => inv({ items: [{ qty: 1, price: 100 }], taxRate: 0, status: "sent", ...o });
+  const paid = mk({ id: "p1", client: "Slow", issueDate: "2024-01-01", dueDate: "2024-01-15", paid: 100, status: "paid", payments: [{ date: "2024-02-10", amount: 100 }] });
+  const open = mk({ id: "o1", client: "Slow", number: "INV-2", issueDate: "2024-05-01", dueDate: "2024-05-15" });
+  const fresh = mk({ id: "o2", client: "New", number: "INV-3", issueDate: "2024-05-01", dueDate: "2024-05-20" });
+  const c = L.expectedCash([paid, open, fresh], "2024-05-10", "USD", 3);
+  const by = Object.fromEntries(c.rows.map((r) => [r.id, r]));
+  assert.equal(by.o1.expected, "2024-06-10");  // 40 days after issue
+  assert.equal(by.o1.slow, true);
+  assert.equal(by.o2.expected, "2024-05-20");
+  assert.equal(c.total, 200);
+  assert.deepEqual(c.byMonth.map((m) => m.amount), [100, 100, 0]);
+  assert.equal(L.clientHabits([paid]).slow.onTimePct, 0);
+});
+
+test("client names like 'constructor' cannot break habits or cash-in", () => {
+  for (const name of ["constructor", "toString", "__proto__"]) {
+    const o = inv({ id: "z", client: name, items: [{ qty: 1, price: 50 }], taxRate: 0, issueDate: "2024-05-01", dueDate: "2024-05-15" });
+    assert.doesNotThrow(() => L.expectedCash([o], "2024-05-10", "USD", 3));
+    assert.equal(L.expectedCash([o], "2024-05-10", "USD", 3).rows[0].expected, "2024-05-15");
+  }
+});
+test("client ledger and dashboard reconcile with withholding", () => {
+  const o = inv({ number: "W", client: "K", items: [{ qty: 1, price: 100 }], taxRate: 0, withholdingRate: 10, paid: 50 });
+  const c = L.byClient([o])[0];
+  assert.deepEqual([c.billed, c.withheld, c.paid, c.balance], [90, 10, 50, 40]);
+  assert.equal(L.summarize([o], "2024-01-01")[0].outstanding, 40);
+  assert.equal(L.upcomingRecurring([{ ...o, recur: "monthly", nextRun: "2024-06-01" }], "2024-05-20", 1)[0].amount, 90);
+  assert.match(L.toCSV([o]), /"100","10","50","40"/);
+});
+
+test("dashboard cash plus outstanding equals what the client owes you (payable)", () => {
+  const o = inv({ number: "W2", client: "K", items: [{ qty: 1, price: 100 }], taxRate: 0, withholdingRate: 10, paid: 50 });
+  const s = L.summarize([o], "2024-01-01")[0];
+  assert.equal(s.collected + s.outstanding, L.payableOf(o));
+  assert.equal(s.collected + s.outstanding + L.withheldOf(o), L.totalOf(o));
+});
+
+test("monthLabel keeps the year and month, never a day", () => {
+  assert.match(L.monthLabel("2026-11", "en-US"), /Nov.*2026/);
+  assert.match(L.monthLabel("2026-11", "es-ES"), /nov.*2026/i);
+  assert.match(L.monthLabel("2026-11", "ko-KR"), /2026.*11/);
+  assert.equal(L.monthLabel("bad"), "bad");
+});
+
+test("reminder habit lookup works for a client with a single paid invoice and reports on-time share", () => {
+  const p = inv({ id: "h1", client: "Zed", items: [{ qty: 1, price: 10 }], taxRate: 0, issueDate: "2024-01-01", dueDate: "2024-01-31", paid: 10, status: "paid", payments: [{ date: "2024-01-20", amount: 10 }] });
+  assert.deepEqual(L.clientHabits([p]).zed, { count: 1, avgDays: 19, onTimePct: 100 });
+});
+
+test("habits treat 'Acme' and ' acme ' as one client", () => {
+  const mk = (id, client, issue, on) => inv({ id, client, items: [{ qty: 1, price: 10 }], taxRate: 0, issueDate: issue, dueDate: issue, paid: 10, status: "paid", payments: [{ date: on, amount: 10 }] });
+  const h = L.clientHabits([mk("a", "Acme", "2024-01-01", "2024-01-11"), mk("b", " acme ", "2024-02-01", "2024-02-21")]);
+  assert.deepEqual(h.acme, { count: 2, avgDays: 15, onTimePct: 0 });
+  const open = inv({ id: "c", client: "ACME", items: [{ qty: 1, price: 10 }], taxRate: 0, issueDate: "2024-03-01", dueDate: "2024-03-05" });
+  assert.equal(L.expectedCash([mk("a", "Acme", "2024-01-01", "2024-01-11"), open], "2024-03-02", "USD", 1).rows[0].basis, "history");
+});
+
+test("client statement: ledger rows, totals, skips drafts and quotes", () => {
+  const mk = (o) => ({ id: o.number, client: "Acme", currency: "USD", type: "invoice", status: "sent", issueDate: "2026-01-01", dueDate: "2026-01-15", items: [{ qty: 1, price: 1000 }], taxRate: 0, discount: 0, paid: 0, payments: [], ...o });
+  const list = [
+    mk({ number: "INV-0002", issueDate: "2026-02-01", dueDate: "2026-02-15", withholdingRate: 3.3 }),
+    mk({ number: "INV-0001", status: "paid", paid: 1000, payments: [{ date: "2026-01-10", amount: 1000 }] }),
+    mk({ number: "INV-0003", status: "draft" }),
+    mk({ number: "QUO-0001", type: "quote" }),
+    mk({ number: "INV-0004", client: "Other" }),
+    mk({ number: "INV-0005", currency: "EUR" }),
+  ];
+  const s = L.statement(list, "Acme", "USD", "2026-03-01");
+  assert.deepEqual(s.rows.map((r) => r.number), ["INV-0001", "INV-0002"]);
+  assert.equal(s.totals.billed, 2000);
+  assert.equal(s.totals.withheld, 33);
+  assert.equal(s.totals.paid, 1000);
+  assert.equal(s.totals.balance, 967);
+  assert.equal(s.totals.overdue, 967);
+  assert.equal(s.rows[0].payments[0].date, "2026-01-10");
+  assert.equal(L.statementCSV(s).split("\n").length, 3);
+  assert.equal(L.statement([], "x", "USD").rows.length, 0);
 });
