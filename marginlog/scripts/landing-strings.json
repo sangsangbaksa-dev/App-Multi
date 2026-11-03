@@ -1,0 +1,222 @@
+{
+ "en": {
+  "title": "Marginlog – a sealed incident log for disputes",
+  "desc": "Log noise, landlord, workplace or contractor problems in seconds. Entries are sealed so they cannot be quietly rewritten. See the pattern, escalate step by step, hand over a clean report. Free, private, works offline.",
+  "h1": "Keep a log nobody can say you made up.",
+  "lead": "Marginlog records each incident with a timestamp, seals it into a tamper-evident chain, spots the pattern, and builds the report you give a landlord, HR, mediator or officer. Free, offline, no account.",
+  "cta": "Open Marginlog",
+  "feat": "What is inside",
+  "f": [
+   [
+    "Sealed entries",
+    "Each entry is fingerprinted with the one before it. Edit history and the report shows the chain broke."
+   ],
+   [
+    "Happening-now timer",
+    "Tap once while it is happening. Duration and start time fill in for you."
+   ],
+   [
+    "Pattern finder",
+    "Weekday-by-hour heat map, 8-week trend, quiet-hour breaches, longest calm stretch."
+   ],
+   [
+    "Evidence strength",
+    "Each entry gets a score and tells you what to add: duration, witness, photo, timeliness."
+   ],
+   [
+    "Escalation ladder",
+    "Talk, written notice, complaint, mediation, legal. Answer deadlines warn you when ignored."
+   ],
+   [
+    "Report in one tap",
+    "Copy, print to PDF, Markdown or CSV, with photos and a seal check at the bottom."
+   ]
+  ],
+  "how": "How it works",
+  "steps": [
+   "Pick the kind of problem and name the case.",
+   "Log incidents in under 20 seconds, or time one live.",
+   "Hand over the report when you need it."
+  ],
+  "priv": "Private by design",
+  "privb": "Everything is stored in your browser on this device. No account, no tracking, no upload. Download a backup file whenever you like.",
+  "disc": "A personal record, not legal advice. The seal shows the log was not rewritten; it is not a notarised timestamp.",
+  "nav": "Languages"
+ },
+ "ko": {
+  "title": "Marginlog – 분쟁을 위한 봉인형 사건 기록",
+  "desc": "소음, 집주인, 직장, 업체 문제를 몇 초 만에 기록하세요. 기록은 봉인되어 몰래 고칠 수 없습니다. 패턴을 보고, 단계별로 대응하고, 깔끔한 보고서를 내세요. 무료, 비공개, 오프라인.",
+  "h1": "지어냈다는 말이 나오지 않는 기록.",
+  "lead": "Marginlog는 사건마다 시각을 기록하고 위·변조가 드러나는 사슬로 봉인하며, 패턴을 찾고, 집주인·인사팀·조정위원·담당자에게 낼 보고서를 만듭니다. 무료, 오프라인, 계정 없음.",
+  "cta": "Marginlog 열기",
+  "feat": "들어 있는 기능",
+  "f": [
+   [
+    "봉인된 기록",
+    "각 기록은 직전 기록과 함께 지문이 찍힙니다. 과거를 고치면 보고서에 사슬이 깨졌다고 표시됩니다."
+   ],
+   [
+    "지금 일어나는 중 타이머",
+    "일어나는 동안 한 번만 누르세요. 시작 시각과 지속 시간이 자동으로 채워집니다."
+   ],
+   [
+    "패턴 찾기",
+    "요일×시간 히트맵, 8주 추세, 정숙 시간 위반, 가장 길게 조용했던 기간."
+   ],
+   [
+    "증거 강도",
+    "기록마다 점수와 보완할 점(지속 시간, 목격자, 사진, 즉시성)을 알려 줍니다."
+   ],
+   [
+    "단계별 대응",
+    "대화, 서면 통보, 민원, 조정, 법적 대응. 답변 기한이 지나면 알려 줍니다."
+   ],
+   [
+    "한 번에 보고서",
+    "복사, PDF 인쇄, Markdown, CSV. 사진과 봉인 검사 결과가 맨 아래 포함됩니다."
+   ]
+  ],
+  "how": "사용 방법",
+  "steps": [
+   "문제 유형을 고르고 사건 이름을 정합니다.",
+   "20초 안에 기록하거나 실시간으로 측정합니다.",
+   "필요할 때 보고서를 내밉니다."
+  ],
+  "priv": "처음부터 비공개",
+  "privb": "모든 데이터는 이 기기의 브라우저에만 저장됩니다. 계정, 추적, 업로드가 없고 백업 파일은 언제든 내려받을 수 있습니다.",
+  "disc": "개인 기록이며 법률 자문이 아닙니다. 봉인은 기록이 고쳐지지 않았음을 보여 줄 뿐 공증된 시각 증명은 아닙니다.",
+  "nav": "언어"
+ },
+ "ja": {
+  "title": "Marginlog – トラブルのための封印つき出来事ログ",
+  "desc": "騒音、大家、職場、業者とのトラブルを数秒で記録。記録は封印され、こっそり書き換えられません。パターンを見て、段階的に対応し、整った報告書を提出。無料・非公開・オフライン対応。",
+  "h1": "作り話と言わせない記録を。",
+  "lead": "Marginlog は出来事ごとに時刻を記録し、改ざんが分かる鎖で封印し、パターンを見つけ、大家・人事・調停人・担当者に渡す報告書を作ります。無料、オフライン、アカウント不要。",
+  "cta": "Marginlog を開く",
+  "feat": "主な機能",
+  "f": [
+   [
+    "封印された記録",
+    "各記録は直前の記録と一緒に指紋が取られます。過去を書き換えると、報告書に鎖が壊れたと表示されます。"
+   ],
+   [
+    "「今まさに」タイマー",
+    "起きている間に一度タップ。開始時刻と継続時間が自動で入ります。"
+   ],
+   [
+    "パターン検出",
+    "曜日×時間のヒートマップ、8週間の推移、静かな時間帯の違反、最長の平穏期間。"
+   ],
+   [
+    "証拠の強さ",
+    "記録ごとにスコアと補強点（継続時間、目撃者、写真、即時性）を表示。"
+   ],
+   [
+    "段階的エスカレーション",
+    "話し合い、書面通知、苦情、調停、法的措置。回答期限が過ぎると知らせます。"
+   ],
+   [
+    "ワンタップで報告書",
+    "コピー、PDF印刷、Markdown、CSV。写真と封印チェックの結果が末尾に入ります。"
+   ]
+  ],
+  "how": "使い方",
+  "steps": [
+   "トラブルの種類を選び、案件に名前を付けます。",
+   "20秒以内に記録、またはリアルタイムで計測。",
+   "必要なときに報告書を渡します。"
+  ],
+  "priv": "最初から非公開",
+  "privb": "データはすべてこの端末のブラウザ内に保存。アカウント・追跡・アップロードなし。バックアップはいつでもダウンロードできます。",
+  "disc": "個人の記録であり法的助言ではありません。封印は記録が書き換えられていないことを示すもので、公証された時刻証明ではありません。",
+  "nav": "言語"
+ },
+ "zh": {
+  "title": "Marginlog – 为纠纷准备的封存式事件记录",
+  "desc": "几秒钟记下噪音、房东、职场或承包商的问题。记录被封存，无法被悄悄改写。查看规律，逐级应对，交出整洁的报告。免费、私密、可离线。",
+  "h1": "一份没人能说你编造的记录。",
+  "lead": "Marginlog 为每次事件记下时间，用可发现篡改的链条封存，找出规律，并生成可交给房东、人事、调解员或主管部门的报告。免费、离线、无需账号。",
+  "cta": "打开 Marginlog",
+  "feat": "功能一览",
+  "f": [
+   [
+    "封存的记录",
+    "每条记录都与前一条一起生成指纹。改写历史，报告会显示链条已断。"
+   ],
+   [
+    "“正在发生”计时",
+    "事件发生时点一下，开始时间和持续时长自动填好。"
+   ],
+   [
+    "规律发现",
+    "星期×小时热力图、8周趋势、安静时段违规、最长平静期。"
+   ],
+   [
+    "证据强度",
+    "每条记录都有评分，并提示还可补充：时长、证人、照片、及时性。"
+   ],
+   [
+    "升级阶梯",
+    "沟通、书面通知、投诉、调解、法律途径。回复期限过了会提醒你。"
+   ],
+   [
+    "一键报告",
+    "复制、打印为 PDF、Markdown、CSV，末尾附照片和封存校验结果。"
+   ]
+  ],
+  "how": "使用方法",
+  "steps": [
+   "选择问题类型，给事项起个名字。",
+   "20 秒内记下事件，或实时计时。",
+   "需要时交出报告。"
+  ],
+  "priv": "天生私密",
+  "privb": "所有数据只保存在本设备的浏览器里。无账号、无追踪、不上传，随时可下载备份文件。",
+  "disc": "这是个人记录，不构成法律意见。封存只说明记录没有被改写，并非经公证的时间戳。",
+  "nav": "语言"
+ },
+ "es": {
+  "title": "Marginlog – un registro sellado de incidentes para disputas",
+  "desc": "Anota en segundos problemas de ruido, casero, trabajo o contratistas. Las entradas se sellan y no se pueden reescribir a escondidas. Ve el patrón, escala paso a paso y entrega un informe limpio. Gratis, privado, sin conexión.",
+  "h1": "Un registro del que nadie pueda decir que te lo inventaste.",
+  "lead": "Marginlog anota cada incidente con su hora, lo sella en una cadena a prueba de manipulación, detecta el patrón y prepara el informe para casero, RR. HH., mediador o autoridad. Gratis, sin conexión, sin cuenta.",
+  "cta": "Abrir Marginlog",
+  "feat": "Qué incluye",
+  "f": [
+   [
+    "Entradas selladas",
+    "Cada entrada lleva la huella de la anterior. Si reescribes el pasado, el informe indica que la cadena se rompió."
+   ],
+   [
+    "Cronómetro «está pasando»",
+    "Un toque mientras ocurre. La hora de inicio y la duración se rellenan solas."
+   ],
+   [
+    "Detector de patrones",
+    "Mapa de calor día×hora, tendencia de 8 semanas, infracciones en horas de silencio, mayor racha de calma."
+   ],
+   [
+    "Solidez de la prueba",
+    "Cada entrada recibe una puntuación y qué añadir: duración, testigo, foto, inmediatez."
+   ],
+   [
+    "Escalera de escalada",
+    "Charla, aviso escrito, queja, mediación, vía legal. Los plazos sin respuesta te avisan."
+   ],
+   [
+    "Informe en un toque",
+    "Copia, imprime en PDF, Markdown o CSV, con fotos y la comprobación del sello al final."
+   ]
+  ],
+  "how": "Cómo funciona",
+  "steps": [
+   "Elige el tipo de problema y nombra el caso.",
+   "Registra en menos de 20 segundos, o cronometra en directo.",
+   "Entrega el informe cuando lo necesites."
+  ],
+  "priv": "Privado por diseño",
+  "privb": "Todo se guarda en el navegador de este dispositivo. Sin cuenta, sin rastreo, sin subidas. Descarga una copia cuando quieras.",
+  "disc": "Registro personal, no asesoría legal. El sello demuestra que el registro no se reescribió; no es un sello de tiempo notarial.",
+  "nav": "Idiomas"
+ }
+}

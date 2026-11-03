@@ -23,7 +23,8 @@
 
   var PRESETS = {
     schengen: { kind: 'rolling', limit: 90, window: 180 },
-    tax183: { kind: 'year', limit: 183 }
+    tax183: { kind: 'year', limit: 183 },
+    visitor180: { kind: 'rolling', limit: 180, window: 365 }
   };
   function cleanRule(r) {
     r = r || PRESETS.schengen;
@@ -223,7 +224,7 @@
 
   /* heads-ups worth a banner today, across all counters: over, leave-by within 7 days, breach ahead within 14,
      permit ending within 30 (or already ended). Most urgent first. */
-  var URGENT_DAYS = { over: 0, leave_by: 7, breach_ahead: 14, permit_end: 30, permit_gone: 0 };
+  var URGENT_DAYS = { over: 0, leave_by: 7, leave_by_safe: 7, breach_ahead: 14, permit_end: 30, permit_gone: 0 };
   function urgent(trackers, today) {
     today = today || todayStr();
     var out = [];
@@ -342,8 +343,9 @@
     function add(kind, d) { out.push({ kind: kind, date: str(d), in: d - t }); }
     if (s.left < 0) add('over', t);
     else if (s.inside) {
-      var ld = lastDay(tr, today);
+      var sd = safeLastDay(tr, today), ld = lastDay(tr, today);
       if (ld) add('leave_by', dn(ld));
+      if (sd && sd !== ld) add('leave_by_safe', dn(sd));
     }
     var ahead = firstBreach(set, rule, t + 1);
     if (ahead !== null && s.left >= 0) add('breach_ahead', ahead);
@@ -360,7 +362,7 @@
       alerts(tr, today).forEach(function (a) {
         if (a.kind === 'over' || a.kind === 'permit_gone' || a.in < 0) return;
         var day = a.date.replace(/-/g, ''), next = addDays(a.date, 1).replace(/-/g, '');
-        lines.push('BEGIN:VEVENT', 'UID:' + tr.id + '-' + a.kind + '-' + day + '@stayline', 'DTSTAMP:' + stamp,
+        lines.push('BEGIN:VEVENT', 'UID:' + String(tr.id).replace(/[^A-Za-z0-9_-]/g, '') + '-' + a.kind + '-' + day + '@stayline', 'DTSTAMP:' + stamp,
           'DTSTART;VALUE=DATE:' + day, 'DTEND;VALUE=DATE:' + next,
           'SUMMARY:' + icsEsc((label ? label(a.kind, tr) : a.kind) + (tr.name ? ' (' + tr.name + ')' : '')), 'END:VEVENT');
       });
@@ -389,6 +391,8 @@
     return out;
   }
 
+  function oneLine(n, max) { return String(n == null ? '' : n).replace(/[\r\n\u2028\u2029]+/g, ' ').trim().slice(0, max); }
+  function cleanNote(n) { return oneLine(n, 120); }
   function validTrip(t) {
     if (!t || !validDate(t.from)) return false;
     if (t.to && (!validDate(t.to) || dn(t.to) < dn(t.from))) return false;
@@ -396,7 +400,7 @@
   }
   function addTrip(tr, trip) {
     if (!validTrip(trip)) return false;
-    tr.trips.push({ id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), place: String(trip.place || '').slice(0, 60), from: trip.from, to: trip.to || '' });
+    tr.trips.push({ id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), place: oneLine(trip.place, 60), from: trip.from, to: trip.to || '', note: cleanNote(trip.note) });
     tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
     return true;
   }
@@ -405,18 +409,39 @@
     if (!t) return false;
     var next = { place: patch.place != null ? patch.place : t.place, from: patch.from, to: patch.to || '' };
     if (!validTrip(next)) return false;
-    t.place = String(next.place || '').slice(0, 60); t.from = next.from; t.to = next.to;
+    t.place = oneLine(next.place, 60); t.from = next.from; t.to = next.to;
+    if (patch.note != null) t.note = cleanNote(patch.note);
     tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
     return true;
+  }
+  function cleanBuffer(b) { return Math.max(0, Math.min(30, Math.floor(+b) || 0)); }
+  /* safety margin: pretend the limit is `buffer` days lower, so the leave-by date keeps a cushion for delays */
+  function safeLastDay(tr, today) {
+    var b = cleanBuffer(tr.buffer);
+    if (!b) return null;
+    var rule = cleanRule(tr.rule), lim = Math.max(1, rule.limit - b);
+    var copy = { rule: rule.kind === 'year' ? { kind: 'year', limit: lim } : { kind: 'rolling', limit: lim, window: rule.window }, trips: tr.trips };
+    return lastDay(copy, today);
+  }
+  /* everything a border officer or a visa form asks for: trips overlapping the counting window, with day counts */
+  function borderSheet(tr, today) {
+    today = today || todayStr();
+    var s = summary(tr, today), a = dn(s.windowFrom), t = dn(today), rows = [];
+    tr.trips.slice().sort(function (x, y) { return x.from < y.from ? -1 : x.from > y.from ? 1 : 0; }).forEach(function (x) {
+      var b = x.to ? dn(x.to) : t;
+      if (b < a || dn(x.from) > t) return;
+      rows.push({ place: x.place || '', from: x.from, countedFrom: str(Math.max(dn(x.from), a)), to: x.to || '', days: Object.keys(stayDays([x], today)).filter(function (k) { return +k >= a && +k <= t; }).length, note: x.note || '' });
+    });
+    return { name: tr.name || '', rule: s.rule, used: s.used, left: s.left, windowFrom: s.windowFrom, today: today, trips: rows, overlap: rows.reduce(function (n, r) { return n + r.days; }, 0) > s.used, lastDay: lastDay(tr, today), safeLastDay: safeLastDay(tr, today), expires: tr.expires || '' };
   }
   /* rebuild a tracker list from untrusted JSON (restore from file): drop anything malformed, clamp the rest */
   function sanitize(list) {
     var out = [];
     (Array.isArray(list) ? list : []).slice(0, 50).forEach(function (t) {
       if (!t || typeof t !== 'object') return;
-      var tr = { id: String(t.id || 'k' + out.length).slice(0, 40), name: String(t.name || '').slice(0, 40), rule: cleanRule(t.rule), expires: validDate(t.expires) ? t.expires : '', trips: [] };
+      var tr = { id: String(t.id || 'k' + out.length).slice(0, 40), name: oneLine(t.name, 40), rule: cleanRule(t.rule), expires: validDate(t.expires) ? t.expires : '', buffer: cleanBuffer(t.buffer), trips: [] };
       (Array.isArray(t.trips) ? t.trips : []).slice(0, 2000).forEach(function (x, i) {
-        if (x && validTrip(x)) tr.trips.push({ id: String(x.id || 't' + i).slice(0, 40), place: String(x.place || '').slice(0, 60), from: x.from, to: x.to || '' });
+        if (x && validTrip(x)) tr.trips.push({ id: String(x.id || 't' + i).slice(0, 40), place: oneLine(x.place, 60), from: x.from, to: x.to || '', note: cleanNote(x.note) });
       });
       tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
       tr.drafts = [];
@@ -485,10 +510,11 @@
   }
 
   var API = {
+    oneLine: oneLine,
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
     validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, placeStats: placeStats, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
-    validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
+    safeLastDay: safeLastDay, borderSheet: borderSheet, cleanBuffer: cleanBuffer, cleanNote: cleanNote, validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;
 })(typeof window !== 'undefined' ? window : globalThis);
