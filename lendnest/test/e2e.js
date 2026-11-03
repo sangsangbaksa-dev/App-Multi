@@ -23,7 +23,7 @@ const plus = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return y
   };
   const escForm = async () => { await pg.keyboard.press('Escape'); await pg.waitForSelector('#confirm-ok', { timeout: 1500 }).then(() => pg.click('#confirm-ok'), () => {}); await pg.waitForSelector('dialog', { state: 'detached' }); };
   // landing
-  await pg.goto(base + '/'); await pg.waitForSelector('#feat article'); assert.equal(await pg.locator('#feat article').count(), 6);
+  await pg.goto(base + '/'); await pg.waitForSelector('#feat article'); assert.equal(await pg.locator('#feat article').count(), 9);
   await pg.selectOption('#lang', 'ko'); assert.ok((await pg.locator('h1').textContent()).includes('전동드릴')); await pg.screenshot({ path: out + '/landing-ko.png' }); await pg.selectOption('#lang', 'en');
   await pg.goto(base + '/privacy'); assert.ok((await pg.locator('h1').textContent()) === 'Privacy');
   // app: empty state
@@ -44,7 +44,7 @@ const plus = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return y
   // money lent, partial repayment, completion with undo
   await add({ kind: 'money', title: 'Dinner', person: 'Joon', amount: 100, due: plus(10) });
   await pg.waitForSelector('.card >> nth=1'); await pg.click('.card:has-text("Joon") .pri'); await pg.waitForSelector('#rp-amt'); await pg.fill('#rp-amt', '40'); await pg.click('dialog button[type=submit]');
-  await pg.waitForSelector('.bar'); assert.ok((await pg.locator('.card:has-text("Joon")').textContent()).includes('$40.00 of $100.00 repaid'));
+  await pg.waitForFunction(() => document.body.textContent.includes('$40.00 of $100.00 repaid')); assert.ok((await pg.locator('.card:has-text("Joon")').textContent()).includes('$40.00 of $100.00 repaid'));
   await pg.click('.card:has-text("Joon") .pri'); await pg.fill('#rp-amt', '999'); await pg.click('dialog button[type=submit]'); await pg.waitForFunction(() => !document.body.textContent.includes('Joon') || ![...document.querySelectorAll('.card')].some(c => c.textContent.includes('Joon')));
   assert.equal(await pg.locator('.card:has-text("Joon")').count(), 0, 'finished entry leaves the open list'); await pg.click('#toast button'); await pg.waitForSelector('.card:has-text("Joon")');
   // returned item (undo path tested above); mark Drill returned
@@ -125,6 +125,12 @@ const plus = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return y
   await nn.click('.card:has-text("Drill") .head'); await nn.click('dialog button:has-text("Delete")'); await nn.click('#confirm-ok'); await nn.waitForFunction(() => !document.body.textContent.includes('Drill'));
   await nn.click('.card:has-text("Tent") .head'); await nn.click('dialog button:has-text("Edit")'); await nn.fill('#f-title', 'Tent 2'); await nn.click('#f-save'); await nn.waitForSelector('.card:has-text("Tent 2")');
   assert.equal(await nn.evaluate(() => window.__ln.state.people.some(p => p.name === 'Ann' && p.note === 'call first')), true, 'note survives');
+  // installments, statement, handover card, upcoming list
+  const ft = await (await b.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true, permissions: ['clipboard-read', 'clipboard-write'] })).newPage(); await ft.goto(base + '/app/'); await ft.waitForSelector('.empty'); await ft.click('.empty button');
+  await ft.check('input[name=kind][value=money]', { force: true }); await ft.fill('#f-title', 'Laptop'); await ft.fill('#f-person', 'Kim'); await ft.fill('#f-amount', '300'); await ft.selectOption('#f-plan', '3'); await ft.click('#f-save'); await ft.waitForSelector('.card:has-text("Installment 1 of 3")');
+  await ft.click('.card .head'); await ft.waitForSelector('#d-card'); const [cd] = await Promise.all([ft.waitForEvent('download'), ft.click('#d-card')]); assert.equal(cd.suggestedFilename(), 'lendnest-note.png'); assert.ok(fs.statSync(await cd.path()).size > 2000); await ft.keyboard.press('Escape');
+  await ft.click('[data-tab=people]'); await ft.click('[data-person]'); await ft.click('#p-stmt'); assert.ok((await ft.evaluate(() => navigator.clipboard.readText())).includes('Laptop')); await ft.keyboard.press('Escape');
+  await ft.click('[data-tab=ins]'); await ft.waitForSelector('h2.sec'); assert.ok((await ft.locator('main').textContent()).includes('Coming up'));
   // Korean first-run detection
   const ko = await (await b.newContext({ locale: 'ko-KR', viewport: { width: 390, height: 844 } })).newPage(); await ko.goto(base + '/app/'); await ko.waitForSelector('.empty'); assert.ok((await ko.locator('.empty h2').textContent()).includes('빌려준'));
   assert.deepEqual(errs, [], 'console/page errors: ' + errs.join(' | '));

@@ -102,6 +102,8 @@
     var err = h('div', { class: 'err', id: 'f-err', role: 'alert' }), hint = h('div', { id: 'f-hint', role: 'status' });
     var moneyBox = h('div', { class: 'two' }, h('div', null, h('label', { for: 'f-amount', text: t('amount') }), amount), h('div', null, h('label', { for: 'f-cur', text: t('currency') }), cur));
     var photoBox = h('div'), file = h('input', { type: 'file', accept: 'image/*', id: 'f-photo', hidden: true });
+    var planSel = h('select', { id: 'f-plan' }, [0, 2, 3, 4, 6, 12].map(function (n) { return h('option', { value: String(n), text: n ? t('planN', { n: n }) : t('planNone'), selected: (base.plan ? base.plan.n : 0) === n }); }));
+    var planBox = h('div', null, h('label', { for: 'f-plan', text: t('planLabel') }), planSel);
     var quick = h('div', { class: 'chips' }, [7, 14, 30].map(function (n) { return h('button', { type: 'button', class: 'sm', text: '+' + n + (/^[a-z]/i.test(t('daysUnit')) ? ' ' : '') + t('daysUnit'), onclick: function () { due.value = C.addDays(date.value || today, n); } }); }),
       h('button', { type: 'button', class: 'sm', text: t('noDue'), onclick: function () { due.value = ''; } }));
     function drawPhoto() {
@@ -115,7 +117,7 @@
     function dirVal() { return form.querySelector('input[name=dir]:checked').value; }
     function kindVal() { return form.querySelector('input[name=kind]:checked').value; }
     function sync() {
-      moneyBox.hidden = kindVal() !== 'money'; 
+      moneyBox.hidden = planBox.hidden = kindVal() !== 'money'; 
       hint.textContent = ''; hint.className = '';
       var p = C.personByName(st, person.value);
       if (dirVal() === 'out' && person.value.trim() && !existing) {
@@ -130,7 +132,7 @@
     form.appendChild(h('div', { class: 'seg', style: 'margin-top:12px', role: 'group', 'aria-label': t('dirOut') + ' / ' + t('dirIn') }, radio('dir', 'out', t('dirOut'), dirV === 'out'), radio('dir', 'in', t('dirIn'), dirV === 'in')));
     form.appendChild(h('div', { class: 'seg', style: 'margin-top:8px', role: 'group', 'aria-label': t('kindItem') + ' / ' + t('kindMoney') }, radio('kind', 'item', t('kindItem'), kindV === 'item'), radio('kind', 'money', t('kindMoney'), kindV === 'money')));
     form.appendChild(h('label', { for: 'f-title', text: t('what') })); form.appendChild(title);
-    form.appendChild(moneyBox);
+    form.appendChild(moneyBox); form.appendChild(planBox);
     form.appendChild(h('label', { for: 'f-person', text: t('who') })); form.appendChild(person); form.appendChild(dl); form.appendChild(hint);
     form.appendChild(h('div', { class: 'two' }, h('div', null, h('label', { for: 'f-date', text: t('lentOn') }), date), h('div', null, h('label', { for: 'f-due', text: t('dueOn') }), due)));
     form.appendChild(quick);
@@ -141,7 +143,7 @@
     function setErr(msg, el) { err.textContent = msg; [title, person, amount, due].forEach(function (x) { x.removeAttribute('aria-invalid'); }); if (el) { el.setAttribute('aria-invalid', 'true'); el.focus(); } }
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
-      var o = { dir: dirVal(), kind: kindVal(), title: title.value, amount: amount.value, currency: cur.value.trim() || st.settings.currency, date: date.value, due: due.value, note: note.value, photo: photo };
+      var o = { dir: dirVal(), kind: kindVal(), title: title.value, amount: amount.value, currency: cur.value.trim() || st.settings.currency, date: date.value, due: due.value, note: note.value, photo: photo, plan: kindVal() === 'money' && +planSel.value >= 2 ? { n: +planSel.value } : null };
       var name = person.value.trim(); if (!o.title.trim()) { setErr(t('needTitle'), title); return; }
       if (!name) { setErr(t('needPerson'), person); return; }
       if (o.kind === 'money' && !(Math.round(Number(o.amount) * 100) > 0 && Number(o.amount) <= 1e12)) { setErr(t('needAmount'), amount); return; }
@@ -151,10 +153,10 @@
       var p = C.addPerson(st, name); o.personId = p.id;
       if (existing) {
         var prevPerson = existing.personId;
-        var n = C.makeEntry(o); ['dir', 'kind', 'title', 'personId', 'amount', 'currency', 'date', 'due', 'note', 'photo'].forEach(function (k) { existing[k] = n[k]; });
+        var n = C.makeEntry(o); ['dir', 'kind', 'title', 'personId', 'amount', 'currency', 'date', 'due', 'note', 'photo', 'plan'].forEach(function (k) { existing[k] = n[k]; }); C.applyPlan(existing);
         C.normalize(existing);
         var old = C.findPerson(st, prevPerson); if (old && old.id !== existing.personId && !old.note && !st.entries.some(function (x) { return x.personId === old.id; })) C.removePerson(st, old.id);
-      } else { st.entries.push(C.makeEntry(o)); }
+      } else { var ne = C.makeEntry(o); C.applyPlan(ne); st.entries.push(ne); }
       q = '';  tab = o.dir; save(); d.close(); render(); toast(saveFailed ? t('storageErr') : t('saved'));
     });
     d = dialog([form]); sync(); title.focus();
@@ -225,6 +227,21 @@
     row.appendChild(h('button', { type: 'button', class: 'pri', id: 'n-copy', text: t('nudgeCopy'), onclick: function () { copy(ta.value).then(function (ok) { if (!ok) ta.select(); toast(ok ? t('nudgeCopied') : t('copyFail')); }); } }));
     var d = dialog([h('h2', { text: t('nudge') + ' · ' + p.name }), late ? h('div', { style: 'margin-top:12px' }, seg) : null, h('label', { for: 'n-text', text: t('nudgeNote') }), ta, row]);
   }
+  function drawCard(e) {
+    var p = C.findPerson(st, e.personId) || { name: '' }, cv = document.createElement('canvas'), W = 720, H = 400; cv.width = W; cv.height = H; var c = cv.getContext('2d');
+    var g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#0f766e'); g.addColorStop(1, '#0b5d56'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.fillStyle = '#f6f3ec'; c.beginPath(); c.roundRect ? c.roundRect(24, 24, W - 48, H - 48, 24) : c.rect(24, 24, W - 48, H - 48); c.fill();
+    var ink = '#1f2a2e', mute = '#55636a', font = 'system-ui,-apple-system,"Segoe UI","Noto Sans KR","Noto Sans JP","Noto Sans SC",sans-serif';
+    function line(txt, x, y, size, weight, col, max) { c.font = weight + ' ' + size + 'px ' + font; c.fillStyle = col; c.textBaseline = 'alphabetic'; var s2 = txt; while (c.measureText(s2).width > max && s2.length > 1) s2 = s2.slice(0, -2); c.fillText(s2 === txt ? txt : s2 + '…', x, y); }
+    line(t('cardTitle'), 56, 84, 30, '800', '#0f766e', W - 112);
+    line(e.kind === 'money' ? fmtMoney(e.amount, e.currency) : e.title, 56, 160, 48, '800', ink, W - 112);
+    if (e.kind === 'money' && e.title) line(e.title, 56, 196, 24, '500', mute, W - 112);
+    line((e.dir === 'out' ? t('toPerson', { name: p.name }) : t('fromPerson', { name: p.name })), 56, 244, 30, '600', ink, W - 112);
+    line(t('lentOn') + ': ' + fmtDate(e.date), 56, 292, 24, '500', mute, W - 112);
+    line(t('dueOn') + ': ' + (e.due ? fmtDate(e.due) : t('noDue')), 56, 328, 24, '600', ink, W - 112);
+    line(t('cardFooter'), 56, 364, 18, '500', mute, W - 112);
+    cv.toBlob(function (b) { if (!b) return; var url = URL.createObjectURL(b), a = h('a', { href: url, download: 'lendnest-note.png' }); document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000); });
+  }
   function receiptText(e) {
     var p = C.findPerson(st, e.personId) || { name: '' };
     return C.fill(e.due ? T.receiptDue : T.receiptNoDue, { what: e.kind === 'money' ? fmtMoney(e.amount, e.currency) : e.title, name: p.name, date: fmtDate(e.date), due: e.due ? fmtDate(e.due) : '' });
@@ -250,6 +267,7 @@
       if (e.kind === 'money') acts.appendChild(act(t('markReturned'), function () { doReturned(e); }));
       acts.appendChild(act(t('nudge'), function () { nudgeDialog(e); }));
       acts.appendChild(act(t('extend'), function () { doExtend(e); }));
+      acts.appendChild(h('button', { type: 'button', id: 'd-card', text: t('cardSave'), onclick: function () { drawCard(e); } }));
       if (e.dir === 'out') acts.appendChild(h('button', { type: 'button', text: t('receipt'), onclick: function () { copyOrShow(t('receipt'), receiptText(e), t('receiptCopied')); } }));
       if (e.dir === 'out') acts.appendChild(act(t('writeOff'), function () { doWriteOff(e); }, 'danger'));
     } else if (!(e.kind === 'money' && !e.writtenOff && !e.repayments.some(function (r) { return r.auto; }))) acts.appendChild(act(t('reopen'), function () { var before = snapshot(), ok = C.reopen(e); if (!ok) { st = C.sanitize(JSON.parse(before)); render(); toast(t('reopenFull')); return; } save(); var mine = saveSeq, after = rawNow(); render(); toast(t('saved'), function () { if (saveSeq !== mine) return; if (rawNow() !== after) { var f = storedState(); if (f) st = f; render(); toast(t('conflict')); return; } st = C.sanitize(JSON.parse(before)); save(); render(); }); }));
@@ -268,9 +286,10 @@
     if (!e.due) return t('noDueShort'); var l = C.daysLeft(e);
     if (l < 0) return l === -1 ? t('lateOne') : t('late', { n: -l }); if (l === 0) return t('dueToday'); if (l === 1) return t('dueTomorrow'); return t('dueIn', { n: l });
   }
+  function instLine(e) { var i = C.installment(e); return i && !C.isClosed(e) ? h('div', { class: 'sub', text: t('instNext', { k: i.k, n: i.n, a: fmtMoney(Math.min(i.each, C.remaining(e)), e.currency), date: fmtDate(i.due) }) }) : null; }
   function progress(e) {
     var pct = e.amount ? Math.min(100, Math.round(C.paid(e) / e.amount * 100)) : 0;
-    return h('div', null, h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, 'aria-label': t('repaid', { a: fmtMoney(C.paid(e), e.currency), t: fmtMoney(e.amount, e.currency) }) }, h('i', { style: 'width:' + pct + '%' })),
+    return h('div', null, instLine(e), h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, 'aria-label': t('repaid', { a: fmtMoney(C.paid(e), e.currency), t: fmtMoney(e.amount, e.currency) }) }, h('i', { style: 'width:' + pct + '%' })),
       h('div', { class: 'sub', text: C.paid(e) > 0 ? t('repaid', { a: fmtMoney(C.paid(e), e.currency), t: fmtMoney(e.amount, e.currency) }) : t('leftAmt', { a: fmtMoney(e.amount, e.currency) }) }));
   }
   function entryCard(e) {
@@ -320,12 +339,20 @@
     });
     return out;
   }
+  function statementText(p) {
+    var list = C.sortOpen(st.entries.filter(function (e) { return e.personId === p.id && !C.isClosed(e); }));
+    if (!list.length) return t('stmtNone', { name: p.name });
+    var lines = list.map(function (e) { var i = C.installment(e); return '• ' + (e.dir === 'out' ? t('dirOut') : t('dirIn')) + ': ' + (e.kind === 'money' ? fmtMoney(C.remaining(e), e.currency) + (e.title ? ' (' + e.title + ')' : '') : e.title) + ' – ' + statusText(e) + (i ? ' · ' + t('instNext', { k: i.k, n: i.n, a: fmtMoney(Math.min(i.each, C.remaining(e)), e.currency), date: fmtDate(i.due) }) : ''); });
+    var sm = C.personStats(st, p.id), tot = []; if (moneyMap(sm.owedToMe)) tot.push(t('pOwes', { a: moneyMap(sm.owedToMe) })); if (moneyMap(sm.iOwe)) tot.push(t('pYouOwe', { a: moneyMap(sm.iOwe) }));
+    return [t('stmtHead', { name: p.name, date: fmtDate(C.today()) })].concat(lines, tot).join('\n');
+  }
   function personDialog(p) {
     var s = C.personStats(st, p.id), list = C.sortOpen(st.entries.filter(function (e) { return e.personId === p.id && !C.isClosed(e); }));
     var facts = []; if (s.avgKept != null) facts.push(t('pKept', { n: s.avgKept })); if (s.late) facts.push(t('pLate', { n: s.avgLate }));
     var note = h('textarea', { id: 'p-note', maxlength: 1000 }); note.value = p.note || '';
     var d = dialog([h('h2', { text: p.name }), h('div', { class: 'pill-row' }, scoreChip(s)), facts.length ? h('p', { class: 'sub', text: facts.join(' · ') }) : null,
       list.length ? h('div', null, list.map(function (e) { return h('p', { style: 'margin:6px 0' }, h('span', { class: 'chip ' + C.status(e), text: statusText(e) }), ' ' + (e.kind === 'money' ? fmtMoney(C.remaining(e), e.currency) : e.title)); })) : null,
+      h('div', { class: 'actions' }, h('button', { type: 'button', id: 'p-stmt', text: t('statement'), onclick: function () { copyOrShow(t('statement'), statementText(p), t('nudgeCopied')); } })),
       h('label', { for: 'p-note', text: t('pNote') }), note,
       h('div', { class: 'row' }, h('button', { type: 'button', text: t('close'), onclick: function () { d.close(); } }), h('button', { type: 'button', class: 'danger', text: t('delPerson'), onclick: function () { if (st.entries.some(function (x) { return x.personId === p.id; })) { toast(t('delPersonBlocked')); return; } d.close(); confirmBox(t('delPerson') + ': ' + p.name + '?' + (p.note ? ' ' + t('pNote') + '!' : ''), t('delPerson'), true).then(function (ok) { if (ok) undoable(t('deleted'), function () { C.removePerson(st, p.id); }); }); } }),
         h('button', { type: 'button', text: t('renamePerson'), onclick: function () { d.close(); askText(t('renamePerson'), t('renamePrompt'), p.name).then(function (v) { if (!v || !v.trim()) return; var o = C.personByName(st, v); if (o && o.id !== p.id) { toast(t('nameTaken')); return; } p.name = C.str(v, 60); save(); render(); }); } }),
@@ -352,6 +379,10 @@
     if (moneyMap(sm.owedToMe)) stat(moneyMap(sm.owedToMe), t('owedToMe')); if (moneyMap(sm.iOwe)) stat(moneyMap(sm.iOwe), t('iOwe'));
     stat(String(sm.itemsOut), t('itemsOut')); stat(String(sm.itemsIn), t('itemsIn')); stat(String(sm.overdue), t('overdueN')); stat(String(sm.soon), t('soonN'));
     out.appendChild(stats);
+    var up = C.upcoming(st, 5); out.appendChild(h('h2', { class: 'sec', text: t('upcoming') }));
+    if (!up.length) out.appendChild(h('div', { class: 'sub', text: t('upNone') }));
+    up.forEach(function (e) { var pp = C.findPerson(st, e.personId) || { name: '?' }; out.appendChild(h('div', { class: 'card', style: 'margin:6px 0' }, h('button', { type: 'button', class: 'head', 'data-id': e.id, onclick: function () { detail(e); } },
+      h('span', { class: 'grow' }, h('span', { class: 'title', text: whatOf(e) }), h('br'), h('span', { class: 'sub', text: (e.dir === 'out' ? t('toPerson', { name: pp.name }) : t('fromPerson', { name: pp.name })) })), h('span', { class: 'chip ' + C.status(e), text: statusText(e) })))); });
     var lo = C.longestOut(st); if (lo && lo.days >= 1) out.appendChild(h('div', { class: 'banner', text: t('longest', { what: lo.entry.kind === 'money' ? fmtMoney(C.remaining(lo.entry), lo.entry.currency) : lo.entry.title, name: (C.findPerson(st, lo.entry.personId) || {}).name, n: lo.days }) }));
     out.appendChild(h('div', { class: 'card' }, h('h2', { text: t('chart') }), chartSvg(C.monthlySeries(st, 6)), h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), t('cLent')), h('span', null, h('i', { style: 'background:var(--c2)' }), t('cBack')))));
     var rk = C.rankPeople(st).filter(function (x) { return x.s.open > 0; }).slice(0, 5);

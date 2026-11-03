@@ -56,6 +56,7 @@
      downloadRaw: 'Download unreadable data',
      nInLate: 'Hi {name}, I still have {what} and it was due back on {due}. Sorry for the delay. When can I bring it back, or could I keep it a little longer?',
      repayDate: 'Date received or paid', markReturnedOn: 'Mark returned on another date', extendEarlier: 'Pick a date after the current return date.',
+     planLabel: 'Repayment plan', planNone: 'One payment', planN: '{n} monthly installments', instNext: 'Installment {k} of {n}: {a} by {date}', upcoming: 'Coming up', upNone: 'Nothing with a return date.', statement: 'Copy statement', stmtHead: 'Open items with {name} ({date})', stmtNone: 'Nothing open with {name}.', cardSave: 'Save as image', cardTitle: 'Handover note', cardFooter: 'Made with Lendnest',
       ics_out: 'Get back', ics_in: 'Give back', installHint: 'Tip: use your browser menu, Add to Home Screen, to install it.', skip: 'Skip to content', 
     },
     ko: {
@@ -113,6 +114,7 @@
      downloadRaw: '읽을 수 없는 데이터 내려받기',
      nInLate: '{name}님, {what}을(를) 아직 돌려드리지 못했어요. 기한이 {due}였는데 늦어서 미안해요. 언제 가져다 드릴까요? 아니면 조금 더 써도 될까요?',
      repayDate: '받은(갚은) 날짜', markReturnedOn: '다른 날짜로 반납 처리', extendEarlier: '현재 반납일보다 늦은 날짜를 고르세요.',
+     planLabel: '상환 계획', planNone: '한 번에 상환', planN: '{n}회 월 분할', instNext: '{n}회 중 {k}회차: {date}까지 {a}', upcoming: '다가오는 일정', upNone: '반납일이 있는 항목이 없어요.', statement: '명세서 복사', stmtHead: '{name}님과의 진행 중 항목 ({date})', stmtNone: '{name}님과 진행 중인 항목이 없어요.', cardSave: '이미지로 저장', cardTitle: '전달 확인서', cardFooter: 'Lendnest로 작성',
       ics_out: '돌려받기', ics_in: '돌려주기', installHint: '팁: 브라우저 메뉴의 홈 화면에 추가로 설치할 수 있어요.', skip: '본문으로 건너뛰기', 
     },
     ja: {
@@ -170,6 +172,7 @@
      downloadRaw: '読み込めないデータをダウンロード',
      nInLate: '{name}さん、{what}をまだお返しできていません。期限は{due}でしたが、遅れてすみません。いつお返しすればよいですか？もう少し借りていてもよいでしょうか？',
      repayDate: '受け取った（返した）日', markReturnedOn: '別の日付で返却済みにする', extendEarlier: '現在の返却日より後の日付を選んでください。',
+     planLabel: '返済プラン', planNone: '一括返済', planN: '月払い{n}回', instNext: '{n}回中{k}回目：{date}までに{a}', upcoming: 'これからの予定', upNone: '返却日のある項目はありません。', statement: '明細をコピー', stmtHead: '{name}さんとの未返却一覧（{date}）', stmtNone: '{name}さんとの未返却はありません。', cardSave: '画像として保存', cardTitle: '受け渡しメモ', cardFooter: 'Lendnestで作成',
       ics_out: '返してもらう', ics_in: '返す', installHint: 'ヒント：ブラウザのメニューから「ホーム画面に追加」でインストールできます。', skip: '本文へスキップ', 
     },
     zh: {
@@ -227,6 +230,7 @@
      downloadRaw: '下载无法读取的数据',
      nInLate: '{name}，{what}我还没还给你，原定{due}归还，抱歉拖延了。我什么时候给你送回去合适？或者能再用一阵吗？',
      repayDate: '收到（还出）日期', markReturnedOn: '按其他日期标记已归还', extendEarlier: '请选择晚于当前归还日期的日期。',
+     planLabel: '还款计划', planNone: '一次还清', planN: '按月分{n}期', instNext: '第{k}/{n}期：{date}前还{a}', upcoming: '即将到期', upNone: '没有设置归还日期的记录。', statement: '复制对账单', stmtHead: '与{name}的未结事项（{date}）', stmtNone: '与{name}没有未结事项。', cardSave: '保存为图片', cardTitle: '交接备忘', cardFooter: '由 Lendnest 生成',
       ics_out: '收回', ics_in: '归还', installHint: '提示：在浏览器菜单中选择“添加到主屏幕”即可安装。', skip: '跳到正文', 
     },
     es: {
@@ -284,28 +288,29 @@
      downloadRaw: 'Descargar datos ilegibles',
      nInLate: 'Hola {name}, todavía tengo {what} y la fecha de devolución era el {due}. Perdona el retraso. ¿Cuándo te lo llevo, o puedo quedármelo un poco más?',
      repayDate: 'Fecha de recepción o pago', markReturnedOn: 'Marcar devuelto en otra fecha', extendEarlier: 'Elige una fecha posterior a la actual de devolución.',
+     planLabel: 'Plan de pago', planNone: 'Un solo pago', planN: '{n} cuotas mensuales', instNext: 'Cuota {k} de {n}: {a} antes del {date}', upcoming: 'Próximamente', upNone: 'Nada con fecha de devolución.', statement: 'Copiar extracto', stmtHead: 'Pendiente con {name} ({date})', stmtNone: 'Nada pendiente con {name}.', cardSave: 'Guardar como imagen', cardTitle: 'Nota de entrega', cardFooter: 'Hecho con Lendnest',
       ics_out: 'Recuperar', ics_in: 'Devolver', installHint: 'Consejo: en el menú del navegador, «Añadir a pantalla de inicio» la instala.', skip: 'Saltar al contenido', 
     }
   };
   /* Landing page copy (index.html) */
   var LAND = {
-    en: { ttl: 'Lendnest · Track what you lend and borrow', priv: 'Privacy', terms: 'Terms', h1: 'Never wonder who has your drill again', lede: 'Lendnest tracks everything you lend or borrow, items and money, with return dates, partial repayments and ready-to-send reminders. No account. Works offline.',
+    en: { langLabel: 'Language', f7h: 'Installment plans', f7b: 'Split a loan into monthly payments. The due date follows the next installment.', f8h: 'Handover card', f8b: 'Save a clean image of what was lent, to whom and by when. Send it in any chat.', f9h: 'Statements and a calendar of what is due', f9b: 'Copy everything open with one person, or see what is coming up next.', stepsT: 'How it works', s1h: 'Add it in 10 seconds', s1b: 'Item or money, who has it, and a return date.', s2h: 'Get reminded, nicely', s2b: 'Pick gentle, firm or final and send the ready-made message.', s3h: 'Mark it returned', s3b: 'Partial payments, extensions and undo included.', faqT: 'Questions', q1: 'Is my data private?', a1: 'Yes. Everything stays in your browser. There is no account and no server.', q2: 'Does it work offline?', a2: 'Yes. After the first visit it opens without a connection. Back up to a file any time.', q3: 'Does it cost anything?', a3: 'No. Lendnest is free.', ctaH: 'Start tracking what you lend', navApp: 'Open app', badge: 'Free · Private · 5 languages', mockA: 'Drill', mockB: 'Dinner', mockC: 'Tent', ttl: 'Lendnest · Track what you lend and borrow', priv: 'Privacy', terms: 'Terms', h1: 'Never wonder who has your drill again', lede: 'Lendnest tracks everything you lend or borrow, items and money, with return dates, partial repayments and ready-to-send reminders. No account. Works offline.',
       cta: 'Open the app', f1h: 'Both directions', f1b: 'What you lent and what you borrowed, in one place.', f2h: 'Reminders that sound like you', f2b: 'Gentle, firm or final, written for you in your language.',
       f3h: 'Know who to trust', f3b: 'Each person gets an on-time score before you lend again.', f4h: 'Private by design', f4b: 'Data stays in your browser. Back up to a file any time.',
       f5h: 'Calendar alerts', f5b: 'Export every return date to your calendar with a day-before alert.', f6h: 'Photos and notes', f6b: 'Snap the condition of an item when it leaves your hands.', free: 'Free, no sign-up.' },
-    ko: { ttl: 'Lendnest · 빌려준 것과 빌린 것 관리', priv: '개인정보', terms: '이용약관', h1: '내 전동드릴, 누가 갖고 있더라? 이제 안 헷갈려요', lede: 'Lendnest는 물건과 돈, 빌려준 것과 빌린 것을 반납일, 분할 상환, 바로 보낼 수 있는 독촉 문구와 함께 정리해요. 가입 없이 오프라인에서도 써요.',
+    ko: { langLabel: '언어', f7h: '할부 상환 계획', f7b: '빌려준 돈을 월 분할로 나눠요. 반납일은 다음 회차를 따라가요.', f8h: '전달 확인서 카드', f8b: '무엇을 누구에게 언제까지 빌려줬는지 깔끔한 이미지로 저장해 어느 채팅에든 보내세요.', f9h: '명세서와 다가오는 일정', f9b: '한 사람과의 진행 중 항목을 한 번에 복사하고, 곧 올 반납일을 한눈에 봐요.', stepsT: '이렇게 써요', s1h: '10초면 기록 끝', s1b: '물건이나 돈, 누가 갖고 있는지, 반납일을 적어요.', s2h: '부드럽게 알려 주기', s2b: '부드럽게·단호하게·최후 통보 중 골라 완성된 문구를 보내요.', s3h: '반납 처리', s3b: '분할 상환, 기한 연장, 되돌리기까지 지원해요.', faqT: '자주 묻는 질문', q1: '내 데이터는 안전한가요?', a1: '네. 모든 데이터는 브라우저 안에만 있어요. 계정도 서버도 없어요.', q2: '오프라인에서도 되나요?', a2: '네. 한 번 열면 인터넷 없이도 열려요. 파일로 언제든 백업하세요.', q3: '요금이 있나요?', a3: '아니요. Lendnest는 무료예요.', ctaH: '빌려준 것, 지금부터 기록하세요', navApp: '앱 열기', badge: '무료 · 프라이버시 · 5개 언어', mockA: '전동드릴', mockB: '저녁 식사', mockC: '텐트', ttl: 'Lendnest · 빌려준 것과 빌린 것 관리', priv: '개인정보', terms: '이용약관', h1: '내 전동드릴, 누가 갖고 있더라? 이제 안 헷갈려요', lede: 'Lendnest는 물건과 돈, 빌려준 것과 빌린 것을 반납일, 분할 상환, 바로 보낼 수 있는 독촉 문구와 함께 정리해요. 가입 없이 오프라인에서도 써요.',
       cta: '앱 열기', f1h: '양방향 기록', f1b: '빌려준 것과 빌린 것을 한곳에서.', f2h: '내 말투 같은 독촉 문구', f2b: '부드럽게, 단호하게, 최후 통보까지 내 언어로 써 줘요.',
       f3h: '믿을 만한 사람 파악', f3b: '다시 빌려주기 전에 기한 내 반납률을 보여 줘요.', f4h: '처음부터 프라이버시', f4b: '데이터는 브라우저에만. 파일로 언제든 백업해요.',
       f5h: '캘린더 알림', f5b: '모든 반납일을 하루 전 알림과 함께 캘린더로 내보내요.', f6h: '사진과 메모', f6b: '물건이 떠날 때 상태를 사진으로 남겨요.', free: '무료, 가입 없음.' },
-    ja: { ttl: 'Lendnest · 貸し借りの管理', priv: 'プライバシー', terms: '利用規約', h1: '電動ドリルを誰に貸したか、もう迷わない', lede: 'Lendnestは、貸し借りした物とお金を返却日・分割返済・すぐ送れる催促文と一緒に管理します。登録不要、オフラインでも動きます。',
+    ja: { langLabel: '言語', f7h: '分割返済プラン', f7b: '貸したお金を月払いに分けられます。返却日は次回の分割に合わせて動きます。', f8h: '受け渡しカード', f8b: '何を誰にいつまで貸したかを、見やすい画像で保存。どのチャットにも送れます。', f9h: '明細とこれからの予定', f9b: '一人分の未返却をまとめてコピー。次に来る期限もひと目で分かります。', stepsT: '使い方', s1h: '10秒で記録', s1b: '物かお金か、誰に貸したか、返却日を入力します。', s2h: 'やさしく催促', s2b: 'やさしく・きっぱり・最終通知から選び、できあがった文面を送ります。', s3h: '返却済みにする', s3b: '分割返済、期限延長、元に戻すにも対応。', faqT: 'よくある質問', q1: 'データは安全ですか?', a1: 'はい。データはブラウザの中だけにあります。アカウントもサーバーもありません。', q2: 'オフラインでも使えますか?', a2: 'はい。一度開けば接続なしでも開けます。ファイルでいつでもバックアップできます。', q3: '料金はかかりますか?', a3: 'いいえ。Lendnestは無料です。', ctaH: '貸したものを今日から記録しよう', navApp: 'アプリを開く', badge: '無料・プライベート・5言語', mockA: '電動ドリル', mockB: '夕食代', mockC: 'テント', ttl: 'Lendnest · 貸し借りの管理', priv: 'プライバシー', terms: '利用規約', h1: '電動ドリルを誰に貸したか、もう迷わない', lede: 'Lendnestは、貸し借りした物とお金を返却日・分割返済・すぐ送れる催促文と一緒に管理します。登録不要、オフラインでも動きます。',
       cta: 'アプリを開く', f1h: '貸しも借りも', f1b: '貸した物も借りた物も一か所で。', f2h: 'あなたらしい催促文', f2b: 'やさしく、きっぱり、最終通知まで、あなたの言語で作成。',
       f3h: '信頼できる相手が分かる', f3b: 'もう一度貸す前に、期限内返却率を確認できます。', f4h: 'はじめからプライベート', f4b: 'データはブラウザの中だけ。ファイルでいつでもバックアップ。',
       f5h: 'カレンダー通知', f5b: '返却日をすべて前日の通知付きでカレンダーへ。', f6h: '写真とメモ', f6b: '手放すときの状態を写真で残せます。', free: '無料・登録不要。' },
-    zh: { ttl: 'Lendnest · 借出与借入管理', priv: '隐私', terms: '条款', h1: '再也不用想“我的电钻在谁那儿”', lede: 'Lendnest 记录你借出和借入的物品与金钱，支持归还日期、分次还款和可直接发送的提醒话术。无需账号，离线可用。',
+    zh: { langLabel: '语言', f7h: '分期还款计划', f7b: '把借出的钱拆成按月还款，归还日期会跟随下一期。', f8h: '交接卡片', f8b: '把借出什么、借给谁、何时归还保存成清晰的图片，发到任何聊天里。', f9h: '对账单与即将到期', f9b: '一键复制与某人的全部未结事项，也能看到接下来要到期的记录。', stepsT: '使用方法', s1h: '10秒记一笔', s1b: '物品还是金钱，借给了谁，何时归还。', s2h: '得体地提醒', s2b: '选择温和、坚定或最后通知，直接发送写好的话术。', s3h: '标记已归还', s3b: '支持分次还款、延期和撤销。', faqT: '常见问题', q1: '我的数据安全吗？', a1: '安全。所有数据只保存在你的浏览器里，没有账号，也没有服务器。', q2: '可以离线使用吗？', a2: '可以。第一次打开后，没有网络也能使用。可随时备份成文件。', q3: '需要付费吗？', a3: '不需要，Lendnest 免费。', ctaH: '从今天开始记录借出的东西', navApp: '打开应用', badge: '免费 · 隐私 · 5种语言', mockA: '电钻', mockB: '聚餐', mockC: '帐篷', ttl: 'Lendnest · 借出与借入管理', priv: '隐私', terms: '条款', h1: '再也不用想“我的电钻在谁那儿”', lede: 'Lendnest 记录你借出和借入的物品与金钱，支持归还日期、分次还款和可直接发送的提醒话术。无需账号，离线可用。',
       cta: '打开应用', f1h: '双向记录', f1b: '借出的和借入的，集中在一处。', f2h: '像你说话的提醒', f2b: '温和、坚定或最后通知，用你的语言替你写好。',
       f3h: '知道该信任谁', f3b: '再次借出前，先看对方的按时归还率。', f4h: '默认隐私', f4b: '数据只在你的浏览器里，随时可备份成文件。',
       f5h: '日历提醒', f5b: '把所有归还日期导出到日历，并提前一天提醒。', f6h: '照片与备注', f6b: '东西离手时拍下它的状态。', free: '免费，无需注册。' },
-    es: { ttl: 'Lendnest · Controla lo que prestas y te prestan', priv: 'Privacidad', terms: 'Términos', h1: 'Olvida el «¿quién tenía mi taladro?»', lede: 'Lendnest registra lo que prestas y lo que te prestan, objetos y dinero, con fechas de devolución, pagos parciales y recordatorios listos para enviar. Sin cuenta. Funciona sin conexión.',
+    es: { langLabel: 'Idioma', f7h: 'Planes de pago', f7b: 'Divide un préstamo en cuotas mensuales. La fecha límite sigue a la próxima cuota.', f8h: 'Tarjeta de entrega', f8b: 'Guarda una imagen clara de qué prestaste, a quién y hasta cuándo. Envíala por cualquier chat.', f9h: 'Extractos y próximos vencimientos', f9b: 'Copia todo lo pendiente con una persona o mira qué vence pronto.', stepsT: 'Cómo funciona', s1h: 'Anótalo en 10 segundos', s1b: 'Objeto o dinero, quién lo tiene y la fecha de devolución.', s2h: 'Recordatorios con buen tono', s2b: 'Elige amable, firme o definitivo y envía el mensaje ya redactado.', s3h: 'Márcalo como devuelto', s3b: 'Con pagos parciales, prórrogas y deshacer.', faqT: 'Preguntas', q1: '¿Mis datos son privados?', a1: 'Sí. Todo se queda en tu navegador. No hay cuenta ni servidor.', q2: '¿Funciona sin conexión?', a2: 'Sí. Tras la primera visita se abre sin conexión. Haz una copia a archivo cuando quieras.', q3: '¿Cuesta algo?', a3: 'No. Lendnest es gratis.', ctaH: 'Empieza a controlar lo que prestas', navApp: 'Abrir app', badge: 'Gratis · Privada · 5 idiomas', mockA: 'Taladro', mockB: 'Cena', mockC: 'Tienda', ttl: 'Lendnest · Controla lo que prestas y te prestan', priv: 'Privacidad', terms: 'Términos', h1: 'Olvida el «¿quién tenía mi taladro?»', lede: 'Lendnest registra lo que prestas y lo que te prestan, objetos y dinero, con fechas de devolución, pagos parciales y recordatorios listos para enviar. Sin cuenta. Funciona sin conexión.',
       cta: 'Abrir la app', f1h: 'En los dos sentidos', f1b: 'Lo que prestaste y lo que te prestaron, en un solo sitio.', f2h: 'Recordatorios con tu voz', f2b: 'Amables, firmes o definitivos, redactados en tu idioma.',
       f3h: 'Sabe en quién confiar', f3b: 'Cada persona tiene un índice de puntualidad antes de volver a prestar.', f4h: 'Privada por diseño', f4b: 'Los datos se quedan en tu navegador. Haz copias de seguridad en archivo cuando quieras.',
       f5h: 'Avisos de calendario', f5b: 'Exporta cada fecha de devolución con aviso el día anterior.', f6h: 'Fotos y notas', f6b: 'Haz una foto del estado cuando algo sale de tus manos.', free: 'Gratis, sin registro.' }

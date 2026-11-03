@@ -35,12 +35,23 @@
   function daysLate(e, now) { return e.due && !isClosed(e) ? Math.max(0, diffDays(now || today(), e.due)) : 0; }
   function daysLeft(e, now) { return e.due ? diffDays(e.due, now || today()) : null; }
 
+  /* installment plan: the due date follows the next unpaid monthly installment */
+  function applyPlan(e) {
+    if (e.kind !== 'money' || !e.plan || isClosed(e) || !(e.amount > 0)) return;
+    var k = Math.min(e.plan.n - 1, Math.floor(paid(e) / (e.amount / e.plan.n) + 1e-9)); e.due = addDays(e.date, e.plan.every * (k + 1));
+  }
+  function installment(e) {
+    if (e.kind !== 'money' || !e.plan) return null;
+    var each = round2(e.amount / e.plan.n), k = Math.min(e.plan.n - 1, Math.floor(paid(e) / (e.amount / e.plan.n) + 1e-9));
+    return { k: k + 1, n: e.plan.n, each: each, due: addDays(e.date, e.plan.every * (k + 1)) };
+  }
   function repay(e, amount, date) {
     if (e.kind !== 'money' || isClosed(e)) return false;
     var a = round2(Number(amount)); if (!(a > 0) || !isFinite(a) || !isDate(date)) return false;
     a = Math.min(a, remaining(e));
     e.repayments.push({ id: uid(), date: date, amount: a });
     if (remaining(e) === 0) { e.returnedAt = date; e.reopened = false; }
+    applyPlan(e);
     return true;
   }
   function markReturned(e, date) {
@@ -64,6 +75,10 @@
       e.repayments = e.repayments.filter(function (r) { return !r.auto; }); if (rem > 0) e.repayments.push({ id: autos[0].id, date: autos[0].date, amount: rem, auto: true });
     }
     if (remaining(e) > 0) { if (e.returnedAt) { e.gone = (e.gone || []).concat(e.repayments.filter(function (r) { return r.auto; }).map(function (r) { return r.id; })).slice(-200); e.repayments = e.repayments.filter(function (r) { return !r.auto; }); } e.returnedAt = null; } else if (e.amount > 0 && !e.returnedAt) e.returnedAt = e.repayments.length ? e.repayments[e.repayments.length - 1].date : today();
+    applyPlan(e);
+  }
+  function upcoming(st, n, now) {
+    return sortOpen(st.entries.filter(function (e) { return !isClosed(e) && e.due; }), now).slice(0, n);
   }
   function extend(e, newDue, now) {
     if (isClosed(e) || !isDate(newDue) || newDue < e.date || (e.due && newDue < e.due)) return false;
@@ -73,7 +88,7 @@
     var kind = o.kind === 'money' ? 'money' : 'item';
     var e = { id: o.id || uid(), dir: o.dir === 'in' ? 'in' : 'out', kind: kind, title: str(o.title), personId: o.personId || '',
       amount: kind === 'money' ? (round2(Number(o.amount)) > 0 && Number(o.amount) <= MAX_AMOUNT ? round2(Number(o.amount)) : 0) : 0, currency: str(o.currency, 8).toUpperCase() || 'USD',
-      date: isDate(o.date) ? o.date : today(), due: isDate(o.due) ? o.due : '', repayments: [], returnedAt: null, writtenOff: false, extended: [], gone: [], reopened: false,
+      date: isDate(o.date) ? o.date : today(), due: isDate(o.due) ? o.due : '', repayments: [], returnedAt: null, writtenOff: false, extended: [], gone: [], reopened: false, plan: (kind === 'money' && o.plan && Number.isInteger(o.plan.n) && o.plan.n >= 2 && o.plan.n <= 60) ? { n: o.plan.n, every: 30 } : null,
       note: str(o.note, MAX.note), photo: typeof o.photo === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(o.photo) && o.photo.length <= MAX_PHOTO ? o.photo : '', created: Number.isFinite(o.created) ? o.created : Date.now() };
     return e;
   }
@@ -232,7 +247,7 @@
       e.returnedAt = isDate(o.returnedAt) ? o.returnedAt : null; e.writtenOff = !!o.writtenOff;
       e.extended = (Array.isArray(o.extended) ? o.extended : []).filter(function (x) { return x && isDate(x.date) && isDate(x.due); }).map(function (x) { return { date: x.date, due: x.due }; });
       if (Number.isFinite(o.created)) e.created = o.created;
-      e.reopened = !!o.reopened; e.gone = (Array.isArray(o.gone) ? o.gone : []).filter(function (g) { return typeof g === 'string' && ID_RE.test(g); }).slice(-200);
+      e.reopened = !!o.reopened; if (e.plan === null && o.plan) e.plan = makeEntry({ kind: 'money', amount: 1, title: 'x', plan: o.plan }).plan; e.gone = (Array.isArray(o.gone) ? o.gone : []).filter(function (g) { return typeof g === 'string' && ID_RE.test(g); }).slice(-200);
       if (e.kind === 'money' && !(e.amount > 0)) return; normalize(e);
       st.entries.push(e);
     });
@@ -262,7 +277,7 @@
     return { state: out, added: added };
   }
 
-  var api = { str: str, normalize: normalize, DAY: DAY, ymd: ymd, today: today, isDate: isDate, parse: parse, addDays: addDays, diffDays: diffDays, uid: uid, round2: round2, newState: newState,
+  var api = { applyPlan: applyPlan, installment: installment, upcoming: upcoming, str: str, normalize: normalize, DAY: DAY, ymd: ymd, today: today, isDate: isDate, parse: parse, addDays: addDays, diffDays: diffDays, uid: uid, round2: round2, newState: newState,
     paid: paid, remaining: remaining, isClosed: isClosed, status: status, daysLate: daysLate, daysLeft: daysLeft, repay: repay, markReturned: markReturned,
     writeOff: writeOff, reopen: reopen, extend: extend, makeEntry: makeEntry, validEntry: validEntry, findPerson: findPerson, personByName: personByName,
     addPerson: addPerson, removePerson: removePerson, personStats: personStats, summary: summary, monthlySeries: monthlySeries, rankPeople: rankPeople,

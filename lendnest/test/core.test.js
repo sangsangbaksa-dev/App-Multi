@@ -172,3 +172,11 @@ test('settled loans stay consistent when the amount is lowered or a manual repay
   e = mkSettled(); e.amount = 150; C.normalize(e); assert.equal(C.paid(e), 150); assert.ok(e.returnedAt);
   const f = C.makeEntry({ title: 'x', personId: p.id, date: '2026-10-01', due: '2026-11-30' }); assert.ok(!C.extend(f, '2026-10-20')); assert.ok(C.extend(f, '2026-12-05'));
 });
+test('installment plan: due follows the next unpaid monthly installment', () => {
+  const { s, p } = mk(); const e = C.makeEntry({ kind: 'money', amount: 300, title: 'Loan', personId: p.id, date: '2026-10-01', plan: { n: 3 } }); C.applyPlan(e);
+  assert.equal(e.due, '2026-10-31'); assert.deepEqual([C.installment(e).k, C.installment(e).each], [1, 100]);
+  C.repay(e, 100, '2026-10-20'); assert.equal(e.due, '2026-11-30'); assert.equal(C.installment(e).k, 2); C.repay(e, 50, '2026-11-20'); assert.equal(C.installment(e).k, 2); assert.equal(e.due, '2026-11-30');
+  C.repay(e, 150, '2026-12-01'); assert.ok(e.returnedAt); assert.equal(C.installment(e).k, 3);
+  s.entries.push(e); const r = C.sanitize(JSON.parse(JSON.stringify(s))); assert.equal(r.entries[0].plan.n, 3); assert.equal(C.makeEntry({ kind: 'item', title: 'x', personId: p.id, plan: { n: 3 } }).plan, null); assert.equal(C.makeEntry({ kind: 'money', amount: 5, title: 'x', personId: p.id, plan: { n: 1 } }).plan, null);
+  const d = C.makeEntry({ title: 'soon', personId: p.id, date: '2026-10-01', due: '2026-10-05' }); s.entries.push(d); assert.equal(C.upcoming(s, 1, '2026-10-02')[0].title, 'soon');
+});
