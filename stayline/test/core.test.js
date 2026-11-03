@@ -485,3 +485,12 @@ test('permit watch: within 90 days or ended in the last 30, soonest first', () =
   assert.deepEqual(w.map(x => x.id), ['b', 'a']);
   assert.equal(w[0].left, -14);
 });
+
+test('year report: one section per counter with rule, count and per-year table', () => {
+  const md = C.yearReport([{ id: 'a', name: 'Me', rule: C.PRESETS.schengen, expires: '2030-01-01', trips: [{ id: 't1', place: 'Rome', from: '2026-01-10', to: '2026-01-19' }] }], '2026-06-01');
+  assert.ok(md.startsWith('# Stayline report'));
+  assert.ok(md.includes('## Me'));
+  assert.ok(md.includes('Longest stay: 10 days (Rome)'));
+  assert.ok(md.includes('| 2026 | 10 |'));
+  assert.ok(md.includes('Permit or visa valid until: 2030-01-01'));
+});
