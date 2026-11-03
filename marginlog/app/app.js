@@ -90,7 +90,7 @@
     document.documentElement.lang = S.lang; document.title = 'Marginlog';
     var c = cur(), h = '<header class="top"><h1>Marginlog</h1><div class="topbtns"><label class="sr" for="lang">' + esc(t('language')) + '</label><select id="lang">' +
       Object.keys(I.L).map(function (k) { return '<option value="' + k + '"' + (k === S.lang ? ' selected' : '') + '>' + esc(I.L[k].name) + '</option>'; }).join('') +
-      '</select><button type="button" class="ghost" data-act="data">' + esc(t('dataBtn')) + '</button></div></header>';
+      '</select><button type="button" class="ghost" data-act="overview">' + esc(t('overviewBtn')) + '</button><button type="button" class="ghost" data-act="data">' + esc(t('dataBtn')) + '</button></div></header>';
     h += '<main id="main">';
     h += c ? caseView(c) : emptyView();
     h += '</main><footer class="foot"><p>' + esc(t('privacy')) + '</p><p>' + esc(t('disclaimer')) + '</p></footer>';
@@ -379,7 +379,7 @@
     return d;
   }
   function dataDialog() {
-    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(persisted === null ? '' : t(persisted ? 'persistYes' : 'persistNo')) + '</p><p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
+    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div><label for="d-pass">' + esc(t('passLabel')) + '</label><input id="d-pass" type="password" autocomplete="new-password"><p class="hint">' + esc(t('passHint')) + '</p>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(persisted === null ? '' : t(persisted ? 'persistYes' : 'persistNo')) + '</p><p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
     $('#d-exp', dlg).addEventListener('click', backup);
     if (corruptKey) $('#d-corrupt', dlg).addEventListener('click', function () { try { download('marginlog-unreadable.txt', 'text/plain', localStorage.getItem(corruptKey) || ''); } catch (e) { err(saveMsg()); } });
     $('#d-imp', dlg).addEventListener('change', function (ev) { var f = ev.target.files[0]; if (f) restore(f); });
@@ -389,15 +389,41 @@
     S.cases.forEach(function (c) { c.entries.forEach(function (e) { e.photos.forEach(function (p) { ids.push(p.id); }); }); });
     var missing = 0; for (var i = 0; i < ids.length; i++) { var d = await photoGet(ids[i]); if (d) photos[ids[i]] = d; else missing++; }
     var cp = {}; S.cases.forEach(function (c) { if (c.entries.length) cp[c.id] = { n: c.entries.length, head: c.entries[c.entries.length - 1].hash }; });
-    try { download('marginlog-backup-' + C.toLocalStamp(new Date(now())).slice(0, 10) + '.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos, cp: cp })); err(''); try { localStorage.setItem(KEY + ':lastbackup', String(now())); } catch (e4) { /* optional */ } toast(t('backupDone') + (missing ? ' ' + t('backupMissing', { n: missing }) : '')); }
+    var pass = dlg && $('#d-pass', dlg) ? $('#d-pass', dlg).value : '', stamp = C.toLocalStamp(new Date(now())).slice(0, 10);
+    if (pass && pass.length < 8) return err(t('passShort'));
+    try {
+      var body = JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos, cp: cp });
+      if (pass) { var env = await C.encryptText(body, pass); download('marginlog-backup-' + stamp + '-encrypted.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 2, enc: env })); }
+      else download('marginlog-backup-' + stamp + '.json', 'application/json', body);
+      err(''); try { localStorage.setItem(KEY + ':lastbackup', String(now())); } catch (e4) { /* optional */ } toast(t('backupDone') + (missing ? ' ' + t('backupMissing', { n: missing }) : ''));
+    }
     catch (e) { err(saveMsg()); }
+  }
+  function overviewDialog() {
+    var rows = C.overview(S.cases, now()), items = rows.length ? rows.map(function (r) {
+      var lab = esc(r.name || t('kind_' + r.kind));
+      return '<li><button type="button" class="ghost" data-ov="' + esc(r.id) + '" style="width:100%;text-align:left"><strong>' + lab + '</strong>' + (r.archived ? ' <span class="pill">' + esc(t('ovArchived')) + '</span>' : '') +
+        '<br><span class="hint">' + esc(t('kind_' + r.kind)) + ' · ' + esc(t('ovEntries', { n: r.total })) + (r.lastAt ? ' · ' + esc(t('ovLast', { d: r.lastAt.slice(0, 10) })) : '') + '</span><br>' +
+        (r.overdue ? '<span class="pill warn">' + esc(t('ovOverdue', { n: r.overdue })) + '</span> ' : '') + (r.openSteps ? '<span class="pill">' + esc(t('ovOpen', { n: r.openSteps })) + '</span> ' : '') +
+        '<span class="pill">' + esc(t('ovStrength', { s: r.strength })) + '</span></button></li>'; }).join('') : '<li class="hint">' + esc(t('ovNone')) + '</li>';
+    openDialog('<h2 id="dlg-h">' + esc(t('overviewH')) + '</h2><p class="hint">' + esc(t('overviewHelp')) + '</p><ul class="facts">' + items + '</ul><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
+    dlg.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-ov]'); if (!b) return;
+      S.cur = b.getAttribute('data-ov'); S.tab = 'log'; S.f = { q: '', tag: '', sev: 0, voided: false }; save(); closeDialog(); render();
+    });
   }
   function restore(file) {
     var fr = new FileReader();
     fr.onerror = function () { err(t('badFile')); };
     fr.onload = async function () {
       try {
-        var d = JSON.parse(fr.result); if (!d || d.app !== 'marginlog' || !Array.isArray(d.cases)) throw new Error('shape');
+        var d = JSON.parse(fr.result);
+        if (d && d.enc) {
+          var pw = dlg && $('#d-pass', dlg) ? $('#d-pass', dlg).value : '';
+          if (!pw) return err(t('passNeeded'));
+          try { d = JSON.parse(await C.decryptText(d.enc, pw)); } catch (e6) { return err(t('passWrong')); }
+        }
+        if (!d || d.app !== 'marginlog' || !Array.isArray(d.cases)) throw new Error('shape');
         var cs = d.cases.map(C.sanitizeCase).filter(Boolean), broken = 0, ph = d.photos && typeof d.photos === 'object' ? d.photos : {}, fcp = d.cp && typeof d.cp === 'object' ? d.cp : {}, n = 0, skipped = 0, photoBad = 0, newCp = {};
         var vok = [], rejected = 0;
         for (var i = 0; i < cs.length; i++) { var v = await C.verifyChain(cs[i].entries, fcp[cs[i].id]); vok.push(v.ok); }
@@ -457,6 +483,7 @@
     var b = ev.target.closest('[data-act]'); if (!b) return;
     var act = b.getAttribute('data-act'), c = cur(), id = b.getAttribute('data-id'); lastTrig = act + '|' + (id || '');
     if (act === 'data') return dataDialog();
+    if (act === 'overview') return overviewDialog();
     if (act === 'newcase') return caseDialog(b.getAttribute('data-kind') || 'other');
     if (!c) return;
     if (act === 'tab') { S.tab = b.getAttribute('data-tab'); render(); var tb = $('#tab-' + S.tab); tb && tb.focus(); if (S.tab === 'report') fillReport(); return; }
@@ -511,9 +538,27 @@
   root.addEventListener('submit', function (ev) { ev.preventDefault(); });
 
   var tel = document.createElement('div'); tel.id = 'toast'; tel.className = 'toast'; tel.setAttribute('role', 'status'); tel.setAttribute('aria-live', 'polite'); tel.addEventListener('click', function (ev) { if (ev.target.tagName !== 'BUTTON') tel.innerHTML = ''; }); document.body.appendChild(tel);
+  /* ---------- paid access ---------- */
+  var CFG = window.ML_CONFIG || {}, Lic = window.MLLicense;
+  function paywall() {
+    var h = '<h2 id="dlg-h">' + esc(t('pwTitle')) + '</h2><p class="hint">' + esc(t('pwLead')) + '</p>';
+    if (CFG.checkoutLive) h += '<p><a class="btn pri" href="' + esc(CFG.checkoutUrl) + '" rel="noopener">' + esc(t('pwBuy')) + '</a></p>';
+    h += '<label for="pw-k">' + esc(t('pwKey')) + '</label><input id="pw-k" name="key" autocomplete="off" autocapitalize="off" spellcheck="false" required>' +
+      '<p class="hint">' + esc(t('pwHint')) + '</p><p class="err" role="alert" hidden></p>' +
+      '<div class="btns wrap"><button type="submit" class="pri">' + esc(t('pwActivate')) + '</button></div>';
+    var d = openDialog(h, function (form) {
+      return Lic.activate({ store: localStorage, fetch: window.fetch.bind(window), api: CFG.licenseApi, key: $('#pw-k', form).value }).then(function (r) {
+        if (r.ok) { closeDialog(); toast(t('pwOk')); } else err(t(r.reason === 'network' ? 'pwNet' : 'pwBad'));
+      });
+    }, { focus: '#pw-k' });
+    /* a locked app cannot be dismissed with Escape; only a valid key unlocks it */
+    d.addEventListener('cancel', function (ev) { ev.preventDefault(); });
+  }
+
   /* ---------- boot ---------- */
   var nl = (navigator.language || 'en').slice(0, 2); if (Object.prototype.hasOwnProperty.call(I.L, nl)) S.lang = nl;
   load(); render(); if (S.tab === 'report') fillReport();
+  if (Lic && CFG.licenseApi) Lic.status({ store: localStorage, fetch: window.fetch.bind(window), api: CFG.licenseApi }).then(function (s) { if (s.locked) paywall(); }, function () { /* could not tell: stay open */ });
   try { if (/[?&]log=1\b/.test(location.search) && cur() && !blocked && !cur().live) { history.replaceState(null, '', location.pathname); entryDialog(cur()); } } catch (e7) { /* optional */ }
   if (blocked) toast(t('corruptBlocked'));
   else if (corruptKey) toast(t('corrupt', { k: corruptKey }));
