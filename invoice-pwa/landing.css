@@ -116,3 +116,14 @@ details p{margin:0 0 1.2rem;color:var(--mute);max-width:40rem}
 .landing main{max-width:none;padding:0}
 html:lang(ko) body{word-break:keep-all}
 html:lang(ja) body{line-break:strict}
+
+.hl{display:grid;grid-template-columns:1.15fr .85fr;gap:3rem;align-items:center}
+.hl .sub{margin-bottom:1.6rem}
+.hllist{list-style:none;padding:0;margin:0;display:grid;gap:1.1rem}
+.hllist li{border-left:3px solid var(--accent);padding-left:1rem}
+.hllist h3{margin:0 0 .25rem;font-size:1.1rem}.hllist p{margin:0;color:var(--mute)}
+.hlmock{background:var(--sheet);color:#211e18;border:1px solid #211e18;border-radius:8px;box-shadow:8px 8px 0 #211e18;padding:1.4rem 1.6rem}
+.hlmock p{display:flex;justify-content:space-between;gap:1rem;margin:0;padding:.7rem 0;border-bottom:1px solid #d9d2c1}
+.hlmock b{font-family:var(--serif);font-size:1.25rem}
+.hlmock .hlsum{border-bottom:0;border-top:2px solid #211e18;margin-top:.4rem}.hlmock .hlsum b{color:#a4401a;font-size:1.7rem}
+@media(max-width:900px){.hl{grid-template-columns:1fr;gap:2rem}}

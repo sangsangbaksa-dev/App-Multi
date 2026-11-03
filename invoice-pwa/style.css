@@ -199,3 +199,8 @@ dialog form input{flex:1 1 100%}
 @media(max-width:480px){#vw-paper{padding:1rem}#vw-paper td,#vw-paper th{padding:.35rem .25rem;font-size:.9rem}}
 .cloud-panel h3{margin:0 0 6px;font-size:1rem}.cloud-form{display:grid;gap:8px}.cloud-form input{width:100%}.cloud-msg{min-height:1.2em;margin:8px 0 0}
 label.wide{grid-column:1/-1}label.wide small{display:block;margin-top:.25rem;text-transform:none;letter-spacing:0;font-size:.82rem}
+
+#stmt{max-width:min(46rem,94vw)}#stmt-doc table{width:100%;border-collapse:collapse;margin:.8rem 0}
+#stmt-doc th,#stmt-doc td{padding:.4rem .3rem;border-bottom:1px solid var(--rule);text-align:left;font-size:.92rem}
+#stmt-doc .r{text-align:right}#stmt-doc .sub{font-size:.8rem;color:var(--mute)}
+@media print{body.print-stmt>*:not(#stmt){display:none!important}body.print-stmt #stmt{position:static;border:0;max-width:none;width:100%;padding:0;box-shadow:none}}

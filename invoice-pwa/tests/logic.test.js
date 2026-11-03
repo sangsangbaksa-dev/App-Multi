@@ -323,3 +323,25 @@ test("habits treat 'Acme' and ' acme ' as one client", () => {
   const open = inv({ id: "c", client: "ACME", items: [{ qty: 1, price: 10 }], taxRate: 0, issueDate: "2024-03-01", dueDate: "2024-03-05" });
   assert.equal(L.expectedCash([mk("a", "Acme", "2024-01-01", "2024-01-11"), open], "2024-03-02", "USD", 1).rows[0].basis, "history");
 });
+
+test("client statement: ledger rows, totals, skips drafts and quotes", () => {
+  const mk = (o) => ({ id: o.number, client: "Acme", currency: "USD", type: "invoice", status: "sent", issueDate: "2026-01-01", dueDate: "2026-01-15", items: [{ qty: 1, price: 1000 }], taxRate: 0, discount: 0, paid: 0, payments: [], ...o });
+  const list = [
+    mk({ number: "INV-0002", issueDate: "2026-02-01", dueDate: "2026-02-15", withholdingRate: 3.3 }),
+    mk({ number: "INV-0001", status: "paid", paid: 1000, payments: [{ date: "2026-01-10", amount: 1000 }] }),
+    mk({ number: "INV-0003", status: "draft" }),
+    mk({ number: "QUO-0001", type: "quote" }),
+    mk({ number: "INV-0004", client: "Other" }),
+    mk({ number: "INV-0005", currency: "EUR" }),
+  ];
+  const s = L.statement(list, "Acme", "USD", "2026-03-01");
+  assert.deepEqual(s.rows.map((r) => r.number), ["INV-0001", "INV-0002"]);
+  assert.equal(s.totals.billed, 2000);
+  assert.equal(s.totals.withheld, 33);
+  assert.equal(s.totals.paid, 1000);
+  assert.equal(s.totals.balance, 967);
+  assert.equal(s.totals.overdue, 967);
+  assert.equal(s.rows[0].payments[0].date, "2026-01-10");
+  assert.equal(L.statementCSV(s).split("\n").length, 3);
+  assert.equal(L.statement([], "x", "USD").rows.length, 0);
+});

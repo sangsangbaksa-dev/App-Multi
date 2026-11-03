@@ -86,7 +86,7 @@ function renderDash() {
   const rows = L.byClient(invoices);
   $("#clientsum").innerHTML = !rows.length ? "" : isPro()
     ? `<details open><summary>${I.t("byClient")}</summary><table class="mini">${rows.map((r) =>
-        `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td></tr>`).join("")}</table></details>`
+        `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td><td class="r"><button type="button" data-stmt="${esc(r.client)}" data-cur="${esc(r.currency)}">${I.t("stmtBtn")}</button></td></tr>`).join("")}</table></details>`
     : `<p class="muted">${I.t("byClientPro")}</p>`;
 }
 
@@ -569,3 +569,27 @@ const account = initAccount({ auth, cloud, cloudPanel });
 auth.init().then(() => account.paint()).catch(() => account.paint());
 if (cloudPanel && cloud.user()) cloud.sync().then((r) => { if (r.status === "pulled") toast(globalThis.CloudI18n.t(I.getLang(), "pulled")); });
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+// Statement of account: a printable page per client, built on the device from saved invoices.
+let stmtOpen = null;
+function openStatement(client, currency) {
+  const st = L.statement(invoices, client, currency, today());
+  stmtOpen = st;
+  const m = (n) => money(n, currency);
+  const from = esc(invoices.find((x) => x.from)?.from || "");
+  $("#stmt-doc").innerHTML = `<h2 id="stmt-title">${esc(I.t("stmtTitle"))}</h2>
+    <p>${from ? `<b>${esc(I.t("fromL"))}:</b> ${from}<br>` : ""}<b>${esc(I.t("toL"))}:</b> ${esc(client)}<br><span class="sub">${esc(I.t("stmtAsOf", { d: I.formatDate(st.asOf) }))}</span></p>
+    <table><thead><tr><th>${esc(I.t("stmtCol"))}</th><th>${esc(I.t("dueL"))}</th><th class="r">${esc(I.t("total"))}</th><th class="r">${esc(I.t("paidAmt").replace(/\s*\/.*$/, ""))}</th><th class="r">${esc(I.t("stmtOwed"))}</th></tr></thead><tbody>${st.rows.map((r) =>
+      `<tr><td>${esc(r.number)}<br><span class="sub">${esc(I.formatDate(r.issueDate))}</span></td><td>${esc(I.formatDate(r.dueDate))}${r.overdue ? ` <span class="late">${esc(I.t("overdue"))}</span>` : ""}</td><td class="r">${m(r.total)}${r.withheld ? `<br><span class="sub">${esc(I.t("whL"))} −${m(r.withheld)}</span>` : ""}</td><td class="r">${m(r.paid)}${r.payments.map((p) => `<br><span class="sub">${esc(I.t("stmtPaidOn", { d: I.formatDate(p.date) }))}</span>`).join("")}</td><td class="r">${m(r.balance)}</td></tr>`).join("")}</tbody></table>
+    <p class="r"><b>${esc(I.t("stmtLatest"))}: ${m(st.totals.balance)}</b>${st.totals.overdue ? `<br><span class="late">${esc(I.t("dashOverdue"))}: ${m(st.totals.overdue)}</span>` : ""}</p>
+    <p class="sub">${esc(I.t("stmtNote"))}</p>`;
+  $("#stmt").showModal();
+}
+$("#clientsum").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-stmt]");
+  if (b && isPro()) openStatement(b.dataset.stmt, b.dataset.cur);
+});
+$("#stmt-close").onclick = () => $("#stmt").close();
+$("#stmt-csv").onclick = () => { if (stmtOpen) download(`statement-${stmtOpen.client.replace(/[^\w-]+/g, "_")}.csv`, "text/csv", L.statementCSV(stmtOpen)); };
+$("#stmt-print").onclick = () => { document.body.classList.add("print-stmt"); window.print(); };
+window.addEventListener("afterprint", () => document.body.classList.remove("print-stmt"));

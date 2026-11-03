@@ -557,3 +557,27 @@ export function paymentsCSV(invoices) {
   rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || String(a[1]).localeCompare(String(b[1])));
   return [["paymentDate", "invoice", "client", "currency", "amount", "dueDate", "invoiceTotal", "invoiceWithheld", "invoiceBalance"].join(","), ...rows.map((r) => r.map(cell).join(","))].join("\n");
 }
+
+// Statement of account for one client and currency: every sent invoice with what is still owed, plus dated payments.
+// Drafts and quotes are skipped. Oldest invoice first, so the page reads like a ledger.
+export function statement(invoices, client, currency, today = new Date().toISOString().slice(0, 10)) {
+  const rows = invoices
+    .filter((i) => !isQuote(i) && i.status !== "draft" && i.client === client && i.currency === currency)
+    .sort((a, b) => (a.issueDate + a.number).localeCompare(b.issueDate + b.number))
+    .map((i) => ({
+      number: i.number, issueDate: i.issueDate, dueDate: i.dueDate, total: totalOf(i), withheld: withheldOf(i),
+      payable: payableOf(i), paid: round2(Number(i.paid) || 0), balance: balanceOf(i), overdue: overdue(i, today),
+      payments: (i.payments || []).filter((p) => validDate(p.date)).map((p) => ({ date: p.date, amount: p.amount })),
+    }));
+  const sum = (k) => round2(rows.reduce((s, r) => s + r[k], 0));
+  return {
+    client, currency, asOf: today, rows,
+    totals: { billed: sum("total"), withheld: sum("withheld"), payable: sum("payable"), paid: sum("paid"), balance: sum("balance"),
+      overdue: round2(rows.filter((r) => r.overdue).reduce((s, r) => s + r.balance, 0)) },
+  };
+}
+export function statementCSV(st) {
+  const head = ["number", "issueDate", "dueDate", "total", "withheld", "paid", "balance"];
+  const rows = st.rows.map((r) => [r.number, r.issueDate, r.dueDate, r.total, r.withheld, r.paid, r.balance].map(esc).join(","));
+  return [head.join(","), ...rows].join("\n");
+}
