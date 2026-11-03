@@ -18,28 +18,38 @@
 <body>
 <div class="wrap">
 <nav><a class="logo" href="/es/"><img src="/icon.svg" alt="" width="28" height="28"> <span>Sellos</span></a>
-<select id="lang" aria-label="Language"><option value="en" data-href="/">English</option><option value="ko" data-href="/ko/">한국어</option><option value="ja" data-href="/ja/">日本語</option><option value="zh" data-href="/zh/">中文</option><option value="es" data-href="/es/" selected>Español</option></select></nav>
+<span class="navr"><select id="lang" aria-label="Language"><option value="en" data-href="/">English</option><option value="ko" data-href="/ko/">한국어</option><option value="ja" data-href="/ja/">日本語</option><option value="zh" data-href="/zh/">中文</option><option value="es" data-href="/es/" selected>Español</option></select><a class="btn sm" href="/app/">Abrir app</a></span></nav>
 <main>
 <section class="hero">
+<div class="hcopy">
 <p class="kick">Para profesores particulares, entrenadores e instructores</p>
 <h1>Cada clase, un sello. Nadie discute la cuenta.</h1>
 <p class="lede">Tu alumno paga 10 clases por adelantado. Tres semanas después nadie recuerda si quedaban 6 o 7. Sellos es una tarjeta de sellos que vive en tu navegador.</p>
-<p><a class="btn" href="/app/">Abrir la app</a> <span class="fine">Gratis con 3 bonos activos. Sin registro.</span></p>
-<div class="demo" aria-hidden="true"><div class="c on">3/10</div><div class="c on">10/14</div><div class="c on">10/21</div><div class="c on">10/28</div><div class="c n">5</div><div class="c">6</div><div class="c">7</div><div class="c">8</div><div class="c">9</div><div class="c">10</div></div>
+<p class="cta"><a class="btn" href="/app/">Abrir la app</a> <span class="fine">Gratis con 3 bonos activos. Sin registro.</span></p>
+<ul class="trust"><li>Sin registro</li><li>Funciona sin conexión</li><li>Tus datos se quedan en tu dispositivo</li></ul>
+</div>
+<div class="hdemo">
+<div class="sheet" id="demo" data-left="quedan {n}" data-done="Paquete completo. Toca renovar." data-reset="Reiniciar">
+<div class="sh-top"><b>Mina</b><span id="demo-left" class="chip" aria-live="polite"></span></div>
+<div class="demo" id="demo-grid" role="group" aria-label="Pruébalo: toca el siguiente círculo"></div>
+<p class="sh-hint" id="demo-hint">Pruébalo: toca el siguiente círculo</p>
+<button type="button" class="btn ghost sm" id="demo-reset" hidden>Reiniciar</button>
+</div>
+</div>
 </section>
+
+<section class="aud"><p class="audh">Hecho para</p><ul><li>Profesores de piano y música</li><li>Tutores de idiomas</li><li>Entrenadores personales</li><li>Yoga y pilates</li><li>Clases de refuerzo</li><li>Talleres de arte y manualidades</li></ul></section>
 
 <section><h2>Cómo funciona</h2>
-<ol class="steps"><li>Añade el bono de un alumno: cuántas clases, cuánto pagó y hasta cuándo vale.</li><li>Al terminar cada clase, toca el siguiente círculo. La fecha queda en el sello.</li><li>Cuando quede una, copia un aviso de renovación ya redactado. Con Pro, envía un enlace de saldo que el alumno puede abrir.</li></ol></section>
+<ol class="steps3"><li><span class="num">1</span><h3>Añadir</h3><p>Añade el bono de un alumno: cuántas clases, cuánto pagó y hasta cuándo vale.</p></li><li><span class="num">2</span><h3>Sellar</h3><p>Al terminar cada clase, toca el siguiente círculo. La fecha queda en el sello.</p></li><li><span class="num">3</span><h3>Renovar</h3><p>Cuando quede una, copia un aviso de renovación ya redactado. Con Pro, envía un enlace de saldo que el alumno puede abrir.</p></li></ol></section>
 
-<section class="grid3">
-<div><h3>El dinero aún no ganado, a la vista</h3><p>Mira lo que tus alumnos han pagado y todavía no han tomado. Los bonos caducados salen aparte y tú decides qué hacer con ellos.</p></div>
-<div><h3>Tus datos son tuyos</h3><p>Sin cuenta ni servidor. Haz copia a un archivo cuando quieras.</p></div>
-<div><h3>En tu idioma</h3><p>English, 한국어, 日本語, 中文, Español, con un toque.</p></div>
-</section>
-<section class="grid3">
-<div><h3>Faltas y cancelaciones</h3><p>Marca una falta que sí cuenta o una cancelación avisada que no. Ambas quedan en el registro.</p></div>
-<div><h3>Renueva con un toque</h3><p>Al sellar la última clase, empieza el siguiente bono con las mismas condiciones.</p></div>
-<div><h3>Notas por clase</h3><p>Lo que diste y lo que toca la próxima vez, junto a la fecha.</p></div>
+<section class="feats">
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.7-1.1 1.5-2.5 1.8-2.5.8-2.5 1.8 1.1 1.7 2.5 1.7 2.5-.7 2.5-1.7"/></svg><h3>El dinero aún no ganado, a la vista</h3><p>Mira lo que tus alumnos han pagado y todavía no han tomado. Los bonos caducados salen aparte y tú decides qué hacer con ellos.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><h3>Tus datos son tuyos</h3><p>Sin cuenta ni servidor. Haz copia a un archivo cuando quieras.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg><h3>En tu idioma</h3><p>English, 한국어, 日本語, 中文, Español, con un toque.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg><h3>Faltas y cancelaciones</h3><p>Marca una falta que sí cuenta o una cancelación avisada que no. Ambas quedan en el registro.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></svg><h3>Renueva con un toque</h3><p>Al sellar la última clase, empieza el siguiente bono con las mismas condiciones.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h6"/></svg><h3>Notas por clase</h3><p>Lo que diste y lo que toca la próxima vez, junto a la fecha.</p></div>
 </section>
 
 <section class="price"><h2>Se paga una vez</h2>
@@ -58,5 +68,6 @@
 </main>
 <footer><a href="/privacy">Privacidad</a> · <a href="/terms">Términos</a> · <a href="mailto:sangsangbaksa@gmail.com">sangsangbaksa@gmail.com</a> · <span>Hecha para quien enseña.</span></footer>
 </div>
+<div class="sticky"><a class="btn" href="/app/">Abrir la app</a></div>
 <script src="/landing.js"></script>
 </body></html>
