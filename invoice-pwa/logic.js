@@ -1,7 +1,4 @@
 // Everything here is DOM-free so `npm test` can cover it directly.
-export const FREE_LIMIT = 3;
-export const FREE_SHEETS = 2;
-export const FREE_DOCS = 2;
 
 export function round2(n) {
   return Math.round((n + Number.EPSILON) * 100) / 100;
@@ -30,12 +27,6 @@ export function nextInvoiceNumber(invoices, prefix = "INV") {
     .map((m) => parseInt(m[1], 10));
   const n = (nums.length ? Math.max(...nums) : 0) + 1;
   return `${prefix}-${String(n).padStart(4, "0")}`;
-}
-
-export function canSave(invoices, isPro, editingId) {
-  if (isPro) return true;
-  if (editingId && invoices.some((i) => i.id === editingId)) return true;
-  return invoices.length < FREE_LIMIT;
 }
 
 export function formatMoney(n, currency = "USD", locale = "en-US") {
@@ -580,4 +571,37 @@ export function statementCSV(st) {
   const head = ["number", "issueDate", "dueDate", "total", "withheld", "paid", "balance"];
   const rows = st.rows.map((r) => [r.number, r.issueDate, r.dueDate, r.total, r.withheld, r.paid, r.balance].map(esc).join(","));
   return [head.join(","), ...rows].join("\n");
+}
+
+// ---- Payment reminder queue (Pro) ----
+// Invoices that need a reminder today: unpaid, sent, with a balance, and either due within `soonDays`
+// or already overdue. Most overdue first, then soonest due. Pure, so `npm test` covers it.
+const DAY_MS = 864e5;
+export function daysBetween(from, to) {
+  return Math.round((Date.parse(to + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / DAY_MS);
+}
+export function reminderQueue(invoices, today = new Date().toISOString().slice(0, 10), soonDays = 3) {
+  const out = [];
+  for (const inv of invoices) {
+    if (isQuote(inv) || inv.status === "draft" || inv.status === "paid" || !inv.dueDate || balanceOf(inv) <= 0) continue;
+    const left = daysBetween(today, inv.dueDate); // >0 days still to go, <0 days overdue
+    if (left < 0) out.push({ invoice: inv, kind: "overdue", days: -left });
+    else if (left <= soonDays) out.push({ invoice: inv, kind: "soon", days: left });
+  }
+  return out.sort((a, b) => (a.kind === b.kind ? (a.kind === "overdue" ? b.days - a.days : a.days - b.days) : a.kind === "overdue" ? -1 : 1));
+}
+
+// ---- Monthly income goal (Pro) ----
+// Money collected on invoices issued in `ym` (YYYY-MM) in the goal's currency. Counted by issue date, like the
+// tax-year view. Quotes and drafts never count. Returns null when there is no goal.
+export function goalProgress(invoices, ym, goal) {
+  if (!goal || !(Number(goal.amount) > 0) || !goal.currency) return null;
+  let collected = 0;
+  for (const inv of invoices) {
+    if (isQuote(inv) || inv.status === "draft" || inv.currency !== goal.currency) continue;
+    if (!String(inv.issueDate || "").startsWith(ym)) continue;
+    collected = round2(collected + (Number(inv.paid) || 0));
+  }
+  const target = round2(Number(goal.amount));
+  return { currency: goal.currency, target, collected, remaining: round2(Math.max(0, target - collected)), pct: Math.min(100, Math.floor((collected / target) * 100)) };
 }

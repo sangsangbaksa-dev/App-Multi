@@ -1,3 +1,4 @@
+const proInit = require("./pro-init.cjs");
 // Run: node tests/e2e-insights.cjs  (needs playwright + tests/serve.cjs on :8123)
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
@@ -20,6 +21,7 @@ const URL = "http://localhost:8123/app";
 
   // Free user: expenses are locked; reminders list the unpaid invoice and copy.
   const free = await b.newPage({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+  await proInit(free);
   free.on("pageerror", (e) => errs.push(String(e)));
   await free.goto(URL, { waitUntil: "load" });
   await seed(free, {});
@@ -36,6 +38,7 @@ const URL = "http://localhost:8123/app";
 
   // Pro user: add an expense, check profit and tax estimate, then delete it.
   const pro = await b.newPage({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+  await proInit(pro);
   pro.on("pageerror", (e) => errs.push(String(e)));
   await pro.goto(URL, { waitUntil: "load" });
   await seed(pro, { "qb.license": key });

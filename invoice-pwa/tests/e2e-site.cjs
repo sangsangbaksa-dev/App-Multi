@@ -1,3 +1,4 @@
+const proInit = require("./pro-init.cjs");
 // Run: node tests/e2e-site.cjs  (static server with the production headers on :8123: node tests/serve.cjs)
 // Landing pages in five languages, SEO tags, structured data, sitemap/robots, terms and privacy pages, axe.
 const { chromium } = require("playwright");
@@ -12,7 +13,9 @@ const axe = fs.existsSync(AXE) ? fs.readFileSync(AXE, "utf8") : "";
   const b = await chromium.launch();
   const errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 800 }, serviceWorkers: "block" });
+  await proInit(ctx);
   const p = await ctx.newPage();
+  await proInit(p);
   p.on("pageerror", (e) => errs.push(e.message));
   p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
 
@@ -57,7 +60,9 @@ const axe = fs.existsSync(AXE) ? fs.readFileSync(AXE, "utf8") : "";
 
   // the root page still follows the browser language
   const ko = await b.newContext({ locale: "ko-KR", serviceWorkers: "block" });
+  await proInit(ko);
   const kp = await ko.newPage();
+  await proInit(kp);
   await kp.goto(BASE + "/");
   await kp.waitForFunction(() => document.documentElement.lang === "ko");
   await ko.close();
@@ -77,7 +82,9 @@ const axe = fs.existsSync(AXE) ? fs.readFileSync(AXE, "utf8") : "";
 
   // accessibility on the new pages
   const wide = await b.newContext({ viewport: { width: 1100, height: 900 }, serviceWorkers: "block" });
+  await proInit(wide);
   const w = await wide.newPage();
+  await proInit(w);
   for (const path of ["/", "/ko/", "/terms", "/privacy"]) {
     await w.goto(BASE + path);
     if (!axe) continue;

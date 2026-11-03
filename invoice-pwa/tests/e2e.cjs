@@ -1,3 +1,4 @@
+const proInit = require("./pro-init.cjs");
 // Run: node tests/e2e.cjs  (needs playwright + a static server on :8123)
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
@@ -6,7 +7,9 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 (async () => {
   const b = await chromium.launch();
   const ctx = await b.newContext({ locale: "en-US", acceptDownloads: true });
+  await proInit(ctx);
   const p = await ctx.newPage();
+  await proInit(p);
   const errs = [];
   p.on("pageerror", (e) => errs.push(e.message));
   p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
@@ -94,7 +97,9 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
   // free user: recurring is gated
   const ctx2 = await b.newContext({ locale: "es-ES" });
+  await proInit(ctx2);
   const q = await ctx2.newPage();
+  await proInit(q);
   await q.goto("http://localhost:8123/app.html");
   assert.match(await q.textContent("#btn-new"), /Nueva factura/);
   await q.click("#btn-new");
@@ -106,7 +111,9 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
   // quote -> invoice, partial payment, dashboard
   const ctx3 = await b.newContext({ locale: "en-US" });
+  await proInit(ctx3);
   const r = await ctx3.newPage();
+  await proInit(r);
   r.on("pageerror", (e) => errs.push(e.message));
   r.on("dialog", (d) => d.accept());
   await r.goto("http://localhost:8123/app.html");

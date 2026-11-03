@@ -1,3 +1,4 @@
+const proInit = require("./pro-init.cjs");
 // Run: node tests/e2e-polish.cjs  (needs playwright + a static server on :8123)
 // List search and filters, duplicate, keyboard access, the upgrade dialog, and the "cannot save" warning.
 const { chromium } = require("playwright");
@@ -8,6 +9,7 @@ const URL = "http://localhost:8123/app.html";
   const errs = [];
   const page = async (ctx) => {
     const p = await ctx.newPage();
+  await proInit(p);
     p.on("pageerror", (e) => errs.push(e.message));
     p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
     p.on("dialog", (d) => d.accept());
@@ -15,6 +17,7 @@ const URL = "http://localhost:8123/app.html";
   };
 
   const ctx = await b.newContext({ locale: "en-US", acceptDownloads: true });
+  await proInit(ctx);
   const p = await page(ctx);
   await p.goto(URL);
   const lic = "PRO-TEST-0001-ZCUY";
@@ -85,6 +88,7 @@ const URL = "http://localhost:8123/app.html";
 
   // storage that refuses writes: a visible warning, no crash
   const c2 = await b.newContext({ locale: "en-US" });
+  await proInit(c2);
   await c2.addInitScript(() => { Storage.prototype.setItem = function () { throw new DOMException("full", "QuotaExceededError"); }; });
   const q = await page(c2);
   await q.goto(URL);

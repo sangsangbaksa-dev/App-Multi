@@ -55,7 +55,7 @@ async function main() {
         "@context": "https://schema.org", "@type": "SoftwareApplication", name: "QuickBill", url: url(lang), inLanguage: lang,
         applicationCategory: "BusinessApplication", operatingSystem: "Any (web browser)", description: data.desc,
         image: `${site}/og.png`,
-        offers: [{ "@type": "Offer", name: "Free", price: "0", priceCurrency: cur || "USD" }].concat(priceNum && cur ? [{ "@type": "Offer", name: "Pro", price: priceNum, priceCurrency: cur }] : []),
+        offers: priceNum && cur ? [{ "@type": "Offer", name: "QuickBill Pro", price: priceNum, priceCurrency: cur }] : [],
       },
       { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: data.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
     ].map((o) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`).join("\n");

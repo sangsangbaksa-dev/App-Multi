@@ -57,7 +57,7 @@ function toast(msg) {
 
 function renderList() {
   document.body.classList.toggle("is-pro", isPro());
-  $("#plan").textContent = isPro() ? "Pro" : `Free ${invoices.length}/${L.FREE_LIMIT}`;
+  $("#plan").textContent = "Pro";
   $("#btn-upgrade").hidden = isPro();
   $("#empty").hidden = invoices.length > 0;
   $("#clients").innerHTML = [...new Set(invoices.map((i) => i.client).filter(Boolean))]
@@ -88,7 +88,54 @@ function renderDash() {
     ? `<details open><summary>${I.t("byClient")}</summary><table class="mini">${rows.map((r) =>
         `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td><td class="r"><button type="button" data-stmt="${esc(r.client)}" data-cur="${esc(r.currency)}">${I.t("stmtBtn")}</button></td></tr>`).join("")}</table></details>`
     : `<p class="muted">${I.t("byClientPro")}</p>`;
+  renderReminders();
+  renderGoal();
 }
+
+// Reminder queue: unpaid invoices that are due within 3 days or already late, most late first.
+function renderReminders() {
+  const box = $("#reminders-box");
+  if (!isPro()) { box.innerHTML = ""; return; }
+  const q = L.reminderQueue(invoices, today());
+  box.innerHTML = `<details open><summary>${I.t("remindersTitle")} (${q.length})</summary>${q.length
+    ? `<table class="mini">${q.map((r) => `<tr><td>${esc(r.invoice.client)} · ${esc(r.invoice.number)}</td>
+        <td class="r ${r.kind === "overdue" ? "late" : ""}">${I.t(r.kind === "overdue" ? "remindOverdue" : "remindSoon", { n: r.days })}</td>
+        <td class="r">${money(L.balanceOf(r.invoice), r.invoice.currency)}</td>
+        <td class="r"><button type="button" data-remind-id="${esc(r.invoice.id)}">${I.t("copyReminder")}</button></td></tr>`).join("")}</table>`
+    : `<p class="muted">${I.t("remindersNone")}</p>`}</details>`;
+}
+$("#reminders-box").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-remind-id]");
+  const inv = b && invoices.find((x) => x.id === b.dataset.remindId);
+  if (!inv) return;
+  let text = I.t("reminderText", { client: inv.client, number: inv.number, amount: money(L.balanceOf(inv), inv.currency), date: I.formatDate(inv.dueDate), from: inv.from });
+  try { await navigator.clipboard.writeText(text); toast(I.t("reminderCopied")); }
+  catch { window.prompt(I.t("copyReminder"), text); }
+});
+
+// Monthly income goal: money collected on invoices issued this month, in the goal's currency.
+function renderGoal() {
+  const box = $("#goal-box");
+  if (!isPro()) { box.innerHTML = ""; return; }
+  const goal = store.get("qb.goal", null);
+  const p = L.goalProgress(invoices, today().slice(0, 7), goal);
+  box.innerHTML = `<details><summary>${I.t("goalTitle")}</summary>
+    ${p ? `<p>${I.t("goalProgress", { collected: money(p.collected, p.currency), target: money(p.target, p.currency), pct: p.pct })}</p><progress max="100" value="${p.pct}"></progress>` : `<p class="muted">${I.t("goalNone")}</p>`}
+    <form id="goal-form" class="calc">
+      <label><span>${I.t("goalCurrency")}</span><input name="cur" maxlength="3" value="${esc(goal?.currency || "USD")}"></label>
+      <label><span>${I.t("goalAmount")}</span><input name="amt" type="number" min="0.01" step="0.01" value="${esc(goal?.amount || "")}"></label>
+      <button class="primary" type="submit">${I.t("goalSave")}</button>
+    </form></details>`;
+}
+$("#goal-box").addEventListener("submit", (e) => {
+  if (e.target.id !== "goal-form") return;
+  e.preventDefault();
+  const cur = e.target.elements.cur.value.trim().toUpperCase();
+  const amt = Number(e.target.elements.amt.value);
+  if (!/^[A-Z]{3}$/.test(cur) || !(amt > 0)) return toast(I.t("goalBad"));
+  store.set("qb.goal", { currency: cur, amount: amt });
+  renderGoal();
+});
 
 // Combined total across currencies, using rates typed in here. The inputs are only rebuilt when the set of
 // currencies or the base changes, so typing a rate never loses focus.
@@ -170,7 +217,6 @@ $("#t-list").onclick = (e) => {
   const b = e.target.closest("[data-bill]");
   if (!b) return;
   if (!isPro()) return openUpgrade(I.t("timePro"));
-  if (!L.canSave(invoices, true, null)) return;
   const client = b.dataset.bill;
   const items = L.timeItems(entries, client, rate);
   const n = items.length;
@@ -313,7 +359,13 @@ function openUpgrade(reason = "") {
   $("#lic-msg").hidden = !reason;
   $("#dlg").showModal();
 }
-const limitMsg = () => I.t("freeLimit", { n: L.FREE_LIMIT });
+
+// Paid-only app: without a Pro key the purchase dialog is the only thing on screen, and it cannot be dismissed.
+function requirePro() {
+  if (isPro()) return;
+  $("#lic-close").hidden = true;
+  openUpgrade(I.t("gateLead"));
+}
 
 function runRecurring() {
   if (!isPro()) return;
@@ -336,7 +388,6 @@ function fullRender() {
 
 // ---- events ----
 function newDoc(type, extra = {}) {
-  if (!L.canSave(invoices, isPro(), null)) return openUpgrade(limitMsg());
   const last = invoices[0];
   const doc = {
     id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", taxId: last?.taxId ?? "", client: "",
@@ -350,7 +401,6 @@ function newDoc(type, extra = {}) {
 $("#btn-new").onclick = () => newDoc("invoice");
 $("#btn-new-quote").onclick = () => newDoc("quote");
 $("#btn-convert").onclick = () => {
-  if (!L.canSave(invoices, isPro(), null)) return openUpgrade(limitMsg());
   const q = readForm();
   const inv = L.convertQuote(q, invoices, () => crypto.randomUUID(), today());
   const i = invoices.findIndex((x) => x.id === q.id);
@@ -417,7 +467,6 @@ $("#form").onsubmit = (e) => {
   if (inv.payLink && !safeLink(inv.payLink)) { toast(I.t("payLinkBad")); return $("#form").elements.payLink.focus(); }
   if (inv.payLink) inv.payLink = safeLink(inv.payLink);
   if (inv.recur && !isPro()) { $("#form").elements.recur.value = ""; renderPreview(); return openUpgrade(I.t("recurPro")); }
-  if (!L.canSave(invoices, isPro(), inv.id)) return openUpgrade(limitMsg());
   if (isPro() && inv.clientEmail && !CL.validEmail(inv.clientEmail)) inv.clientEmail = "";
   if (isPro()) {
     profiles = CL.learn(profiles, inv); store.set("qb.clients", profiles);
@@ -479,7 +528,6 @@ $("#file-restore").onchange = async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (data.app !== "quickbill" || !Array.isArray(data.invoices) || !data.invoices.every(L.validInvoice)) throw 0;
-    if (!isPro() && data.invoices.length > L.FREE_LIMIT) return openUpgrade(limitMsg());
     // Backups from before expenses existed have no "expenses" key; those leave the current expenses alone.
     const hasExpenses = data.expenses !== undefined;
     if (hasExpenses && (!Array.isArray(data.expenses) || !data.expenses.every(L.validExpense))) throw 0;
@@ -525,13 +573,15 @@ $("#logo-file").onchange = async (e) => {
 $("#btn-logo-rm").onclick = () => { logo = ""; store.del("qb.logo"); renderPreview(); };
 
 const licFail = { network: "licNetwork", revoked: "licRevoked", unknown: "badKey" };
+$("#dlg").addEventListener("cancel", (e) => { if (!isPro()) e.preventDefault(); });
 $("#dlg").addEventListener("close", async () => {
-  if ($("#dlg").returnValue !== "ok") return;
+  if ($("#dlg").returnValue !== "ok") return requirePro();
   const k = $("#lic").value.trim();
   if (!k) return;
   toast(I.t("licChecking"));
   const r = await LS.activate(k, { fetchImpl: fetch.bind(window), api: CONFIG.licenseApi });
   if (!r.ok) return openUpgrade(I.t(licFail[r.reason] || "badKey"));
+  $("#lic-close").hidden = false;
   license = k; store.set("qb.license", k);
   licRec = r.record; if (licRec) store.set("qb.licsrv", licRec); else store.del("qb.licsrv");
   if (r.server) { srvMode = true; store.set("qb.srvmode", true); }
@@ -547,7 +597,7 @@ if (/^https?:$/.test(location.protocol) && navigator.onLine !== false) (async ()
   if (licRec && LS.needsRecheck(licRec)) {
     const r = await LS.recheck(licRec, { fetchImpl: fetch.bind(window), api: CONFIG.licenseApi });
     if (r.keep) { licRec = r.record; store.set("qb.licsrv", licRec); }
-    else { licRec = null; store.del("qb.licsrv"); toast(I.t("licLost")); renderList(); renderPreview(); }
+    else { licRec = null; store.del("qb.licsrv"); toast(I.t("licLost")); renderList(); renderPreview(); requirePro(); }
   }
 })();
 
@@ -564,6 +614,7 @@ const ws = initWorkspace({
 });
 fullRender();
 renderTime();
+requirePro();
 const cloudPanel = cloud?.enabled() && globalThis.CloudPanel ? globalThis.CloudPanel.build({ cloud, lang: () => I.getLang() }) : null;
 const account = initAccount({ auth, cloud, cloudPanel });
 auth.init().then(() => account.paint()).catch(() => account.paint());
