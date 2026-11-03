@@ -2,7 +2,7 @@
  "en": {
   "title": "Marginlog – a sealed incident log for disputes",
   "desc": "Log noise, landlord, workplace or contractor problems in seconds. Entries are sealed so they cannot be quietly rewritten. See the pattern, escalate step by step, hand over a clean report. Free, private, works offline.",
-  "h1": "Keep a log nobody can say you made up.",
+  "h1": "Keep a dated log that shows it was not rewritten.",
   "lead": "Marginlog records each incident with a timestamp, seals it into a tamper-evident chain, spots the pattern, and builds the report you give a landlord, HR, mediator or officer. Free, offline, no account.",
   "cta": "Open Marginlog",
   "feat": "What is inside",
@@ -40,13 +40,13 @@
   ],
   "priv": "Private by design",
   "privb": "Everything is stored in your browser on this device. No account, no tracking, no upload. Download a backup file whenever you like.",
-  "disc": "A personal record, not legal advice. The seal shows the log was not rewritten; it is not a notarised timestamp.",
+  "disc": "A personal record, not legal advice. The seal shows the log was not rewritten; it is not a notarised timestamp, and times come from your device clock. Record only what you may lawfully record where you live, and keep other people's personal details to what the dispute needs.",
   "nav": "Languages"
  },
  "ko": {
   "title": "Marginlog – 분쟁을 위한 봉인형 사건 기록",
   "desc": "소음, 집주인, 직장, 업체 문제를 몇 초 만에 기록하세요. 기록은 봉인되어 몰래 고칠 수 없습니다. 패턴을 보고, 단계별로 대응하고, 깔끔한 보고서를 내세요. 무료, 비공개, 오프라인.",
-  "h1": "지어냈다는 말이 나오지 않는 기록.",
+  "h1": "고쳐 쓰지 않았음을 보여 주는 날짜별 기록.",
   "lead": "Marginlog는 사건마다 시각을 기록하고 위·변조가 드러나는 사슬로 봉인하며, 패턴을 찾고, 집주인·인사팀·조정위원·담당자에게 낼 보고서를 만듭니다. 무료, 오프라인, 계정 없음.",
   "cta": "Marginlog 열기",
   "feat": "들어 있는 기능",
@@ -84,13 +84,13 @@
   ],
   "priv": "처음부터 비공개",
   "privb": "모든 데이터는 이 기기의 브라우저에만 저장됩니다. 계정, 추적, 업로드가 없고 백업 파일은 언제든 내려받을 수 있습니다.",
-  "disc": "개인 기록이며 법률 자문이 아닙니다. 봉인은 기록이 고쳐지지 않았음을 보여 줄 뿐 공증된 시각 증명은 아닙니다.",
+  "disc": "개인 기록이며 법률 자문이 아닙니다. 봉인은 기록이 고쳐지지 않았음을 보여 줄 뿐 공증된 시각 증명은 아니며, 시각은 기기 시계를 따릅니다. 사는 곳의 법이 허용하는 것만 기록하고(예: 남의 대화 몰래 녹음 금지), 다른 사람의 개인정보는 분쟁에 필요한 만큼만 적으세요.",
   "nav": "언어"
  },
  "ja": {
   "title": "Marginlog – トラブルのための封印つき出来事ログ",
   "desc": "騒音、大家、職場、業者とのトラブルを数秒で記録。記録は封印され、こっそり書き換えられません。パターンを見て、段階的に対応し、整った報告書を提出。無料・非公開・オフライン対応。",
-  "h1": "作り話と言わせない記録を。",
+  "h1": "書き換えていないことを示せる、日付入りの記録。",
   "lead": "Marginlog は出来事ごとに時刻を記録し、改ざんが分かる鎖で封印し、パターンを見つけ、大家・人事・調停人・担当者に渡す報告書を作ります。無料、オフライン、アカウント不要。",
   "cta": "Marginlog を開く",
   "feat": "主な機能",
@@ -128,13 +128,13 @@
   ],
   "priv": "最初から非公開",
   "privb": "データはすべてこの端末のブラウザ内に保存。アカウント・追跡・アップロードなし。バックアップはいつでもダウンロードできます。",
-  "disc": "個人の記録であり法的助言ではありません。封印は記録が書き換えられていないことを示すもので、公証された時刻証明ではありません。",
+  "disc": "個人の記録であり法的助言ではありません。封印は記録が書き換えられていないことを示すもので、公証された時刻証明ではなく、時刻は端末の時計に基づきます。お住まいの地域の法律で認められる範囲だけを記録し、他人の個人情報は紛争に必要な分にとどめてください。",
   "nav": "言語"
  },
  "zh": {
   "title": "Marginlog – 为纠纷准备的封存式事件记录",
   "desc": "几秒钟记下噪音、房东、职场或承包商的问题。记录被封存，无法被悄悄改写。查看规律，逐级应对，交出整洁的报告。免费、私密、可离线。",
-  "h1": "一份没人能说你编造的记录。",
+  "h1": "一份能显示没有被改写过的按日期记录。",
   "lead": "Marginlog 为每次事件记下时间，用可发现篡改的链条封存，找出规律，并生成可交给房东、人事、调解员或主管部门的报告。免费、离线、无需账号。",
   "cta": "打开 Marginlog",
   "feat": "功能一览",
@@ -172,13 +172,13 @@
   ],
   "priv": "天生私密",
   "privb": "所有数据只保存在本设备的浏览器里。无账号、无追踪、不上传，随时可下载备份文件。",
-  "disc": "这是个人记录，不构成法律意见。封存只说明记录没有被改写，并非经公证的时间戳。",
+  "disc": "这是个人记录，不构成法律意见。封存只说明记录没有被改写，并非经公证的时间戳，时间取自你的设备时钟。只记录当地法律允许记录的内容，他人的个人信息只写纠纷所需的部分。",
   "nav": "语言"
  },
  "es": {
   "title": "Marginlog – un registro sellado de incidentes para disputas",
   "desc": "Anota en segundos problemas de ruido, casero, trabajo o contratistas. Las entradas se sellan y no se pueden reescribir a escondidas. Ve el patrón, escala paso a paso y entrega un informe limpio. Gratis, privado, sin conexión.",
-  "h1": "Un registro del que nadie pueda decir que te lo inventaste.",
+  "h1": "Un registro con fechas que muestra que no se reescribió.",
   "lead": "Marginlog anota cada incidente con su hora, lo sella en una cadena a prueba de manipulación, detecta el patrón y prepara el informe para casero, RR. HH., mediador o autoridad. Gratis, sin conexión, sin cuenta.",
   "cta": "Abrir Marginlog",
   "feat": "Qué incluye",
@@ -216,7 +216,7 @@
   ],
   "priv": "Privado por diseño",
   "privb": "Todo se guarda en el navegador de este dispositivo. Sin cuenta, sin rastreo, sin subidas. Descarga una copia cuando quieras.",
-  "disc": "Registro personal, no asesoría legal. El sello demuestra que el registro no se reescribió; no es un sello de tiempo notarial.",
+  "disc": "Registro personal, no asesoría legal. El sello demuestra que el registro no se reescribió; no es un sello de tiempo notarial, y las horas vienen del reloj de tu dispositivo. Registra solo lo que la ley de tu lugar permita y limita los datos personales de otras personas a lo que la disputa necesite.",
   "nav": "Idiomas"
  }
 }
