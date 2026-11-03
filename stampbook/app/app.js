@@ -346,6 +346,7 @@
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { editPack(p); } }, T('editPack')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { printText(activityText(p.student)); } }, T('pdfBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { var v = prompt(T('nextPh', { max: C.NEXT_MAX }), p.next || ''); if (v !== null) { var tooLong = v.trim().length > C.NEXT_MAX; C.setNext(p, v); save(); render(); toast(tooLong ? T('nextCut', { max: C.NEXT_MAX }) : T('nextSaved')); } } }, T('nextBtn') + (p.next ? ' ✓' : '')));
     if (p.paid === false) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T('payMsg', { name: p.student, total: p.total, price: money(p.price, p.currency) }), T('remindCopied')); } }, T('payBtn')));
@@ -425,13 +426,34 @@
     var r = C.receipt(p, state.teacher);
     return T('receiptT', { name: r.student, total: r.total, price: money(r.price, r.currency), per: money(r.perLesson, r.currency), status: T(r.paid ? 'receiptPaid' : 'receiptDue'), start: r.start || '-', exp: r.expires || T('receiptNoExp'), from: r.teacher ? T('receiptFrom', { t: r.teacher }) : '' }).replace(/\n+$/, '');
   }
-  function printReceipt(p) {
+  function printReceipt(p) { printText(receiptText(p)); }
+  /* printing a text: the browser's print dialog can save it as a PDF, so no PDF library is needed */
+  function printText(text) {
     var old = document.getElementById('print-receipt'); if (old) old.remove();
-    var box = h('pre', { id: 'print-receipt' }, receiptText(p)); document.body.appendChild(box); document.body.classList.add('printing');
+    var box = h('pre', { id: 'print-receipt' }, text); document.body.appendChild(box); document.body.classList.add('printing');
     /* afterprint is unreliable on some mobile browsers, so a timer cleans up too */
     var end = function () { box.remove(); document.body.classList.remove('printing'); window.removeEventListener('afterprint', end); };
     window.addEventListener('afterprint', end); setTimeout(end, 30000); /* the class stays until afterprint (or this timer) because mobile browsers snapshot the page after print() returns */
     try { window.print(); } catch (e) { end(); return; }
+  }
+  /* all packs of one student (name ignores case and spaces), with every lesson and payment, as plain text for printing */
+  function activityText(name) {
+    var key = name.trim().toLowerCase(), today = C.todayStr();
+    var packs = state.packs.filter(function (p) { return p.student.trim().toLowerCase() === key; }).sort(function (a, b) { return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+    var out = [T('pdfH') + ': ' + name, T('pdfAsOf', { date: today }), ''], paid = 0;
+    packs.forEach(function (p) {
+      var cs = C.counted(p);
+      out.push((p.start || '') + ' → ' + (p.expires || '—') + '   ' + money(p.price, p.currency) + ' (' + T(p.paid === false ? 'pdfUnpaid' : 'pdfPaid') + ')');
+      out.push(T('pdfLessons') + ': ' + cs.length + ' / ' + p.total);
+      if (p.paid !== false) paid += Number(p.price) || 0;
+      if (!p.stamps.length) out.push('  ' + T('pdfNoStamps'));
+      p.stamps.slice().sort(function (x, y) { return x.date < y.date ? -1 : x.date > y.date ? 1 : 0; }).forEach(function (st) {
+        out.push('  ' + st.date + (st.kind ? ' [' + T(st.kind === 'noshow' ? 'kNoshow' : 'kExcused') + ']' : '') + (st.note ? ' ' + st.note : ''));
+      });
+      out.push('');
+    });
+    out.push(T('pdfTotal') + ': ' + money(paid, packs[0] ? packs[0].currency : 'USD'));
+    return out.join('\n');
   }
   /* delete is undoable for a few seconds instead of asking first: a mistaken tap loses nothing */
   function deletePack(p) {
