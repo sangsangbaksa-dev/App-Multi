@@ -406,8 +406,15 @@
         '<br><span class="hint">' + esc(t('kind_' + r.kind)) + ' · ' + esc(t('ovEntries', { n: r.total })) + (r.lastAt ? ' · ' + esc(t('ovLast', { d: r.lastAt.slice(0, 10) })) : '') + '</span><br>' +
         (r.overdue ? '<span class="pill warn">' + esc(t('ovOverdue', { n: r.overdue })) + '</span> ' : '') + (r.openSteps ? '<span class="pill">' + esc(t('ovOpen', { n: r.openSteps })) + '</span> ' : '') +
         '<span class="pill">' + esc(t('ovStrength', { s: r.strength })) + '</span></button></li>'; }).join('') : '<li class="hint">' + esc(t('ovNone')) + '</li>';
-    openDialog('<h2 id="dlg-h">' + esc(t('overviewH')) + '</h2><p class="hint">' + esc(t('overviewHelp')) + '</p><ul class="facts">' + items + '</ul><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
+    openDialog('<h2 id="dlg-h">' + esc(t('overviewH')) + '</h2><p class="hint">' + esc(t('overviewHelp')) + '</p><ul class="facts">' + items + '</ul><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="sec" data-ov-act="ics">' + esc(t('ovIcs')) + '</button><button type="button" class="sec" data-ov-act="digest">' + esc(t('ovDigest')) + '</button></div><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
     dlg.addEventListener('click', function (ev) {
+      var a = ev.target.closest('[data-ov-act]');
+      if (a) {
+        var lb = Object.assign({}, I.L[S.lang], { stepNames: I.stepNames(S.lang) }), stamp = C.toLocalStamp(new Date(now())).slice(0, 10);
+        if (a.getAttribute('data-ov-act') === 'ics') { var ics = C.calendarAll(S.cases, lb, now()); if (!ics) return err(t('ovNoDeadlines')); download('marginlog-deadlines-' + stamp + '.ics', 'text/calendar', ics); }
+        else download('marginlog-digest-' + stamp + '.md', 'text/markdown', C.digest(S.cases, lb, now()));
+        return;
+      }
       var b = ev.target.closest('[data-ov]'); if (!b) return;
       S.cur = b.getAttribute('data-ov'); S.tab = 'log'; S.f = { q: '', tag: '', sev: 0, voided: false }; save(); closeDialog(); render();
     });

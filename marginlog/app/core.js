@@ -285,6 +285,29 @@
     return lines.map(icsFold).join('\r\n') + '\r\n';
   }
 
+  /* ---------- all-cases deadlines: one .ics file with every open reply deadline ---------- */
+  function calendarAll(cases, L, nowTs) {
+    var parts = cases.filter(function (c) { return !c.archived; }).map(function (c) { var s = toIcs(c, L, nowTs); var m = s.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT\r\n/g); return m ? m.join('') : ''; }).join('');
+    if (!parts) return '';
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Marginlog//EN', 'CALSCALE:GREGORIAN'].map(function (x) { return x + '\r\n'; }).join('') + parts + 'END:VCALENDAR\r\n';
+  }
+  /* ---------- digest: Markdown summary of every active case, overdue items first ---------- */
+  function digest(cases, L, nowTs) {
+    var names = L.stepNames || {}, today = toLocalStamp(new Date(nowTs)).slice(0, 10), rows = overview(cases.filter(function (c) { return !c.archived; }), nowTs), att = [];
+    cases.forEach(function (c) {
+      if (c.archived) return;
+      (c.steps || []).forEach(function (s) { if (s.due && !s.done && /^\d{4}-\d{2}-\d{2}$/.test(s.due) && s.due < today) att.push({ due: s.due, text: fill(L.dgOverdueItem, { step: names[s.kind] || s.kind, 'case': c.name || '', d: s.due }) }); });
+    });
+    att.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+    var out = ['# ' + L.dgTitle + ' ' + today, '', '## ' + L.dgAttention];
+    out = out.concat(att.length ? att.map(function (a) { return '- ' + a.text; }) : ['- ' + L.dgNone]);
+    out.push('', '## ' + L.dgCases);
+    out = out.concat(rows.length ? rows.map(function (r) {
+      return '- ' + (r.name || L['kind_' + r.kind] || r.kind) + ' (' + (L['kind_' + r.kind] || r.kind) + '): ' + fill(L.ovEntries, { n: r.total }) + ', ' + fill(L.dgRecent, { n: r.last30 }) + ', ' + fill(L.ovStrength, { s: r.strength }) + ', ' + fill(L.ovOpen, { n: r.openSteps }) + (r.overdue ? ', ' + fill(L.ovOverdue, { n: r.overdue }) : '');
+    }) : ['- ' + L.ovNone]);
+    return out.join('\n') + '\n';
+  }
+
   /* ---------- encrypted backup: AES-GCM, key from a passphrase via PBKDF2-SHA256 (WebCrypto, no library) ---------- */
   function b64(bytes) { var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s); }
   function unb64(s) { var bin = atob(String(s)), out = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
@@ -319,7 +342,7 @@
     uid: uid, pad: pad, toLocalStamp: toLocalStamp, parseAt: parseAt, dayNum: dayNum, sha256Hex: sha256Hex, seal: seal, verifyChain: verifyChain, cleanTags: cleanTags, clampInt: clampInt,
     events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
     strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase,
-    tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs, encryptText: encryptText, decryptText: decryptText, overview: overview
+    tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs, encryptText: encryptText, decryptText: decryptText, overview: overview, calendarAll: calendarAll, digest: digest
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.MLCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
