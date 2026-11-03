@@ -21,8 +21,8 @@ for (const l of langs) {
     description: d.lede, url, offers: [{ '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' }, { '@type': 'Offer', name: 'Pro', price: priceNum, priceCurrency: 'USD' }] }).replace(/</g, '\\u003c');
   const vars = Object.assign({}, d, { lang: l, title: `${d.app} · ${d.h1}`, url, siteUrl: base, alternates, locale: LOC[l], jsonld, home: pathOf(l), terms: TERMS[l],
     options: langs.map(k => `<option value="${k}" data-href="${pathOf(k)}"${k === l ? ' selected' : ''}>${esc(D[k].name)}</option>`).join(''),
-    checkoutUrl: SITE.checkoutUrl, supportEmail: SITE.supportEmail, proAmt: d.proAmt.replace('$19', SITE.price) });
-  const raw = new Set(['alternates', 'jsonld', 'options']);
+    audList: d.aud.split('|').map(x => `<li>${esc(x)}</li>`).join(''), checkoutUrl: SITE.checkoutUrl, supportEmail: SITE.supportEmail, proAmt: d.proAmt.replace('$19', SITE.price) });
+  const raw = new Set(['alternates', 'jsonld', 'options', 'audList']);
   const html = tpl.replace(/\{\{(\w+)\}\}/g, (m, k) => { if (!(k in vars)) throw new Error('missing key ' + k + ' for ' + l); return raw.has(k) ? vars[k] : esc(vars[k]); });
   put(l === 'en' ? 'index.html' : `${l}/index.html`, html);
 }

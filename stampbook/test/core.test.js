@@ -385,3 +385,25 @@ test('balance link handles old and unsorted dates', () => {
   const p = { id: 'o', student: 'Old', total: 5, price: 1, stamps: [{ id: 'a', date: '2026-03-01' }, { id: 'b', date: '1999-12-31' }, { id: 'c', date: '1950-05-05' }] };
   assert.deepEqual(C.decodeCard(C.encodeCard(p, '')).dates, ['1950-05-05', '1999-12-31', '2026-03-01']);
 });
+
+test('ink colour is a bounded palette index; bad values fall back to the default', () => {
+  const p = mk(); assert.equal(C.inkOf(p), 0);
+  assert.ok(C.setInk(p, 3)); assert.equal(C.inkOf(p), 3);
+  assert.ok(C.setInk(p, 0)); assert.equal('ink' in p, false);
+  assert.equal(C.setInk(p, 99), false); assert.equal(C.setInk(p, 'x'), false);
+  for (const bad of ['<script>', 7, -1, 1.5, null, {}]) assert.equal(C.inkOf({ ink: bad }), 0);
+});
+test('weekPlan groups planned lessons by day and skips empty days', () => {
+  const a = mk({ id: 'a', student: 'Ann', schedule: { days: [1, 3], time: '10:00' } });
+  const b = mk({ id: 'b', student: 'Bo', schedule: { days: [3], time: '09:00' } });
+  const w = C.weekPlan([a, b], '2026-11-02', 7); // Monday
+  assert.deepEqual(w.map(d => d.date), ['2026-11-02', '2026-11-04']);
+  assert.deepEqual(w[1].items.map(i => i.student), ['Bo', 'Ann'], 'sorted by time within a day');
+  assert.deepEqual(C.weekPlan([mk()], '2026-11-02', 7), []);
+});
+test('justCompleted is true only for the stamp that used up the pack', () => {
+  const p = mk({ total: 2 }); C.addStamp(p, '2026-10-02'); const first = p.stamps[0].id;
+  assert.equal(C.justCompleted(p, first), false);
+  C.addStamp(p, '2026-10-03'); const last = p.stamps[1].id;
+  assert.equal(C.justCompleted(p, last), true); assert.equal(C.justCompleted(p, first), false);
+});

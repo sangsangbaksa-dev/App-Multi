@@ -18,28 +18,38 @@
 <body>
 <div class="wrap">
 <nav><a class="logo" href="/"><img src="/icon.svg" alt="" width="28" height="28"> <span>Stampbook</span></a>
-<select id="lang" aria-label="Language"><option value="en" data-href="/" selected>English</option><option value="ko" data-href="/ko/">한국어</option><option value="ja" data-href="/ja/">日本語</option><option value="zh" data-href="/zh/">中文</option><option value="es" data-href="/es/">Español</option></select></nav>
+<span class="navr"><select id="lang" aria-label="Language"><option value="en" data-href="/" selected>English</option><option value="ko" data-href="/ko/">한국어</option><option value="ja" data-href="/ja/">日本語</option><option value="zh" data-href="/zh/">中文</option><option value="es" data-href="/es/">Español</option></select><a class="btn sm" href="/app/">Open app</a></span></nav>
 <main>
 <section class="hero">
+<div class="hcopy">
 <p class="kick">For tutors, coaches and instructors</p>
 <h1>Every lesson stamped. Nobody argues about the count.</h1>
 <p class="lede">Your students prepay for 10 lessons. Three weeks later nobody remembers if it was 6 or 7 left. Stampbook is a stamp card that lives in your browser.</p>
-<p><a class="btn" href="/app/">Open the app</a> <span class="fine">Free for 3 active packs. No sign-up.</span></p>
-<div class="demo" aria-hidden="true"><div class="c on">3/10</div><div class="c on">10/14</div><div class="c on">10/21</div><div class="c on">10/28</div><div class="c n">5</div><div class="c">6</div><div class="c">7</div><div class="c">8</div><div class="c">9</div><div class="c">10</div></div>
+<p class="cta"><a class="btn" href="/app/">Open the app</a> <span class="fine">Free for 3 active packs. No sign-up.</span></p>
+<ul class="trust"><li>No sign-up</li><li>Works offline</li><li>Your data stays on your device</li></ul>
+</div>
+<div class="hdemo">
+<div class="sheet" id="demo" data-left="{n} left" data-done="Pack complete. Time to renew." data-reset="Start over">
+<div class="sh-top"><b>Mina</b><span id="demo-left" class="chip" aria-live="polite"></span></div>
+<div class="demo" id="demo-grid" role="group" aria-label="Try it: tap the next circle"></div>
+<p class="sh-hint" id="demo-hint">Try it: tap the next circle</p>
+<button type="button" class="btn ghost sm" id="demo-reset" hidden>Start over</button>
+</div>
+</div>
 </section>
+
+<section class="aud"><p class="audh">Made for</p><ul><li>Piano and music teachers</li><li>Language tutors</li><li>Personal trainers</li><li>Yoga and pilates</li><li>Academic coaching</li><li>Art and craft classes</li></ul></section>
 
 <section><h2>How it works</h2>
-<ol class="steps"><li>Add a student's pack: how many lessons, what they paid, how long it is valid.</li><li>After each lesson, tap the next circle. The date goes on the stamp.</li><li>When one is left, copy a ready-made renewal note. Pro: send a balance link the student can open.</li></ol></section>
+<ol class="steps3"><li><span class="num">1</span><h3>Add</h3><p>Add a student's pack: how many lessons, what they paid, how long it is valid.</p></li><li><span class="num">2</span><h3>Stamp</h3><p>After each lesson, tap the next circle. The date goes on the stamp.</p></li><li><span class="num">3</span><h3>Renew</h3><p>When one is left, copy a ready-made renewal note. Pro: send a balance link the student can open.</p></li></ol></section>
 
-<section class="grid3">
-<div><h3>Unearned money, visible</h3><p>See what students have paid for but not yet taken. Lapsed packs are listed, and what to do about them is your call.</p></div>
-<div><h3>Your data stays yours</h3><p>No account needed. Back up to a file whenever you like, or turn on optional cloud backup.</p></div>
-<div><h3>Reads in your language</h3><p>English, 한국어, 日本語, 中文, Español, switched in one tap.</p></div>
-</section>
-<section class="grid3">
-<div><h3>No-shows and cancellations</h3><p>Mark a missed lesson that still counts, or an excused one that does not. Both stay in the log.</p></div>
-<div><h3>Renew in one tap</h3><p>When the last lesson is stamped, start the next pack with the same terms.</p></div>
-<div><h3>Notes per lesson</h3><p>What you covered and what to do next time, kept beside the date.</p></div>
+<section class="feats">
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.7-1.1 1.5-2.5 1.8-2.5.8-2.5 1.8 1.1 1.7 2.5 1.7 2.5-.7 2.5-1.7"/></svg><h3>Unearned money, visible</h3><p>See what students have paid for but not yet taken. Lapsed packs are listed, and what to do about them is your call.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><h3>Your data stays yours</h3><p>No account needed. Back up to a file whenever you like, or turn on optional cloud backup.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg><h3>Reads in your language</h3><p>English, 한국어, 日本語, 中文, Español, switched in one tap.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg><h3>No-shows and cancellations</h3><p>Mark a missed lesson that still counts, or an excused one that does not. Both stay in the log.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></svg><h3>Renew in one tap</h3><p>When the last lesson is stamped, start the next pack with the same terms.</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h6"/></svg><h3>Notes per lesson</h3><p>What you covered and what to do next time, kept beside the date.</p></div>
 </section>
 
 <section class="price"><h2>Pay once</h2>
@@ -58,5 +68,6 @@
 </main>
 <footer><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:sangsangbaksa@gmail.com">sangsangbaksa@gmail.com</a> · <span>Made for people who teach.</span></footer>
 </div>
+<div class="sticky"><a class="btn" href="/app/">Open the app</a></div>
 <script src="/landing.js"></script>
 </body></html>
