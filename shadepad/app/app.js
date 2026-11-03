@@ -1,10 +1,10 @@
-/* Veilpad UI. Plain DOM, built with textContent and value only (no innerHTML).
+/* Shadepad UI. Plain DOM, built with textContent and value only (no innerHTML).
    Nothing the user types is stored. This device keeps only the language and the licence key. */
 (function () {
   'use strict';
 
-  var I18N = window.VP_I18N || {}, SITE = window.VP_SITE || {}, VP = window.VP;
-  var KEY = 'veilpad.v1';
+  var I18N = window.SP_I18N || {}, SITE = window.SP_SITE || {}, SP = window.SP;
+  var KEY = 'shadepad.v1';
   var LANGS = ['en', 'ko', 'ja', 'zh', 'es'];
   var $ = function (id) { return document.getElementById(id); };
 
@@ -102,7 +102,7 @@
       kind.textContent = t('app_kind_' + kindOf(tag));
       var pv = document.createElement('span');
       pv.className = 'pv';
-      pv.textContent = VP.preview(last.map[tag]);
+      pv.textContent = SP.preview(last.map[tag]);
       li.appendChild(code);
       li.appendChild(kind);
       li.appendChild(pv);
@@ -115,7 +115,7 @@
   /* ---------- actions ---------- */
 
   $('redact').addEventListener('click', function () {
-    var r = VP.redact($('input').value);
+    var r = SP.redact($('input').value);
     last = r;
     $('output').value = r.text;
     renderSummary();
@@ -138,7 +138,7 @@
 
   $('restore').addEventListener('click', function () {
     if (!last) { setMsg('restore_msg', t('app_no_map')); return; }
-    var r = VP.restore($('reply').value, last.map);
+    var r = SP.restore($('reply').value, last.map);
     $('restored').value = r.text;
     setMsg('restore_msg', r.replaced ? t('app_restore_done', { n: r.replaced }) : t('app_restore_none'));
   });

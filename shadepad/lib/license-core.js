@@ -1,7 +1,7 @@
-/* Licence check for Veilpad, used by functions/api/license.js (Cloudflare Pages Function).
+/* Licence check for Shadepad, used by functions/api/license.js (Cloudflare Pages Function).
    check({ method, body, env, fetchFn }) -> { status, body }. The only I/O is the Lemon Squeezy License API
    (POST https://api.lemonsqueezy.com/v1/licenses/validate). It sends only the key; nothing is stored or logged.
-   Optional env LEMONSQUEEZY_PRODUCT_ID pins keys to Veilpad. LEMONSQUEEZY_DISABLED=1 answers { configured: false }. */
+   Optional env LEMONSQUEEZY_PRODUCT_ID pins keys to Shadepad. LEMONSQUEEZY_DISABLED=1 answers { configured: false }. */
 const LS_VALIDATE = 'https://api.lemonsqueezy.com/v1/licenses/validate';
 const KEY_RE = /^[A-Za-z0-9-]{8,80}$/;
 

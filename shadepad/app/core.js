@@ -1,4 +1,4 @@
-/* Veilpad core: pure logic. No DOM, no network, no storage.
+/* Shadepad core: pure logic. No DOM, no network, no storage.
    findAll() finds likely sensitive values with patterns and checks (no AI).
    redact() replaces them with numbered tags such as [EMAIL_1] and returns the originals in a map.
    restore() puts the originals back into text (an AI reply) that carries those tags. */
@@ -108,7 +108,7 @@
     return v.slice(0, 3) + '•••' + v.slice(-2);
   }
 
-  var VP = { findAll: findAll, redact: redact, restore: restore, preview: preview, luhn: luhn };
-  if (typeof module !== 'undefined' && module.exports) module.exports = VP;
-  else root.VP = VP;
+  var SP = { findAll: findAll, redact: redact, restore: restore, preview: preview, luhn: luhn };
+  if (typeof module !== 'undefined' && module.exports) module.exports = SP;
+  else root.SP = SP;
 })(typeof window !== 'undefined' ? window : globalThis);

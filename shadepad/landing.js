@@ -1,9 +1,9 @@
 /* Applies the shared strings to the landing and legal pages. Language: ?lang=, then the saved app setting, then the browser. */
 (function () {
   'use strict';
-  var I18N = window.VP_I18N || {}, SITE = window.VP_SITE || {};
+  var I18N = window.SP_I18N || {}, SITE = window.SP_SITE || {};
   var LANGS = ['en', 'ko', 'ja', 'zh', 'es'];
-  var KEY = 'veilpad.v1';
+  var KEY = 'shadepad.v1';
   var current = 'en';
 
   function readSaved() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }

@@ -1,4 +1,4 @@
-# Veilpad
+# Shadepad
 
 A browser-only tool that hides likely secrets (API keys, passwords in config lines, private key blocks, JWTs, emails, phone numbers, IP addresses, card numbers and Korean resident IDs) before you paste text into an AI tool, and puts the original values back into the AI's reply. Static site, no server of its own, no AI API calls, no upload. 5 languages (en, ko, ja, zh, es).
 
@@ -25,14 +25,14 @@ Working name: the folder and the product name are not final. Check trademarks (K
 ## Tests and build
 
 ```sh
-cd veilpad
+cd shadepad
 node --test test/*.test.js
 node scripts/build.js --dist
 ```
 
 ## Deploy
 
-`../.github/workflows/deploy-cloudflare.yml` tests, builds and deploys this folder to a Cloudflare Pages project named `veilpad` on pushes to `main`. The project must exist first (Cloudflare dashboard → Workers & Pages → Create → Pages → Direct Upload, name `veilpad`). Then set these variables on the project (Settings → Variables and Secrets):
+`../.github/workflows/deploy-cloudflare.yml` tests, builds and deploys this folder to a Cloudflare Pages project named `shadepad` on pushes to `main`. The project must exist first (Cloudflare dashboard → Workers & Pages → Create → Pages → Direct Upload, name `shadepad`). Then set these variables on the project (Settings → Variables and Secrets):
 
 - `LEMONSQUEEZY_PRODUCT_ID`: pins licence keys to this product.
 - `LEMONSQUEEZY_DISABLED`: set to `1` to answer `configured: false`, which keeps the app open (the state before the product is on sale).

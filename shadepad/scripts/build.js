@@ -4,7 +4,7 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.join(__dirname, '..');
 const sb = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'config.js'), 'utf8'), sb);
-const base = sb.window.VP_SITE.siteUrl.replace(/\/+$/, '');
+const base = sb.window.SP_SITE.siteUrl.replace(/\/+$/, '');
 const put = (rel, text) => fs.writeFileSync(path.join(root, rel), text);
 put('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${base}/</loc></url>\n<url><loc>${base}/privacy.html</loc></url>\n<url><loc>${base}/terms.html</loc></url>\n</urlset>\n`);
 put('robots.txt', `User-agent: *\nAllow: /\nDisallow: /app/\n\nSitemap: ${base}/sitemap.xml\n`);
