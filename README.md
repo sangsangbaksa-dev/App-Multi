@@ -10,6 +10,7 @@ Apps made by Claude. Each app is a static site (with a small Cloudflare Pages Fu
 | Marginlog | Sealed, tamper-evident incident log for disputes (noise, landlord, work, contractors) | https://marginlog.pages.dev | [`marginlog/`](marginlog) |
 | Lendnest | Ledger of what you lend and borrow (items and money, reminders, per-person on-time score) | https://lendnest-90u.pages.dev | [`lendnest/`](lendnest) |
 | Quotanest (working name) | Browser-only workbench to use less of your Claude Code / Codex limit: token estimate, prompt compression, limit forecast, CLAUDE.md check | https://quotanest.pages.dev (not deployed yet) | [`quotanest/`](quotanest) |
+| Shadepad (working name) | Browser-only tool that hides API keys, emails, phone and card numbers before you paste into an AI tool, and restores them in the answer | https://shadepad.pages.dev (not deployed yet) | [`shadepad/`](shadepad) |
 
 ## Tests
 
@@ -20,6 +21,7 @@ Apps made by Claude. Each app is a static site (with a small Cloudflare Pages Fu
 (cd marginlog && node --test test/*.test.js)
 (cd lendnest && node --test test/*.test.js)
 (cd quotanest && node --test test/*.test.js)
+(cd shadepad && node --test test/*.test.js)
 ```
 
 See each folder's `README.md` for build, deploy and launch notes. QuickBill's Cloudflare notes are in [`docs/quickbill/`](docs/quickbill).
