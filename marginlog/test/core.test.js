@@ -173,3 +173,20 @@ test('overview: one row per case with counts, overdue deadlines and strength', a
   assert.equal(rows[0].overdue, 2); // both deadlines (Oct 10 and Oct 20) are before NOW (Nov 2)
   assert.equal(rows[1].total, 0); assert.equal(rows[1].strength, 0);
 });
+
+test('calendarAll: one calendar with open deadlines from every active case; digest lists overdue first', async () => {
+  const L = Object.assign({}, I.L.en, { stepNames: I.stepNames('en') });
+  const a = await mk([{ at: '2026-10-01T23:00', text: 'first incident text here' }]);
+  a.name = 'Flat 3B'; a.steps = [{ id: 'st1', kind: 'written', at: '2026-10-02', due: '2026-10-10', done: false }];
+  const b = await mk([{ at: '2026-10-05T23:00', text: 'second incident text here' }]);
+  b.name = 'Boss'; b.steps = [{ id: 'st2', kind: 'talk', at: '2026-10-06', due: '2026-11-20', done: false }];
+  const arch = Object.assign({}, b, { id: 'x', name: 'Old', archived: true, steps: [{ id: 'st3', kind: 'talk', at: '2026-10-06', due: '2026-11-21', done: false }] });
+  const ics = C.calendarAll([a, b, arch], L, NOW);
+  assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 2);
+  assert.ok(ics.startsWith('BEGIN:VCALENDAR') && ics.trimEnd().endsWith('END:VCALENDAR'));
+  assert.equal(C.calendarAll([], L, NOW), '');
+  const md = C.digest([a, b, arch], L, NOW);
+  assert.ok(md.includes('## Needs attention') && md.includes('Written notice in Flat 3B was due 2026-10-10'));
+  assert.ok(md.includes('Flat 3B (Noise or neighbour)') || md.includes('Flat 3B ('));
+  assert.ok(!md.includes('Old'));
+});
