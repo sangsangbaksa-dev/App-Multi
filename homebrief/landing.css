@@ -1,0 +1,29 @@
+:root{--bg:#f5f6fb;--ink:#1b1f3b;--mute:#4f577a;--pri:#3b4fd8;--pri2:#2a3bb0;--card:#fff;--line:#dde0f0;--field:#6f77a0;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#101326;--ink:#eceefb;--mute:#a4abcf;--pri:#8b9bff;--pri2:#aab5ff;--card:#181c36;--line:#2b3157;--field:#8088b2}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI","Noto Sans KR","Noto Sans JP","Noto Sans SC",sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}.sr{position:absolute;left:-999px}
+.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;padding-bottom:10px;gap:10px}.right{display:flex;gap:10px;align-items:center}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--ink);text-decoration:none}
+select{min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid var(--field);background:var(--card);color:var(--ink);font:inherit;max-width:120px}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;background:var(--pri);color:#fff;padding:13px 26px;border-radius:12px;font-weight:700;text-decoration:none;min-height:48px}
+@media (prefers-color-scheme:dark){.btn{color:#10142e}}
+.btn.sm{min-height:44px;padding:8px 12px;font-size:15px}.btn.light{background:#fff;color:#2a3bb0}
+a:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--pri);outline-offset:3px}
+.hero{padding:44px 0 28px}.two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:center}
+.badge{display:inline-block;background:color-mix(in srgb,var(--pri) 14%,var(--card));color:var(--pri2);font-weight:700;font-size:14px;padding:5px 12px;border-radius:999px;margin:0 0 14px}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.15;margin:0 0 14px;letter-spacing:-.01em}.lede{font-size:19px;color:var(--mute);margin:0 0 22px}.cta{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.free{color:var(--mute);font-size:14px}
+.phone{background:var(--card);border:1px solid var(--line);border-radius:30px;padding:14px;max-width:340px;justify-self:center;box-shadow:0 18px 50px rgba(40,50,140,.18)}
+.screen{display:flex;flex-direction:column;gap:10px}.mock-top{display:flex;justify-content:space-between;align-items:center;font-size:15px;padding:4px 4px 8px;border-bottom:1px solid var(--line)}.mock-top span{font-size:13px;color:var(--mute)}
+.bub{background:color-mix(in srgb,var(--pri) 12%,var(--card));border-radius:16px;padding:12px 14px;font-size:15px}.bub p{margin:4px 0 0;line-height:1.5}.bub small{color:var(--mute);font-weight:700}.bub.mine{background:var(--bg);border:1px dashed var(--line)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}.grid article{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+.grid svg{width:32px;height:32px;stroke:var(--pri);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.grid h3{margin:10px 0 6px;font-size:18px}.grid p{margin:0;color:var(--mute);font-size:15.5px}
+.steps{background:var(--card);border-block:1px solid var(--line);padding:36px 0;margin:30px 0}.steps ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.steps b{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--pri);color:#fff}.steps h3{margin:8px 0 4px}.steps p{margin:0;color:var(--mute)}
+@media (prefers-color-scheme:dark){.steps b{color:#10142e}}
+.faq{max-width:760px}.faq details{border-bottom:1px solid var(--line);padding:12px 0}.faq summary{font-weight:700;cursor:pointer;min-height:32px}.faq p{color:var(--mute);margin:8px 0 0}
+.final{background:var(--pri2);color:#fff;text-align:center;padding:44px 0;margin-top:40px}.final h2{margin:0 0 16px;font-size:28px}
+@media (prefers-color-scheme:dark){.final{background:#232a66}}
+.foot{padding:26px 20px;color:var(--mute);font-size:14px}.foot a{color:var(--mute)}
+@media(max-width:800px){.two-col,.grid,.steps ol{grid-template-columns:1fr}.hero{padding-top:26px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.page h1{font-size:30px}.page p,.page li{color:var(--ink)}

@@ -13,6 +13,7 @@ Notes
 - The QuickBill wordmark and icon (`logo.svg`, `icon*.svg`, PNG icons, `og.png`) contain outlined Newsreader glyphs. The OFL allows this; the font itself is not embedded in those files.
 - The font files and their license texts are copied into the published `dist/` folder by `invoice-pwa/scripts/build-pages.mjs`, which satisfies the OFL condition that each copy carries the notice and license.
 - "QR Code" is a registered trademark of DENSO WAVE INCORPORATED. The apps use the words only to describe the code they draw.
+- Homebrief bundles no third-party code, fonts or images (system fonts only). Its server calls the Anthropic API and the Lemon Squeezy License API over HTTPS; those are services, not bundled material.
 - Stampbook, Stayline and Marginlog use only the visitor's system fonts (`system-ui`, `Georgia`, ...). Nothing is bundled.
 - Fonts are only used on the machine that renders `og.png`/icons through the stacks named in `design/og.html` or `scripts/make-images.js`; the PNGs contain pixels, not font files.
 - All other code and artwork in this repository was written for these apps (with Claude). There is no top-level `LICENSE`, so the default is all rights reserved by the owner.
