@@ -34,7 +34,7 @@ function foot(l) {
   return `<footer><div class="in"><span>${esc(L[l].foot)}</span> · <a href="${rel(l, 'privacy')}">${esc(X[l].privacy)}</a> · <a href="${rel(l, 'terms')}">${esc(X[l].terms)}</a> · <a href="mailto:${esc(CFG.supportEmail)}">${esc(CFG.supportEmail)}</a></div></footer>`;
 }
 function jsonld(l) {
-  const s = L[l];
+  const s = Object.fromEntries(Object.entries(L[l]).map(([k, v]) => [k, String(v).split('{price}').join(CFG.price)]));
   const app = { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Stayline', applicationCategory: 'TravelApplication', operatingSystem: 'Any (web browser)', inLanguage: l, url: abs(l), description: X[l].metaDesc, image: site + '/og.png',
     offers: { '@type': 'Offer', price: CFG.priceAmount, priceCurrency: CFG.priceCurrency, availability: 'https://schema.org/InStock' } };
   const faq = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [1, 2, 3, 4].map(i => ({ '@type': 'Question', name: s['q' + i], acceptedAnswer: { '@type': 'Answer', text: s['a' + i] } })) };
@@ -62,8 +62,7 @@ ${top(l, '')}
   <div class="cols"><p>${esc(s.why1)}</p><p>${esc(s.why2)}</p><p>${esc(s.why3)}</p></div></div></section>
 <section class="paper alt"><div class="in"><h2>${esc(s.priceH)}</h2>
   <div class="plans">
-    <div class="plan"><h3>${esc(s.freeN)}</h3><p class="price">$0</p><ul><li>${esc(s.f1)}</li><li>${esc(s.f2)}</li><li>${esc(s.f3)}</li></ul><a class="btn ghost" href="/app/">${esc(s.cta)}</a></div>
-    <div class="plan pro"><h3>Pro</h3><p class="price">${esc(CFG.price)} <small>${esc(s.once)}</small></p><ul><li>${esc(s.p1)}</li><li>${esc(s.p2)}</li><li>${esc(s.p3)}</li></ul><a class="btn" href="${esc(CFG.checkoutUrl)}" rel="noopener">${esc(s.proCta)}</a></div>
+    <div class="plan pro"><h3>Stayline Pro</h3><p class="price">${esc(CFG.price)} <small>${esc(s.once)}</small></p><ul><li>${esc(s.p0)}</li><li>${esc(s.p1)}</li><li>${esc(s.p2)}</li><li>${esc(s.p3)}</li></ul><a class="btn" href="${esc(CFG.checkoutUrl)}" rel="noopener">${esc(s.proCta)}</a><p class="fine">${esc(s.payNote)}</p></div>
   </div></div></section>
 <section class="paper"><div class="in"><h2>${esc(s.faqH)}</h2>
 ${[1, 2, 3, 4].map(i => `  <details><summary>${esc(s['q' + i])}</summary><p>${esc(s['a' + i])}</p></details>`).join('\n')}</div></section>

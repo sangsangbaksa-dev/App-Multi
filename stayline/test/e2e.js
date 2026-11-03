@@ -13,6 +13,8 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', timezoneId: 'UTC' });
   const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && !m.location().url.includes('/api/license') && errs.push(m.text() + ' ' + m.location().url));
   pg.on('dialog', d => d.accept());
+  // paid app: start activated; the paywall cases below switch the flag off
+  await ctx.addInitScript(() => { if (!localStorage.getItem('stayline.v1')) localStorage.setItem('stayline.v1', JSON.stringify({ v: 1, trackers: [], active: '', pro: true, lang: '' })); });
   await pg.goto(base + '/app/'); await pg.waitForSelector('.empty');
   await pg.screenshot({ path: out + '/app-empty.png', fullPage: true });
   // create default Schengen counter with an HTML-ish name
@@ -44,15 +46,15 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   // restore tolerates a malformed file
   await pg.locator('input[type=file]').setInputFiles({ name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ trackers: [{ name: 'Z', rule: { kind: 'rolling', limit: 99999 }, trips: [{ from: 'x' }, { from: '2026-01-01', to: '2026-01-02' }] }] })) });
   await pg.waitForSelector('.tab:has-text("Z")'); assert.equal(await pg.locator('.trips li').count(), 1);
-  await pg.evaluate(() => { localStorage.clear(); }); await pg.reload(); await pg.waitForSelector('.empty');
+  await pg.evaluate(() => { localStorage.setItem('stayline.v1', JSON.stringify({ v: 1, trackers: [], active: '', pro: false, lang: '' })); }); await pg.reload(); await pg.waitForSelector('.paywall');
   await pg.route('**/api/license', r => r.fulfill({ json: { configured: true, valid: true } }));
   await pg.fill('#lic', 'ANY-SERVER-OK-KEY'); await pg.click('.settings .pri'); await pg.waitForFunction(() => JSON.parse(localStorage['stayline.v1'] || '{}').pro === true);
   await pg.unroute('**/api/license');
-  await pg.evaluate(() => { const s = JSON.parse(localStorage['stayline.v1']); s.pro = false; localStorage['stayline.v1'] = JSON.stringify(s); }); await pg.reload(); await pg.waitForSelector('.empty'); await pg.waitForTimeout(2300);
+  await pg.evaluate(() => { const s = JSON.parse(localStorage['stayline.v1']); s.pro = true; localStorage['stayline.v1'] = JSON.stringify(s); }); await pg.reload(); await pg.waitForSelector('.empty'); await pg.waitForTimeout(2300);
   await pg.click('.empty .pri'); await pg.waitForSelector('.board'); assert.equal(await pg.locator('.digits').textContent(), '90', 'quick start');
   await pg.click('.rowhead .pri'); await pg.fill('#f-from', add(-49)); await pg.fill('#f-to', add(-10)); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.trips li');
-  // free limit: 2nd counter blocked
-  await pg.click('.tab.add'); await pg.waitForSelector('dialog a.pri'); assert.ok((await pg.locator('dialog h2').textContent()).includes('free limit')); await pg.keyboard.press('Escape'); await pg.waitForSelector('dialog', { state: 'detached' });
+  // no free tier: switching the licence off shows the paywall instead of the counter
+  await pg.evaluate(() => { const s = JSON.parse(localStorage['stayline.v1']); s.pro = false; localStorage['stayline.v1'] = JSON.stringify(s); }); await pg.reload(); await pg.waitForSelector('.paywall'); assert.ok((await pg.locator('.paywall h2').textContent()).includes('Stayline Pro'));
   // licence: configured server decides (even a well-formed offline key is refused), network failure never unlocks
   const goodKey = require('../app/core.js').makeKey('TESTKEY1');
   await pg.route('**/api/license', r => r.fulfill({ json: { configured: true, valid: false } }));
@@ -64,7 +66,6 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   await pg.unroute('**/api/license');
   // pro gating
   await pg.waitForTimeout(2300);
-  await pg.click('text=CSV (Pro)'); assert.ok((await pg.locator('.toast').last().textContent()).includes('Pro'));
   await pg.waitForTimeout(2300);
   await pg.fill('#lic', 'SL-AAAA-AAAA-ZZZ'); await pg.click('.settings .pri'); assert.equal(await pg.evaluate(() => JSON.parse(localStorage['stayline.v1']).pro), false);
   await pg.waitForTimeout(2300);
@@ -80,7 +81,7 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   // custom rolling rule form shows window field
   await pg.click('.tab.add'); await pg.selectOption('#f-rule', 'custom'); assert.equal(await pg.locator('#f-winl').isVisible(), true); await pg.click('dialog .ghost');
   // csv + backup downloads
-  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('text=CSV (Pro)')]); assert.equal(dl.suggestedFilename(), 'stayline.csv');
+  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('.row button >> text=CSV')]); assert.equal(dl.suggestedFilename(), 'stayline.csv');
   const [bk] = await Promise.all([pg.waitForEvent('download'), pg.click('text=Back up')]); const data = JSON.parse(fs.readFileSync(await bk.path(), 'utf8')); assert.equal(data.trackers.length, 2);
   // over-limit state
   await pg.click('.tab >> nth=0'); await pg.click('.rowhead .pri'); await pg.fill('#f-from', add(-100)); await pg.fill('#f-to', add(-50)); await pg.click('dialog button[type=submit]');
@@ -109,7 +110,7 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   const sm = await (await lp.goto(base + '/sitemap.xml')).text(); assert.ok(sm.includes(CFG.siteUrl + '/ko/privacy') && sm.includes('hreflang="x-default"'));
   assert.ok((await (await lp.goto(base + '/robots.txt')).text()).includes('Sitemap: ' + CFG.siteUrl + '/sitemap.xml'));
   // v-next: margin, note, border sheet, theme
-  const fctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', timezoneId: 'UTC' }); const fp = await fctx.newPage(); fp.on('pageerror', e => errs.push(e.message)); fp.on('dialog', d => d.accept());
+  const fctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', timezoneId: 'UTC' }); await fctx.addInitScript(() => { if (!localStorage.getItem('stayline.v1')) localStorage.setItem('stayline.v1', JSON.stringify({ v: 1, trackers: [], active: '', pro: true, lang: '' })); }); const fp = await fctx.newPage(); fp.on('pageerror', e => errs.push(e.message)); fp.on('dialog', d => d.accept());
   await fp.goto(base + '/app/'); await fp.waitForSelector('.empty'); await fp.click('.empty .pri'); await fp.waitForSelector('.board');
   await fp.click('.rowhead .pri'); await fp.fill('#f-place', 'Rome'); await fp.fill('#f-from', add(-3)); await fp.check('#f-on'); await fp.fill('#f-note', 'stamp page 7'); await fp.click('dialog button[type=submit]');
   await fp.waitForSelector('.trips li .note'); assert.equal(await fp.locator('.trips li .note').textContent(), 'stamp page 7');
