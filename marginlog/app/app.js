@@ -367,7 +367,12 @@
       });
     function gen() { $('#l-text', d).value = C.noticeLetter(c, L, now(), +$('#l-days', d).value); }
     gen();
-    $('#l-days', d).addEventListener('change', function () { if (!dirty) gen(); });
+    var shownDue = C.addDays(C.toLocalStamp(new Date(now())).slice(0, 10), +$('#l-days', d).value);
+    $('#l-days', d).addEventListener('change', function () {
+      var nd = C.addDays(C.toLocalStamp(new Date(now())).slice(0, 10), +this.value);
+      if (!dirty) gen(); else { var ta = $('#l-text', d); ta.value = ta.value.split(shownDue).join(nd); }
+      shownDue = nd;
+    });
     $('#l-text', d).addEventListener('input', function () { dirty = true; });
     $('#l-copy', d).addEventListener('click', async function () { var ta = $('#l-text', d); try { await navigator.clipboard.writeText(ta.value); toast(t('ltrCopied')); } catch (e) { ta.focus(); ta.select(); } });
     $('#l-dl', d).addEventListener('click', function () { download('marginlog-notice-' + slug(c.name) + '.txt', 'text/plain', '\ufeff' + $('#l-text', d).value); });
