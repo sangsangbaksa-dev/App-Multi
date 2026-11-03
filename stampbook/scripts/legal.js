@@ -2,17 +2,19 @@
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = {
   privacy: { en: { h: 'Privacy', p: [
-    'Stampbook runs in your browser. Student names, lesson dates, notes and prices are saved in this browser\'s local storage on your device. They are not sent to us or to anyone else. We run no analytics and set no cookies.',
+    'Stampbook runs in your browser. Student names, lesson dates, notes and prices are saved in this browser\'s local storage on your device. They are not sent to us or to anyone else unless you turn on the optional cloud backup described below. We run no analytics and set no cookies.',
+    'Cloud backup (optional, off by default): only if you create an account and log in (email and password), a copy of your packs and settings (not your licence key or language) is stored with our database provider, Supabase, so you can use it on another device. Your email address is stored for the login, and the copy can only be read with your own login. Log out to stop syncing; to have the cloud copy deleted, email {email}.',
     'A balance link (Pro) contains one student\'s name, lesson dates and lesson count inside the address after the # sign. That part of an address is not sent to a server when the page loads, but anyone who has the link can read it, and the chat app you paste it into may keep it. Share it only with that student.',
     'Licence keys (Pro): when you activate a key, the key is sent from your browser to our server function, which checks it with our payment provider (Lemon Squeezy) and returns yes or no. We do not store the key or log it. The provider holds the purchase record and your payment details under its own privacy policy. Stampbook never sees your card.',
     'Clearing your browser data deletes your stamps. Use Backup to keep a file copy.',
-    'Contact: {email}. Last updated 2026-10-30.'] },
+    'Contact: {email}. Last updated 2026-11-01.'] },
     ko: { h: '개인정보', p: [
-    '스탬프북은 브라우저 안에서 동작합니다. 수강생 이름, 수업 날짜, 메모, 금액은 기기의 이 브라우저 로컬 저장소에만 저장되며 우리나 제3자에게 전송되지 않습니다. 분석 도구도 쿠키도 쓰지 않습니다.',
+    '스탬프북은 브라우저 안에서 동작합니다. 수강생 이름, 수업 날짜, 메모, 금액은 기기의 이 브라우저 로컬 저장소에 저장되며 우리나 제3자에게 전송되지 않습니다. 분석 도구도 쿠키도 쓰지 않습니다. 단, 아래의 선택 기능인 클라우드 백업을 켜면 예외입니다.',
+    '클라우드 백업(선택, 기본 꺼짐): 계정을 만들어 로그인(이메일·비밀번호)한 경우에만, 다른 기기에서도 쓸 수 있도록 팩과 설정의 사본(라이선스 키와 언어 설정 제외)이 데이터베이스 제공업체 Supabase에 저장됩니다. 로그인용으로 이메일 주소도 저장되며, 사본은 본인 로그인으로만 읽을 수 있습니다. 로그아웃하면 동기화가 멈추고, 클라우드 사본 삭제는 {email}로 요청해 주세요.',
     '잔여 링크(Pro)에는 수강생 한 명의 이름, 수업 날짜, 횟수가 주소의 # 뒤에 담깁니다. 이 부분은 페이지를 열 때 서버로 전송되지 않지만 링크를 가진 사람은 누구나 읽을 수 있고, 붙여넣은 메신저가 보관할 수 있습니다. 해당 수강생에게만 보내세요.',
     '라이선스 키(Pro): 키를 활성화하면 브라우저가 키를 우리 서버 함수로 보내고, 서버 함수가 결제 대행사(Lemon Squeezy)에 확인해 맞는지 틀린지만 돌려줍니다. 키를 저장하거나 기록하지 않습니다. 구매 기록과 결제 정보는 결제 대행사가 자체 방침에 따라 보관하며, 스탬프북은 카드 정보를 보지 못합니다.',
     '브라우저 데이터를 지우면 도장 기록도 삭제됩니다. 백업으로 파일 사본을 보관하세요.',
-    '문의: {email}. 최종 수정 2026-10-30.'] } },
+    '문의: {email}. 최종 수정 2026-11-01.'] } },
   terms: { en: { h: 'Terms', p: [
     'Stampbook is a tool for keeping count of prepaid lessons. It is provided as is. It does not process payments between you and your students, and it is not tax, legal or accounting advice. You are responsible for your own records; keep backups.',
     'Free: up to {limit} active packs. Pro: a one-time payment of {price} that unlocks unlimited packs, balance links and CSV export on the devices where you enter your licence key. We may change the price for new buyers; what you paid for stays unlocked.',
