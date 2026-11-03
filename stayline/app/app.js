@@ -518,6 +518,7 @@
         h('button', { class: 'ghost', onclick: function () { download('stayline-backup.json', JSON.stringify({ v: 1, trackers: state.trackers, active: state.active }), 'application/json'); toast(T('backupDone')); } }, T('exp')),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
         tr ? h('button', { class: 'ghost', onclick: function () { icsIn.click(); } }, T('icsImport')) : null, icsIn,
+        state.trackers.length ? h('button', { class: 'ghost', onclick: function () { download('stayline-report.md', C.yearReport(state.trackers, C.todayStr()), 'text/markdown'); } }, T('report')) : null,
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; download('stayline.csv', C.toCsv(state.trackers, C.todayStr()), 'text/csv'); } }, T('csv')),
         h('button', { class: 'ghost', onclick: function () { download('stayline.ics', C.toIcs(state.trackers, C.todayStr()), 'text/calendar'); } }, T('ics')),
         h('button', { class: 'ghost', onclick: function () {

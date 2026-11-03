@@ -602,8 +602,25 @@
     });
     return out.sort(function (a, b) { return a.left - b.left; });
   }
+  /* plain-text (Markdown) report for every counter: rule, days counted now, days per calendar year, places, longest stay, permit date */
+  function yearReport(trackers, today) {
+    today = today || todayStr();
+    var out = ['# Stayline report', '', 'Generated ' + today + '. These are estimates from the dates entered; official records decide.', ''];
+    (trackers || []).forEach(function (tr) {
+      var r = cleanRule(tr.rule), st = yearStats(tr, today), s = summary(tr, today);
+      out.push('## ' + (tr.name || 'Counter'), '');
+      out.push('- Rule: ' + (r.kind === 'year' ? r.limit + ' days per calendar year' : r.limit + ' days in any ' + r.window + ' days'));
+      out.push('- Counted now: ' + s.used + ' days, ' + (s.left >= 0 ? s.left + ' left' : (-s.left) + ' over'));
+      if (tr.expires && validDate(tr.expires)) out.push('- Permit or visa valid until: ' + tr.expires);
+      out.push('- Trips: ' + st.trips + ', places: ' + st.places + ', days inside in total: ' + st.total);
+      if (st.longest) out.push('- Longest stay: ' + st.longest.days + ' days' + (st.longest.place ? ' (' + st.longest.place + ')' : '') + ', from ' + st.longest.from);
+      if (st.years.length) { out.push('', '| Year | Days inside |', '| --- | --- |'); st.years.forEach(function (y) { out.push('| ' + y.year + ' | ' + y.days + ' |'); }); }
+      out.push('');
+    });
+    return out.join('\n');
+  }
   var API = {
-    oneLine: oneLine, parseIcs: parseIcs, permitWatch: permitWatch,
+    oneLine: oneLine, parseIcs: parseIcs, permitWatch: permitWatch, yearReport: yearReport,
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
     validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, placeStats: placeStats, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
