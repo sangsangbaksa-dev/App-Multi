@@ -13,7 +13,7 @@ const srv = http.createServer((q, r) => {
   const mkPack = (id, student, dates) => ({ id, student, total: 10, price: 500, currency: 'USD', start: ym + '-01', months: 3, expires: C.addMonths(today, 2), paid: true,
     stamps: dates.map((d, i) => ({ id: id + i, date: d, note: i === 0 ? 'scales' : '', kind: d[0] === '!' ? '' : '' })) });
   const d = (n) => C.addDays(today, -n);
-  const state = { v: 1, teacher: '', pro: false, lang: '', packs: [mkPack('a', 'Mina', [d(0), d(7), d(14), d(40)]), mkPack('b', 'Joon', [d(30)])] };
+  const state = { v: 1, teacher: '', pro: true, lang: '', packs: [mkPack('a', 'Mina', [d(0), d(7), d(14), d(40)]), mkPack('b', 'Joon', [d(30)])] };
   state.packs[0].stamps[1].kind = 'noshow'; state.packs[0].stamps[2].kind = 'excused';
   const b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US' });
   await ctx.addInitScript(s => { if (!localStorage['stampbook.v1']) localStorage['stampbook.v1'] = s; }, JSON.stringify(state));
@@ -38,7 +38,7 @@ const srv = http.createServer((q, r) => {
   await pg.click('.tabs button >> nth=0'); await pg.waitForSelector('.card');
   await pg.locator('.foot button', { hasText: 'Mark unpaid' }).first().click(); assert.equal(await pg.locator('.chip', { hasText: 'Unpaid' }).count(), 1);
   await pg.click('.tabs button >> nth=2'); await pg.waitForSelector('.ins .bars'); assert.ok((await pg.locator('.ins').textContent()).includes('Awaiting payment'));
-  await pg.locator('.ins button', { hasText: 'Stats CSV' }).click(); await pg.waitForSelector('#up[open]'); await pg.locator('#up button', { hasText: 'Cancel' }).click(); // Pro gate
+  await pg.locator('.ins button', { hasText: 'Stats CSV' }).click(); // (no gate: the app is licensed)
   await pg.selectOption('select', 'ko'); await pg.waitForSelector('.ins .bars');
   assert.ok((await pg.locator('.tabs').textContent()).includes('통계'));
   await pg.screenshot({ path: out + '/insights-ko.png', fullPage: true });

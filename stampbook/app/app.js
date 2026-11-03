@@ -65,7 +65,6 @@
       try { document.execCommand('copy'); done(); } catch (e) { prompt('', text); } ta.remove();
     }
   }
-  function activeCount() { return state.packs.filter(function (p) { var s = C.status(p); return s === 'active' || s === 'low'; }).length; }
   function needPro() { showUpgrade(); }
 
   /* ---------- read-only balance card (opened from a shared link) ---------- */
@@ -86,18 +85,38 @@
     ]));
   }
 
+  /* ---------- paid app: without a licence key the app shows the offer, key entry and a backup only; data stays on the device ---------- */
+  function renderLocked() {
+    document.documentElement.lang = lang; document.title = T('app');
+    var key = h('input', { id: 'lic', placeholder: T('licPh'), autocapitalize: 'characters', autocomplete: 'off', spellcheck: 'false' });
+    var sel = h('select', { 'aria-label': T('lang'), onchange: function (e) { lang = e.target.value; state.lang = lang; save(); render(); } },
+      I.langs.map(function (l) { return h('option', { value: l, selected: l === lang ? 'selected' : false }, I.L[l].name); }));
+    root.appendChild(h('header', {}, [h('h1', {}, [T('app'), h('small', {}, T('tag'))]), sel]));
+    root.appendChild(h('div', { class: 'card lock' }, [
+      h('h2', { style: 'font:700 22px var(--serif);margin:0 0 6px' }, T('lockH')),
+      h('p', {}, T('lockB', { price: CFG.price })),
+      h('ul', {}, [T('upL1'), T('upL2'), T('upL3')].map(function (x) { return h('li', {}, x); })),
+      h('p', {}, [h('a', { class: 'btnlink', href: CFG.checkoutUrl, target: '_blank', rel: 'noopener' }, T('lockBuy'))]),
+      h('label', { for: 'lic' }, T('lockKey')),
+      h('div', { class: 'row' }, [key, h('button', { id: 'act', class: 'pri', onclick: function () { activate(key.value); } }, T('activate'))]),
+      h('p', { class: 'note' }, T('lockBackup')),
+      h('div', { class: 'row' }, [h('button', { class: 'ghost', onclick: doBackup }, T('exp'))])
+    ]));
+  }
+
   /* ---------- main ---------- */
   function render() {
     root.textContent = '';
     document.documentElement.lang = lang; document.title = T('app');
     var m = location.hash.match(/^#c=([\w-]+)$/);
     if (m) { var card = C.decodeCard(m[1]); if (card) return renderCard(card); }
+    if (!state.pro) return renderLocked();
 
     var sel = h('select', { 'aria-label': T('lang'), onchange: function (e) { lang = e.target.value; state.lang = lang; save(); render(); } },
       I.langs.map(function (l) { return h('option', { value: l, selected: l === lang ? 'selected' : false }, I.L[l].name); }));
     root.appendChild(h('header', {}, [
       h('h1', {}, [T('app'), h('small', {}, T('tag'))]),
-      state.pro ? h('span', { class: 'chip c-active' }, T('pro')) : h('button', { class: 'ghost', onclick: function () { document.getElementById('lic').scrollIntoView({ behavior: 'smooth' }); } }, T('upgrade')),
+      h('span', { class: 'chip c-active' }, T('pro')),
       sel
     ]));
 
@@ -275,14 +294,14 @@
   function upgradeDialog() {
     return h('dialog', { id: 'up', 'aria-labelledby': 'up-h' }, [
       h('h2', { id: 'up-h', style: 'font:700 22px var(--serif);margin:0 0 6px' }, T('upH')),
-      h('p', {}, T('upB', { max: CFG.freeLimit })),
+      h('p', {}, T('upB')),
       h('ul', {}, [T('upL1'), T('upL2'), T('upL3')].map(function (x) { return h('li', {}, x); })),
       h('div', { class: 'row', style: 'justify-content:flex-end;margin-top:16px' }, [
         h('button', { class: 'ghost', onclick: function () { document.getElementById('up').close(); } }, T('cancel')),
         h('button', { class: 'ghost', onclick: function () { document.getElementById('up').close(); document.getElementById('lic').scrollIntoView({ behavior: 'smooth' }); document.getElementById('lic').focus(); } }, T('haveKey')),
         h('a', { class: 'btnlink', href: CFG.checkoutUrl, target: '_blank', rel: 'noopener' }, T('upBuy'))])]);
   }
-  function showUpgrade() { var d = document.getElementById('up'); if (d && d.showModal) d.showModal(); else toast(T('limit', { max: CFG.freeLimit })); }
+  function showUpgrade() { var d = document.getElementById('up'); if (d && d.showModal) d.showModal(); else toast(T('needKey')); }
 
   function packCard(p, today) {
     var st = C.status(p, today), rem = C.remaining(p), grid = h('div', { class: 'grid ink' + C.inkOf(p), role: 'group', 'aria-label': p.student });
@@ -387,8 +406,6 @@
     toast(T('delDone') + ': ' + p.student, T('undo'), function () { state.packs.splice(Math.min(at, state.packs.length), 0, p); save(); render(); }, true);
   }
   function renewPack(p) {
-    if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
-    if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'low') return showUpgrade();
     var n = C.renew(p, C.todayStr()); state.packs.unshift(n); save(); render(); toast(T('renewed', { name: p.student }));
   }
   function stamp(p, date, kind, makeup) {
@@ -440,7 +457,6 @@
         T('presetFmt', { n: x.total, price: money(x.price, x.currency), m: x.months })); }))] : [];
     var form = h('form', { method: 'dialog', onsubmit: function (e) {
       e.preventDefault();
-      if (!state.pro && activeCount() >= CFG.freeLimit) { document.getElementById('dlg').close(); showUpgrade(); return; }
       var total = Math.round(+f.total.value), price = +f.price.value, months = Math.round(+f.valid.value) || 0;
       if (!f.name.value.trim() || !(total >= 1) || !(price >= 0) || !f.start.value) return;
       state.packs.unshift({ id: uid(), student: f.name.value.trim(), total: total, price: price, currency: (f.cur.value || 'USD').toUpperCase().slice(0, 3),
@@ -460,7 +476,6 @@
     return l.indexOf('ko') === 0 ? 'KRW' : l.indexOf('ja') === 0 ? 'JPY' : l.indexOf('zh') === 0 ? 'CNY' : l.indexOf('es') === 0 ? 'EUR' : 'USD';
   }
   function openNew() {
-    if (!state.pro && activeCount() >= CFG.freeLimit) { showUpgrade(); return; }
     var d = document.getElementById('dlg'); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
     document.getElementById('f-name').focus();
   }
