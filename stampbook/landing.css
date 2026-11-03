@@ -57,4 +57,5 @@ footer{margin:56px 0 24px;color:var(--mute);font-size:14px}footer a{color:var(--
 .logo span{display:none}.navr .btn{display:none}
 .sticky{display:block;position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--paper) 40%);z-index:5}
 .sticky .btn{width:100%;justify-content:center}footer{padding-bottom:70px}}
-h1,.lede,h3,.steps3 p,.feats p{word-break:keep-all;overflow-wrap:break-word}
+:lang(ko) :is(h1,.lede,h3,.steps3 p,.feats p){word-break:keep-all}
+h1,.lede,h3,.steps3 p,.feats p{overflow-wrap:anywhere}
