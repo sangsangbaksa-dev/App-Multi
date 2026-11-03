@@ -124,6 +124,8 @@
     var curs = state.packs.map(function (p) { return p.currency || 'USD'; }).filter(function (c, i, a) { return a.indexOf(c) === i; });
     if (!curs.length) curs = ['USD'];
     function perCur(fn) { return curs.map(function (c) { return money(fn(state.packs.filter(function (p) { return (p.currency || 'USD') === c; })), c); }).join(' + '); }
+    var dueN = dueForRenewal(today).length;
+    if (dueN) root.appendChild(h('div', { class: 'row', style: 'margin:0 0 10px' }, [h('button', { class: 'pri', onclick: renewAllDue }, T('renewAll', { n: dueN }))]));
     root.appendChild(h('div', { class: 'sum' }, [
       h('div', {}, [h('b', {}, String(ms.lessons)), h('span', {}, T('thisMonth') + ' · ' + T('given'))]),
       h('div', {}, [h('b', {}, perCur(function (ps) { return C.monthStats(ps, ym).earned; })), h('span', {}, T('earned'))]),
@@ -435,6 +437,39 @@
     state.packs.splice(at, 1); save(); render();
     toast(T('delDone') + ': ' + p.student, T('undo'), function () { state.packs.splice(Math.min(at, state.packs.length), 0, p); save(); render(); }, true);
   }
+  /* bulk: packs that need renewal and have no successor yet (a renewal records renewsFrom, so pressing twice never doubles a pack) */
+  function dueForRenewal(today) {
+    return state.packs.filter(function (p) { var st = C.status(p, today); return (st === 'low' || st === 'expired' || st === 'done') && !state.packs.some(function (q) { return q.renewsFrom === p.id; }); });
+  }
+  function renewAllDue() {
+    var today = C.todayStr(), due = dueForRenewal(today); if (!due.length) return;
+    if (!confirm(T('renewAllAsk', { n: due.length }))) return;
+    due.forEach(function (p) { state.packs.unshift(C.renew(p, today)); });
+    save(); render(); toast(T('renewAllDone', { n: due.length }));
+  }
+  /* bulk: rename one student across all of their packs (name match ignores case and surrounding spaces) */
+  function openRename() {
+    var names = state.packs.map(function (p) { return p.student; }).filter(function (n, i, arr) { return arr.indexOf(n) === i; });
+    var from = h('input', { id: 'r-from', required: 'required', maxlength: 80, autocomplete: 'off', list: 'r-names' });
+    var to = h('input', { id: 'r-to', required: 'required', maxlength: 80, autocomplete: 'off' });
+    var d = h('dialog', { id: 'rendlg', 'aria-labelledby': 'r-h' });
+    var form = h('form', { method: 'dialog', onsubmit: function (e) {
+      e.preventDefault();
+      var a = from.value.trim().toLowerCase(), b = to.value.trim();
+      if (!a || !b) return;
+      var n = 0; state.packs.forEach(function (p) { if (p.student.trim().toLowerCase() === a) { p.student = b; n++; } });
+      if (!n) return toast(T('renameNone'));
+      d.close(); save(); render(); toast(T('renameDone', { n: n }));
+    } }, [h('h2', { id: 'r-h', style: 'font:700 22px var(--serif);margin:0 0 6px' }, T('renameH')),
+      h('label', { for: 'r-from' }, T('renameFrom')), from, h('datalist', { id: 'r-names' }, names.map(function (n) { return h('option', { value: n }); })),
+      h('label', { for: 'r-to' }, T('renameTo')), to,
+      h('div', { class: 'row', style: 'margin-top:18px;justify-content:flex-end' }, [
+        h('button', { type: 'button', class: 'ghost', onclick: function () { d.close(); } }, T('cancel')),
+        h('button', { type: 'submit', class: 'pri' }, T('save'))])]);
+    d.appendChild(form); d.addEventListener('close', function () { d.remove(); });
+    document.body.appendChild(d); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+    from.focus();
+  }
   function renewPack(p) {
     var n = C.renew(p, C.todayStr()); state.packs.unshift(n); save(); render(); toast(T('renewed', { name: p.student }));
   }
@@ -537,6 +572,7 @@
         return h('button', { class: 'ghost sm' + (on ? ' on' : ''), 'aria-pressed': String(on), onclick: function () { if (x[0]) state.theme = x[0]; else delete state.theme; applyTheme(); save(); render(); } }, T(x[1])); }))),
       h('div', { class: 'row', style: 'margin:14px 0' }, [
         h('button', { class: 'ghost', onclick: doBackup }, T('exp')),
+        h('button', { class: 'ghost', onclick: openRename }, T('renameBtn')),
         h('button', { class: 'ghost', onclick: function () { var ics = C.toIcs(state.packs, C.todayStr(), 120, Date.now()); if (ics.indexOf('BEGIN:VEVENT') === -1) return toast(T('icsEmpty')); download('stampbook-lessons.ics', ics, 'text/calendar'); } }, T('icsBtn') + ' (.ics)'),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
         h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv')),
