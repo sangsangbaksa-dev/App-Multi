@@ -18,7 +18,7 @@ const srv = http.createServer((q, r) => {
   const ago = n => { const d = new Date(today); d.setDate(d.getDate() - n); return iso(d); };
   const soon = new Date(today); soon.setDate(soon.getDate() + 20);
   await pg.goto(base + '/app/');
-  await pg.evaluate(([a, b2, c, exp, t]) => { localStorage['stampbook.v1'] = JSON.stringify({ v: 1, pro: false, teacher: 'Prof. Park', lang: 'en', packs: [
+  await pg.evaluate(([a, b2, c, exp, t]) => { localStorage['stampbook.v1'] = JSON.stringify({ v: 1, pro: true, teacher: 'Prof. Park', lang: 'en', packs: [
     { id: 'p1', student: 'Slow Sam', total: 10, price: 200, currency: 'USD', start: a, months: 3, expires: exp, paid: true, stamps: [
       { id: 's1', date: a, note: '', kind: '' }, { id: 's2', date: b2, note: '', kind: '' }, { id: 's3', date: c, note: '', kind: '' }] },
     { id: 'p2', student: 'Cara', total: 4, price: 80, currency: 'USD', start: a, months: 3, expires: '', paid: true, stamps: [] }] }); }, [ago(28), ago(14), ago(1), iso(soon)]);

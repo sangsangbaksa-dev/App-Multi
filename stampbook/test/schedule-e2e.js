@@ -12,7 +12,7 @@ const srv = http.createServer((q, r) => {
   fs.mkdirSync(out, { recursive: true });
   const C = require('../app/core.js'), today = C.todayStr(), dow = C.parse(today).getDay();
   const old = [0, 1, 2, 3, 4].map(i => ({ id: 's' + i, date: C.addDays(today, -20 - i), note: '', kind: '' }));
-  const state = { v: 1, teacher: '', pro: false, lang: '', packs: [{ id: 'a', student: 'Mina', total: 10, price: 500, currency: 'USD', start: C.addDays(today, -30), months: 6, expires: C.addMonths(today, 5), paid: true, stamps: old }] };
+  const state = { v: 1, teacher: '', pro: true, lang: '', packs: [{ id: 'a', student: 'Mina', total: 10, price: 500, currency: 'USD', start: C.addDays(today, -30), months: 6, expires: C.addMonths(today, 5), paid: true, stamps: old }] };
   const b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', acceptDownloads: true });
   await ctx.addInitScript(s => { if (!localStorage['stampbook.v1']) localStorage['stampbook.v1'] = s; }, JSON.stringify(state));
   const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message));

@@ -65,7 +65,6 @@
       try { document.execCommand('copy'); done(); } catch (e) { prompt('', text); } ta.remove();
     }
   }
-  function activeCount() { return state.packs.filter(function (p) { var s = C.status(p); return s === 'active' || s === 'low'; }).length; }
   function needPro() { showUpgrade(); }
 
   /* ---------- read-only balance card (opened from a shared link) ---------- */
@@ -86,18 +85,38 @@
     ]));
   }
 
+  /* ---------- paid app: without a licence key the app shows the offer, key entry and a backup only; data stays on the device ---------- */
+  function renderLocked() {
+    document.documentElement.lang = lang; document.title = T('app');
+    var key = h('input', { id: 'lic', placeholder: T('licPh'), autocapitalize: 'characters', autocomplete: 'off', spellcheck: 'false' });
+    var sel = h('select', { 'aria-label': T('lang'), onchange: function (e) { lang = e.target.value; state.lang = lang; save(); render(); } },
+      I.langs.map(function (l) { return h('option', { value: l, selected: l === lang ? 'selected' : false }, I.L[l].name); }));
+    root.appendChild(h('header', {}, [h('h1', {}, [T('app'), h('small', {}, T('tag'))]), sel]));
+    root.appendChild(h('div', { class: 'card lock' }, [
+      h('h2', { style: 'font:700 22px var(--serif);margin:0 0 6px' }, T('lockH')),
+      h('p', {}, T('lockB', { price: CFG.price })),
+      h('ul', {}, [T('upL1'), T('upL2'), T('upL3')].map(function (x) { return h('li', {}, x); })),
+      h('p', {}, [h('a', { class: 'btnlink', href: CFG.checkoutUrl, target: '_blank', rel: 'noopener' }, T('lockBuy'))]),
+      h('label', { for: 'lic' }, T('lockKey')),
+      h('div', { class: 'row' }, [key, h('button', { id: 'act', class: 'pri', onclick: function () { activate(key.value); } }, T('activate'))]),
+      h('p', { class: 'note' }, T('lockBackup')),
+      h('div', { class: 'row' }, [h('button', { class: 'ghost', onclick: doBackup }, T('exp'))])
+    ]));
+  }
+
   /* ---------- main ---------- */
   function render() {
     root.textContent = '';
     document.documentElement.lang = lang; document.title = T('app');
     var m = location.hash.match(/^#c=([\w-]+)$/);
     if (m) { var card = C.decodeCard(m[1]); if (card) return renderCard(card); }
+    if (!state.pro) return renderLocked();
 
     var sel = h('select', { 'aria-label': T('lang'), onchange: function (e) { lang = e.target.value; state.lang = lang; save(); render(); } },
       I.langs.map(function (l) { return h('option', { value: l, selected: l === lang ? 'selected' : false }, I.L[l].name); }));
     root.appendChild(h('header', {}, [
       h('h1', {}, [T('app'), h('small', {}, T('tag'))]),
-      state.pro ? h('span', { class: 'chip c-active' }, T('pro')) : h('button', { class: 'ghost', onclick: function () { document.getElementById('lic').scrollIntoView({ behavior: 'smooth' }); } }, T('upgrade')),
+      h('span', { class: 'chip c-active' }, T('pro')),
       sel
     ]));
 
@@ -275,14 +294,14 @@
   function upgradeDialog() {
     return h('dialog', { id: 'up', 'aria-labelledby': 'up-h' }, [
       h('h2', { id: 'up-h', style: 'font:700 22px var(--serif);margin:0 0 6px' }, T('upH')),
-      h('p', {}, T('upB', { max: CFG.freeLimit })),
+      h('p', {}, T('upB')),
       h('ul', {}, [T('upL1'), T('upL2'), T('upL3')].map(function (x) { return h('li', {}, x); })),
       h('div', { class: 'row', style: 'justify-content:flex-end;margin-top:16px' }, [
         h('button', { class: 'ghost', onclick: function () { document.getElementById('up').close(); } }, T('cancel')),
         h('button', { class: 'ghost', onclick: function () { document.getElementById('up').close(); document.getElementById('lic').scrollIntoView({ behavior: 'smooth' }); document.getElementById('lic').focus(); } }, T('haveKey')),
         h('a', { class: 'btnlink', href: CFG.checkoutUrl, target: '_blank', rel: 'noopener' }, T('upBuy'))])]);
   }
-  function showUpgrade() { var d = document.getElementById('up'); if (d && d.showModal) d.showModal(); else toast(T('limit', { max: CFG.freeLimit })); }
+  function showUpgrade() { var d = document.getElementById('up'); if (d && d.showModal) d.showModal(); else toast(T('needKey')); }
 
   function packCard(p, today) {
     var st = C.status(p, today), rem = C.remaining(p), grid = h('div', { class: 'grid ink' + C.inkOf(p), role: 'group', 'aria-label': p.student });
@@ -321,6 +340,7 @@
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
     foot.push(h('button', { class: 'ghost inkbtn', title: T('inkBtn'), onclick: function () { C.setInk(p, (C.inkOf(p) + 1) % C.INK_COUNT); save(); render(); } }, [h('span', { class: 'dot ink' + C.inkOf(p), 'aria-hidden': 'true' }), ' ' + T('inkBtn')]));
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
+    foot.push(h('button', { class: 'ghost', onclick: function () { editPack(p); } }, T('editPack')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
     foot.push(h('button', { class: 'ghost', onclick: function () { var v = prompt(T('nextPh', { max: C.NEXT_MAX }), p.next || ''); if (v !== null) { var tooLong = v.trim().length > C.NEXT_MAX; C.setNext(p, v); save(); render(); toast(tooLong ? T('nextCut', { max: C.NEXT_MAX }) : T('nextSaved')); } } }, T('nextBtn') + (p.next ? ' ✓' : '')));
@@ -344,6 +364,35 @@
       paceBar, grid, h('div', { class: 'row' }, rowEls), more.length ? h('div', { class: 'row', style: 'margin-top:8px' }, more) : null, sch, log,
       h('div', { class: 'foot' }, foot)
     ]);
+  }
+  /* edit a pack after it was created: student name, lesson count (never below the lessons already stamped), price, currency, expiry */
+  function editPack(p) {
+    var used = C.counted(p).length;
+    var f = {
+      name: h('input', { id: 'e-name', required: 'required', maxlength: 80, autocomplete: 'off', value: p.student }),
+      total: h('input', { id: 'e-total', type: 'number', min: Math.max(1, used), max: 200, value: p.total, inputmode: 'numeric', required: 'required' }),
+      price: h('input', { id: 'e-price', type: 'number', min: 0, step: 'any', inputmode: 'decimal', value: p.price, required: 'required' }),
+      cur: h('input', { id: 'e-cur', maxlength: 3, value: p.currency || 'USD' }),
+      expires: h('input', { id: 'e-exp', type: 'date', value: p.expires || '' })
+    };
+    function lab(id, key, el) { return [h('label', { for: id }, T(key)), el]; }
+    var d = h('dialog', { id: 'edlg', 'aria-labelledby': 'ed-h' });
+    var form = h('form', { method: 'dialog', onsubmit: function (e) {
+      e.preventDefault();
+      var total = Math.round(+f.total.value), price = +f.price.value;
+      if (!f.name.value.trim() || !(total >= Math.max(1, used)) || !(price >= 0)) return toast(T('editBad'));
+      p.student = f.name.value.trim(); p.total = total; p.price = price;
+      p.currency = (f.cur.value || 'USD').toUpperCase().slice(0, 3); p.expires = f.expires.value || '';
+      d.close(); save(); render(); toast(T('editDone'));
+    } }, [h('h2', { id: 'ed-h', style: 'font:700 22px var(--serif);margin:0 0 6px' }, T('editH'))].concat(
+      lab('e-name', 'student', f.name), [h('div', { class: 'two' }, [h('div', {}, lab('e-total', 'lessons', f.total)), h('div', {}, lab('e-price', 'price', f.price))])],
+      [h('div', { class: 'two' }, [h('div', {}, lab('e-cur', 'currency', f.cur)), h('div', {}, lab('e-exp', 'editExp', f.expires))])],
+      [h('div', { class: 'row', style: 'margin-top:18px;justify-content:flex-end' }, [
+        h('button', { type: 'button', class: 'ghost', onclick: function () { d.close(); } }, T('cancel')),
+        h('button', { type: 'submit', class: 'pri' }, T('save'))])]));
+    d.appendChild(form); d.addEventListener('close', function () { d.remove(); });
+    document.body.appendChild(d); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+    f.name.focus();
   }
   function scheduleEditor(p) {
     var cur = p.schedule || { days: [], time: '' }, ws = weekStart(), sel = cur.days.slice(), time = h('input', { type: 'time', value: cur.time || '', 'aria-label': T('schedTime') });
@@ -387,8 +436,6 @@
     toast(T('delDone') + ': ' + p.student, T('undo'), function () { state.packs.splice(Math.min(at, state.packs.length), 0, p); save(); render(); }, true);
   }
   function renewPack(p) {
-    if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'active') return showUpgrade();
-    if (!state.pro && activeCount() >= CFG.freeLimit && C.status(p) === 'low') return showUpgrade();
     var n = C.renew(p, C.todayStr()); state.packs.unshift(n); save(); render(); toast(T('renewed', { name: p.student }));
   }
   function stamp(p, date, kind, makeup) {
@@ -440,7 +487,6 @@
         T('presetFmt', { n: x.total, price: money(x.price, x.currency), m: x.months })); }))] : [];
     var form = h('form', { method: 'dialog', onsubmit: function (e) {
       e.preventDefault();
-      if (!state.pro && activeCount() >= CFG.freeLimit) { document.getElementById('dlg').close(); showUpgrade(); return; }
       var total = Math.round(+f.total.value), price = +f.price.value, months = Math.round(+f.valid.value) || 0;
       if (!f.name.value.trim() || !(total >= 1) || !(price >= 0) || !f.start.value) return;
       state.packs.unshift({ id: uid(), student: f.name.value.trim(), total: total, price: price, currency: (f.cur.value || 'USD').toUpperCase().slice(0, 3),
@@ -460,7 +506,6 @@
     return l.indexOf('ko') === 0 ? 'KRW' : l.indexOf('ja') === 0 ? 'JPY' : l.indexOf('zh') === 0 ? 'CNY' : l.indexOf('es') === 0 ? 'EUR' : 'USD';
   }
   function openNew() {
-    if (!state.pro && activeCount() >= CFG.freeLimit) { showUpgrade(); return; }
     var d = document.getElementById('dlg'); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
     document.getElementById('f-name').focus();
   }
