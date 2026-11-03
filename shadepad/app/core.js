@@ -18,6 +18,17 @@
     return sum % 10 === 0;
   }
 
+  function entropy(v) {
+    var counts = {}, i;
+    for (i = 0; i < v.length; i++) counts[v[i]] = (counts[v[i]] || 0) + 1;
+    var h = 0;
+    Object.keys(counts).forEach(function (c) {
+      var p = counts[c] / v.length;
+      h -= p * Math.log2(p);
+    });
+    return h;
+  }
+
   /* Order matters: an earlier rule claims its text first, so a card number is not also a phone number. */
   var RULES = [
     { kind: 'PRIVATE_KEY', re: /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g },
@@ -28,7 +39,7 @@
     { kind: 'API_KEY', re: /\bxox[abposr]-[A-Za-z0-9-]{10,}/g },
     { kind: 'API_KEY', re: /\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g },
     { kind: 'TOKEN', re: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g },
-    { kind: 'SECRET', re: /\b[\w.-]*?(?:password|passwd|pwd|secret|token|api[_-]?key)\b\s*[:=]\s*["']?([^\s"',;&]{6,})/gi, group: 1 },
+    { kind: 'SECRET', re: /\b[\w.-]*?(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|client[_-]?secret)\b\s*[:=]\s*["']?([^\s"',;&]{4,})/gi, group: 1 },
     { kind: 'ID_NUMBER', re: /(?<!\d)\d{6}-[1-4]\d{6}(?!\d)/g },
     {
       kind: 'CARD', re: /(?<![\w-])(?:\d[ -]?){12,18}\d(?![\w-])/g,
@@ -39,7 +50,17 @@
       kind: 'PHONE', re: /(?<![\w+])(?:\+\d{1,3}[ .-]?)?\(?\d{2,4}\)?[ .-]\d{3,4}[ .-]\d{4}(?!\w)/g,
       check: function (v) { var d = digitsOf(v); return d.length >= 9 && d.length <= 15 && (v.charAt(0) === '+' || d.length <= 11); }
     },
-    { kind: 'IP', re: /(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?!\d|\.\d)/g }
+    { kind: 'IP', re: /(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?!\d|\.\d)/g },
+    /* Bare hex strings (hashes, tokens, IDs) of 32+ chars that mix letters and digits. */
+    {
+      kind: 'TOKEN', re: /\b[0-9a-fA-F]{32,}\b/g,
+      check: function (v) { return /[a-fA-F]/.test(v) && /[0-9]/.test(v); }
+    },
+    /* Random-looking mixed-case tokens of 32+ chars. Identifiers and words sit well below this entropy. */
+    {
+      kind: 'TOKEN', re: /\b[A-Za-z0-9_-]{32,}\b/g,
+      check: function (v) { return /[a-z]/.test(v) && /[A-Z]/.test(v) && /[0-9]/.test(v) && entropy(v) >= 4; }
+    }
   ];
 
   /* Returns [{ kind, value, start, end }] sorted by position. Overlaps keep the earlier rule. */

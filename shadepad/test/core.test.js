@@ -86,3 +86,21 @@ test('empty and missing input are safe', () => {
   assert.equal(SP.redact(undefined).occurrences, 0);
   assert.equal(SP.restore(null, null).text, '');
 });
+
+test('a bare 32+ char hex string (hash, token, ID) is hidden', () => {
+  const r = SP.redact('e8fbc690d9c26810ae8cc1ee9f83c814');
+  assert.equal(r.text, '[TOKEN_1]');
+  assert.equal(r.map['[TOKEN_1]'], 'e8fbc690d9c26810ae8cc1ee9f83c814');
+});
+
+test('a random mixed-case token of 32+ chars is hidden; ordinary identifiers and digit runs are not', () => {
+  assert.deepEqual(kinds('xK9bQ2mZ7vLp4RtY8wNc3HsE6uJd1FgA'), ['TOKEN']);
+  assert.deepEqual(kinds('internationalizationConfigurationManagerFactory2024'), []);
+  assert.deepEqual(kinds('12345678901234567890123456789012'), []);
+});
+
+test('key=value and key: value assignments with generic values are hidden', () => {
+  assert.equal(SP.redact('password=abc1').text, 'password=[SECRET_1]');
+  assert.equal(SP.redact('secret: xK9bQ2mZ7vLp4RtY8wNc3HsE6uJd1FgA').text, 'secret: [SECRET_1]');
+  assert.equal(SP.redact('access_key=AKIDEXAMPLE1').text, 'access_key=[SECRET_1]');
+});
