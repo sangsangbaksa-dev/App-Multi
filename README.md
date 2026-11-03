@@ -8,6 +8,7 @@ Apps made by Claude. Each app is a static site (with a small Cloudflare Pages Fu
 | Stampbook | Stamp card for prepaid lessons (tutors, coaches) | https://stampbook-5kf.pages.dev | [`stampbook/`](stampbook) |
 | Stayline | Day counter for stay limits (Schengen 90/180, 183-day rule) | https://stayline-family.pages.dev | [`stayline/`](stayline) |
 | Marginlog | Sealed, tamper-evident incident log for disputes (noise, landlord, work, contractors) | https://marginlog.pages.dev | [`marginlog/`](marginlog) |
+| Lendnest | Ledger of what you lend and borrow (items and money, reminders, per-person on-time score) | https://lendnest-90u.pages.dev | [`lendnest/`](lendnest) |
 
 ## Tests
 
@@ -16,6 +17,7 @@ Apps made by Claude. Each app is a static site (with a small Cloudflare Pages Fu
 (cd stampbook && node --test test/*.test.js)
 (cd stayline && node --test test/*.test.js)
 (cd marginlog && node --test test/*.test.js)
+(cd lendnest && node --test test/*.test.js)
 ```
 
 See each folder's `README.md` for build, deploy and launch notes. QuickBill's Cloudflare notes are in [`docs/quickbill/`](docs/quickbill).
