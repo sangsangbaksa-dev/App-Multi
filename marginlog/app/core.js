@@ -285,12 +285,41 @@
     return lines.map(icsFold).join('\r\n') + '\r\n';
   }
 
+  /* ---------- encrypted backup: AES-GCM, key from a passphrase via PBKDF2-SHA256 (WebCrypto, no library) ---------- */
+  function b64(bytes) { var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s); }
+  function unb64(s) { var bin = atob(String(s)), out = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+  async function deriveKey(pass, salt, iter, usage) {
+    var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(pass)), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, [usage]);
+  }
+  async function encryptText(text, pass) {
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 310000;
+    var key = await deriveKey(pass, salt, iter, 'encrypt');
+    var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(text));
+    return { alg: 'AES-GCM', kdf: 'PBKDF2-SHA256', iter: iter, salt: b64(salt), iv: b64(iv), data: b64(new Uint8Array(ct)) };
+  }
+  /* throws when the passphrase is wrong or the file was altered (GCM tag check) */
+  async function decryptText(env, pass) {
+    if (!env || env.alg !== 'AES-GCM' || env.kdf !== 'PBKDF2-SHA256' || !(env.iter >= 100000 && env.iter <= 1000000)) throw new Error('format');
+    var key = await deriveKey(pass, unb64(env.salt), env.iter, 'decrypt');
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv) }, key, unb64(env.data));
+    return new TextDecoder().decode(pt);
+  }
+  /* ---------- all-cases overview: one row per case ---------- */
+  function overview(cases, nowTs) {
+    var today = toLocalStamp(new Date(nowTs)).slice(0, 10);
+    return cases.map(function (c) {
+      var st = stats(c, nowTs), open = (c.steps || []).filter(function (s) { return s.due && !s.done; });
+      return { id: c.id, kind: c.kind, name: c.name || '', archived: !!c.archived, total: st.total, last30: st.last30, lastAt: st.last,
+        openSteps: open.length, overdue: open.filter(function (s) { return /^\d{4}-\d{2}-\d{2}$/.test(s.due) && s.due < today; }).length, strength: caseStrength(c) };
+    });
+  }
   var api = {
     KINDS: KINDS, STEP_KINDS: STEP_KINDS, LATE_HOURS: LATE_HOURS,
     uid: uid, pad: pad, toLocalStamp: toLocalStamp, parseAt: parseAt, dayNum: dayNum, sha256Hex: sha256Hex, seal: seal, verifyChain: verifyChain, cleanTags: cleanTags, clampInt: clampInt,
     events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
     strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase,
-    tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs
+    tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs, encryptText: encryptText, decryptText: decryptText, overview: overview
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.MLCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

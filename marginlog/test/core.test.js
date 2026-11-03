@@ -153,3 +153,23 @@ test('readiness and tag counts', async () => {
   assert.ok(C.readiness(c, NOW).checks.find(x => x.key === 'written').ok && C.readiness(c, NOW).checks.find(x => x.key === 'parties').ok);
   assert.deepEqual(C.tagCounts(C.events(c.entries)), [{ tag: 'bass', n: 2 }, { tag: 'party', n: 1 }]);
 });
+
+test('encrypted backup: round trip works, wrong passphrase and altered data are refused', async () => {
+  const env = await C.encryptText('{"app":"marginlog","cases":[]}', 'correct horse');
+  assert.equal(env.alg, 'AES-GCM'); assert.ok(!JSON.stringify(env).includes('cases'));
+  assert.equal(await C.decryptText(env, 'correct horse'), '{"app":"marginlog","cases":[]}');
+  await assert.rejects(C.decryptText(env, 'wrong passphrase'));
+  const bad = Object.assign({}, env, { data: env.data.slice(0, -4) + 'AAAA' });
+  await assert.rejects(C.decryptText(bad, 'correct horse'));
+  await assert.rejects(C.decryptText(Object.assign({}, env, { iter: 1e9 }), 'correct horse'), /format/);
+});
+
+test('overview: one row per case with counts, overdue deadlines and strength', async () => {
+  const c = await mk([{ at: '2026-10-01T23:00', text: 'first incident text here' }]);
+  c.name = 'Flat 3B'; c.steps = [{ id: 's1', kind: 'written', at: '2026-10-02', due: '2026-10-10', done: false }, { id: 's2', kind: 'talk', at: '2026-10-02', due: '2026-10-20', done: false }];
+  const empty = { id: 'e', kind: 'work', name: '', entries: [], steps: [] };
+  const rows = C.overview([c, empty], NOW);
+  assert.equal(rows[0].name, 'Flat 3B'); assert.equal(rows[0].total, 1); assert.equal(rows[0].openSteps, 2);
+  assert.equal(rows[0].overdue, 2); // both deadlines (Oct 10 and Oct 20) are before NOW (Nov 2)
+  assert.equal(rows[1].total, 0); assert.equal(rows[1].strength, 0);
+});
