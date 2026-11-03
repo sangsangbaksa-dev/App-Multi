@@ -472,3 +472,16 @@ t2('border sheet clips the start date and flags overlapping trips', () => {
     const e = C3.decodeShare(evil); assert3.equal(e.trips.length, 1); assert3.equal(e.name, '<img onerror=1>');
   });
 }
+
+test('ics import: all-day end is exclusive, timed events use their date, commas unescaped', () => {
+  const ics = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20260301\r\nDTEND;VALUE=DATE:20260305\r\nSUMMARY:Lisbon\r\nEND:VEVENT\r\n' +
+    'BEGIN:VEVENT\r\nDTSTART:20260310T090000Z\r\nDTEND:20260310T170000Z\r\nSUMMARY:Day\\, trip\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nDTSTART:20260401\r\nSUMMARY:Broken\r\nEND:VEVENT\r\nEND:VCALENDAR';
+  assert.deepEqual(C.parseIcs(ics), [{ place: 'Lisbon', from: '2026-03-01', to: '2026-03-04' }, { place: 'Day, trip', from: '2026-03-10', to: '' }, { place: 'Broken', from: '2026-04-01', to: '' }]);
+  assert.deepEqual(C.parseIcs('not a calendar'), []);
+});
+test('permit watch: within 90 days or ended in the last 30, soonest first', () => {
+  const list = [{ id: 'a', name: 'A', expires: '2026-12-01' }, { id: 'b', name: 'B', expires: '2026-10-20' }, { id: 'c', name: 'C', expires: '2027-06-01' }, { id: 'd', name: 'D' }];
+  const w = C.permitWatch(list, '2026-11-03', 90);
+  assert.deepEqual(w.map(x => x.id), ['b', 'a']);
+  assert.equal(w[0].left, -14);
+});
