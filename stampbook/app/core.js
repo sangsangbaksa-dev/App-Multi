@@ -472,7 +472,21 @@
       start: p.start || '', expires: p.expires || '', paid: p.paid !== false };
   }
 
+  /* ink colour of a pack's stamps: an index into a fixed palette (0 = the default red). Anything else, e.g. from an old or hand-edited backup, is the default. */
+  var INK_COUNT = 6;
+  function inkOf(p) { var i = p && p.ink; return typeof i === 'number' && i % 1 === 0 && i >= 0 && i < INK_COUNT ? i : 0; }
+  function setInk(p, i) { i = Math.round(+i); if (!(i >= 0 && i < INK_COUNT)) return false; if (i) p.ink = i; else delete p.ink; return true; }
+  /* planned lessons for n days from `from`, grouped by date: [{date, items:[{packId, student, time}]}], empty days left out */
+  function weekPlan(packs, from, n) {
+    var days = [], by = {};
+    agenda(packs, from, n).forEach(function (e) { if (!by[e.date]) { by[e.date] = { date: e.date, items: [] }; days.push(by[e.date]); } by[e.date].items.push({ packId: e.packId, student: e.student, time: e.time || '' }); });
+    return days;
+  }
+  /* true when the stamp with this id was the one that used up the pack */
+  function justCompleted(p, id) { return remaining(p) === 0 && p.stamps.length > 0 && counted(p).slice(-1)[0].id === id; }
+
   var API = {
+    INK_COUNT: INK_COUNT, inkOf: inkOf, setInk: setInk, weekPlan: weekPlan, justCompleted: justCompleted,
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, setNext: setNext, NEXT_MAX: NEXT_MAX, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
