@@ -83,7 +83,7 @@ const srv = http.createServer((q, r) => {
   for (const l of ['en', 'ko', 'ja', 'zh', 'es']) {
     await lp.goto(base + (l === 'en' ? '/' : `/${l}/`)); assert.equal(await lp.getAttribute('html', 'lang'), l);
     assert.equal(await lp.locator('link[rel=alternate][hreflang]').count(), 6); assert.ok((await lp.getAttribute('link[rel=canonical]', 'href')).startsWith('https://'));
-    assert.ok((await lp.locator('h1').textContent()).length > 8); assert.equal(await lp.locator('a.btn[href="/app/"]').count(), 2);
+    assert.ok((await lp.locator('h1').textContent()).length > 8); assert.equal(await lp.locator('a.btn[href="/app/"]').count(), 4);
     assert.equal(await lp.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal scroll ' + l);
     await lp.screenshot({ path: `${out}/landing-${l}.png`, fullPage: true });
   }

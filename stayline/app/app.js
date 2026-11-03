@@ -25,6 +25,8 @@
     onResult: function (r) { if (r.status === 'pushed') toast(window.CloudI18n.t(lang, 'pushed')); }
   }) : null;
   if (cloud && !cloud.enabled()) cloud = null;
+  var shared = (function () { var m = /^#s=([A-Za-z0-9_-]+)$/.exec(location.hash); return m ? C.decodeShare(m[1]) : null; })();
+  if (shared) cloud = null;
   function T(k, v) { return I.t(lang, k, v); }
   function h(tag, attrs, kids) {
     var e = document.createElement(tag);
@@ -92,7 +94,7 @@
     } }, '+')]));
   }
 
-  function board(tr) {
+  function board(tr, ro) {
     var s = C.summary(tr, C.todayStr());
     var big = s.left < 0 ? -s.left : s.left;
     var cells = C.strip(tr, C.todayStr());
@@ -114,7 +116,7 @@
         s.freesOn ? h('span', { class: 'free' }, T('freeOn', { date: fmt(s.freesOn) })) : null,
         s.permit ? h('span', { class: 'permit p-' + s.permit.state }, s.permit.state === 'gone' ? T('permitGone', { date: fmt(tr.expires) }) : s.permit.days === 0 ? T('permitToday') : T('permitLeft', { n: s.permit.days })) : null
       ]),
-      h('button', { class: 'ghost small editc', onclick: function () { editCounter = true; render(); } }, T('editCounter'))
+      ro ? null : h('div', { class: 'row wrap boardbtns' }, [quickBtn(tr), h('button', { class: 'ghost small editc', onclick: function () { editCounter = true; render(); } }, T('editCounter'))])
     ]);
   }
 
@@ -322,7 +324,7 @@
         });
       } }, T('borderCopy'))])]);
   }
-  function tripList(tr) {
+  function tripList(tr, ro) {
     var list = tr.trips.length ? h('ul', { class: 'trips' }, tr.trips.map(function (t) {
       var days = Object.keys(C.stayDays([t], C.todayStr())).length;
       return h('li', null, [
@@ -332,7 +334,7 @@
           t.from > C.todayStr() ? h('span', { class: 'chip plan' }, T('planned')) : null,
           t.note ? h('span', { class: 'dates note' }, t.note) : null
         ]),
-        h('span', { class: 'rowbtns' }, [
+        ro ? null : h('span', { class: 'rowbtns' }, [
           !t.to ? h('button', { class: 'ghost', onclick: function () { t.to = C.todayStr(); save(); render(); } }, T('leftToday')) : null,
           h('button', { class: 'ghost', onclick: function () { editing = t.id; render(); } }, T('edit')),
           h('button', { class: 'ghost x', 'aria-label': T('confTrip'), onclick: function () { if (confirm(T('confTrip'))) undoable(T('tripGone'), function () { C.removeTrip(tr, t.id); save(); render(); }); } }, '×')
@@ -340,7 +342,7 @@
       ]);
     })) : h('p', { class: 'muted' }, T('noTrips'));
     return h('section', { class: 'card' }, [
-      h('div', { class: 'rowhead' }, [h('h2', null, T('trips')), h('span', { class: 'rowbtns' }, [h('button', { class: 'ghost small', onclick: function () { pasting = true; render(); } }, T('pasteBtn')), h('button', { class: 'pri small', onclick: function () { adding = true; render(); } }, '+ ' + T('addTrip'))])]),
+      h('div', { class: 'rowhead' }, [h('h2', null, T('trips')), ro ? null : h('span', { class: 'rowbtns' }, [h('button', { class: 'ghost small', onclick: function () { pasting = true; render(); } }, T('pasteBtn')), h('button', { class: 'pri small', onclick: function () { adding = true; render(); } }, '+ ' + T('addTrip'))])]),
       list]);
   }
 
@@ -488,8 +490,13 @@
           if (needPro()) return;
           download('stayline-key-dates.ics', C.alertsIcs(state.trackers, C.todayStr(), function (k) { return T('icsLabel_' + k); }), 'text/calendar'); toast(T('icsDone'));
         } }, T('icsKey')),
-        h('button', { class: 'ghost', onclick: function () { if (needPro()) return; window.print(); } }, T('print'))
+        h('button', { class: 'ghost', onclick: function () { if (needPro()) return; window.print(); } }, T('print')),
+        tr ? h('button', { class: 'ghost', onclick: function () {
+          var u = shareUrl(tr);
+          (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { toast(T('shareCopied')); }, function () { toast(T('shareFail')); });
+        } }, T('shareBtn')) : null
       ]),
+      tr ? h('p', { class: 'fine' }, T('shareHint')) : null,
       cloudPanel ? h('div', { style: 'margin:14px 0' }, [cloudPanel.el]) : null,
       h('div', { class: 'settings' }, state.pro ? h('span', { class: 'chip' }, T('pro') + ' ✓') : [
         h('label', null, [T('lic'), lic]),
@@ -513,20 +520,54 @@
     ]);
   }
 
+
+  /* one tap: start a trip today, or close the open one today */
+  function quickBtn(tr) {
+    var today = C.todayStr(), open = tr.trips.filter(function (t) { return !t.to && t.from <= today; })[0];
+    if (open) return h('button', { class: 'pri small', onclick: function () { open.to = today; save(); render(); toast(T('quickOutDone')); } }, T('quickOut'));
+    if (C.summary(tr, today).inside) return null;
+    return h('button', { class: 'pri small', onclick: function () { if (C.addTrip(tr, { from: today, to: '', place: '' })) { save(); render(); toast(T('quickInDone')); } } }, T('quickIn'));
+  }
+  function rulesCard(tr) {
+    var rows = C.compareRules(tr, C.todayStr());
+    return h('section', { class: 'card' }, [h('h2', null, T('rulesH')), h('p', { class: 'muted' }, T('rulesHint')),
+      h('ul', { class: 'rulelist' }, rows.map(function (r) {
+        return h('li', null, [
+          h('span', null, [h('strong', null, T('rule_' + (r.key === 'own' ? 'own' : r.key) + '_s')), r.own ? h('span', { class: 'dates' }, T('rulesOwn')) : null, h('span', { class: 'dates' }, T('usedOf', { u: r.used, l: r.rule.limit }))]),
+          h('span', { class: 'chip st-' + r.state }, leftText(r.left))]);
+      }))]);
+  }
+  function statsCard(tr) {
+    var st = C.yearStats(tr, C.todayStr());
+    if (!st.trips) return h('section', { class: 'card' }, [h('h2', null, T('statsH')), h('p', { class: 'muted' }, T('statsNone'))]);
+    return h('section', { class: 'card' }, [h('h2', null, T('statsH')),
+      h('p', null, T('statsCount', { n: st.trips, p: st.places, t: st.total })),
+      st.longest ? h('p', null, T('statsLongest', { n: st.longest.days, where: st.longest.place || '—', date: fmt(st.longest.from) })) : null,
+      h('ul', { class: 'alerts' }, st.years.slice(0, 6).map(function (y) { return h('li', null, h('span', null, T('statsYear', { year: y.year, n: y.days }))); }))]);
+  }
+  function shareUrl(tr) { return location.origin + location.pathname + '#s=' + C.encodeShare(tr); }
+  function sharedView(tr) {
+    var kids = [header(), h('section', { class: 'banner', role: 'region' }, [h('strong', null, T('shareBadge')), h('div', null, T('shareFor', { name: tr.name || T('namePh') }))]),
+      board(tr, true), keyDates(tr), rulesCard(tr), calendarCard(tr), forecastCard(tr), statsCard(tr), tripList(tr, true),
+      h('div', { class: 'row wrap' }, [h('a', { class: 'pri link', href: location.pathname }, T('shareOpen'))]),
+      h('p', { class: 'fine' }, T('disclaimer'))];
+    root.replaceChildren.apply(root, kids);
+  }
   function applyTheme() { var mt = document.querySelector('meta[name=theme-color]'), lt = state.theme === 'light' || (!state.theme && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches); if (mt) mt.setAttribute('content', lt ? '#f6f3ec' : '#14171a'); var th = state.theme === 'light' || state.theme === 'dark' ? state.theme : ''; if (th) document.documentElement.setAttribute('data-theme', th); else document.documentElement.removeAttribute('data-theme'); }
   if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', function () { applyTheme(); }); } catch (e) {} }
   function render() {
     applyTheme();
     document.documentElement.lang = lang; document.title = T('app');
+    if (shared) { sharedView(shared); return; }
     var tr = current(), kids = [header()];
     if (!tr) kids.push(h('p', { class: 'tag' }, T('tag')), empty());
     else {
       var bn = banner(); if (bn) kids.push(bn);
       kids.push(tabs());
       if (state.trackers.length > 1) kids.push(overview());
-      kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr));
+      kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr), rulesCard(tr));
       if (state.trackers.length > 1) kids.push(groupCard());
-      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), placesCard(tr), auditCard(tr), borderCard(tr), tripList(tr));
+      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), placesCard(tr), statsCard(tr), auditCard(tr), borderCard(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }
@@ -540,7 +581,8 @@
   }
   document.addEventListener('cancel', function () { adding = creating = editCounter = upsell = pasting = false; editing = ''; setTimeout(render, 0); }, true);
   render();
-  remind();
-  if (cloud && cloud.user()) cloud.sync().then(function (r) { if (r.status === 'pulled') toast(window.CloudI18n.t(lang, 'pulled')); });
+  if (!shared && /^#s=/.test(location.hash)) toast(T('shareBad'));
+  if (!shared) remind();
+  if (!shared && cloud && cloud.user()) cloud.sync().then(function (r) { if (r.status === 'pulled') toast(window.CloudI18n.t(lang, 'pulled')); });
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();

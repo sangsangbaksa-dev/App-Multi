@@ -2,7 +2,9 @@
   'use strict';
   var C = window.SB, I = window.I18N, CFG = window.SB_SITE;
   var KEY = 'stampbook.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true, view = 'packs', calYm = C.todayStr().slice(0, 7), calDay = '';
+  var state = load(), lang = I.pick(state.lang), query = '', filter = 'all', storageOk = true, view = 'packs', calYm = C.todayStr().slice(0, 7), calDay = '', fresh = '';
+  function applyTheme() { var t = state.theme === 'light' || state.theme === 'dark' ? state.theme : ''; if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme'); }
+  applyTheme();
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.packs)) return s; } catch (e) {}
@@ -11,7 +13,7 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; } catch (e) { storageOk = false; } if (cloud) cloud.changed(); }
 
   /* Optional cloud sync (Supabase). Off unless config.js has a project URL and key. Licence fields stay on this device. */
-  var LOCAL_ONLY = ['pro', 'key', 'licMode', 'instanceId', 'licChecked', 'lang'];
+  var LOCAL_ONLY = ['pro', 'key', 'licMode', 'instanceId', 'licChecked', 'lang', 'theme'];
   var cloud = window.CloudSync ? window.CloudSync.create({
     url: CFG.supabaseUrl, anonKey: CFG.supabaseKey, app: 'stampbook', storage: window.localStorage, device: (navigator.platform || 'web').slice(0, 60),
     snapshot: function () { var o = JSON.parse(JSON.stringify(state)); LOCAL_ONLY.forEach(function (k) { delete o[k]; }); return o; },
@@ -127,6 +129,10 @@
       return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'ln' }, T('left', { n: C.remaining(p) })),
         h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(p, today); save(); render(); } }, T('skip')),
         h('button', { class: 'stampbtn sm', onclick: function () { stamp(p, today); } }, T('stampToday'))]); }))]));
+    var wk = C.weekPlan(state.packs, today, 7);
+    if (state.packs.length) root.appendChild(h('details', { class: 'weekbox', open: wk.length ? 'open' : false }, [h('summary', {}, T('weekH') + (wk.length ? ' (' + wk.reduce(function (n, d) { return n + d.items.length; }, 0) + ')' : '')),
+      wk.length ? h('div', {}, wk.map(function (d) { return h('div', { class: 'wkday' }, [h('b', {}, d.date === today ? T('todayH') : fmt({ weekday: 'short', month: 'short', day: 'numeric' }, d.date)),
+        h('ul', { class: 'evs' }, d.items.map(function (e) { return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, e.student]); }))]); })) : h('p', { class: 'note' }, T('weekEmpty'))]));
     var att = C.attention(state.packs, today);
     root.appendChild(h('div', { class: 'row', style: 'margin-bottom:16px' }, [h('button', { class: 'pri', onclick: openNew }, '+ ' + T('newPack')),
       att.length ? h('span', { class: 'chip c-low' }, T('attn', { n: att.length })) : null]));
@@ -279,13 +285,13 @@
   function showUpgrade() { var d = document.getElementById('up'); if (d && d.showModal) d.showModal(); else toast(T('limit', { max: CFG.freeLimit })); }
 
   function packCard(p, today) {
-    var st = C.status(p, today), rem = C.remaining(p), grid = h('div', { class: 'grid', role: 'group', 'aria-label': p.student });
+    var st = C.status(p, today), rem = C.remaining(p), grid = h('div', { class: 'grid ink' + C.inkOf(p), role: 'group', 'aria-label': p.student });
     var cs = C.counted(p);
     for (var i = 0; i < p.total; i++) {
       (function (i) {
         var s = cs[i], isNext = !s && i === cs.length && st !== 'expired';
         grid.appendChild(h('button', {
-          class: 'slot' + (s ? ' on' : '') + (isNext ? ' next' : ''), type: 'button',
+          class: 'slot' + (s ? ' on' : '') + (isNext ? ' next' : '') + (s && s.id === fresh ? ' fresh' : ''), type: 'button',
           style: s ? '--r:' + (((i * 37) % 13) - 6) + 'deg' : false, title: s ? s.date : '',
           'aria-label': (i + 1) + '/' + p.total + (s ? ' · ' + s.date + (s.kind === 'noshow' ? ' · ' + T('kNoshow') : '') : ''),
           onclick: function () {
@@ -313,6 +319,7 @@
     var foot = [];
     if (st === 'low' || st === 'expired' || st === 'done') foot.push(h('button', { class: 'pri', onclick: function () { renewPack(p); } }, T('renewPack')));
     if (p.expires && st !== 'done') foot.push(h('button', { class: 'ghost', onclick: function () { var d = C.extend(p, 1, today); save(); render(); toast(T('extended', { date: d })); } }, T('extend')));
+    foot.push(h('button', { class: 'ghost inkbtn', title: T('inkBtn'), onclick: function () { C.setInk(p, (C.inkOf(p) + 1) % C.INK_COUNT); save(); render(); } }, [h('span', { class: 'dot ink' + C.inkOf(p), 'aria-hidden': 'true' }), ' ' + T('inkBtn')]));
     foot.push(h('button', { class: 'ghost', onclick: function () { C.setPaid(p, p.paid === false); save(); render(); } }, T(p.paid === false ? 'markPaid' : 'markUnpaid')));
     foot.push(h('button', { class: 'ghost', onclick: function () { copy(reportText(p, today.slice(0, 7)), T('reportCopied')); } }, T('reportBtn')));
     if (st === 'low' || st === 'expired' || soon) foot.push(h('button', { class: 'ghost', onclick: function () { copy(T(p.expires ? 'remindExp' : 'remind', { name: p.student, n: rem, date: p.expires }), T('remindCopied')); } }, T('remindBtn')));
@@ -387,7 +394,8 @@
   function stamp(p, date, kind, makeup) {
     if (!C.addStamp(p, date, '', kind, makeup)) return;
     var id = p.stamps.filter(function (x) { return x.date === date; }).pop().id;
-    save(); render();
+    fresh = id; save(); render(); fresh = '';
+    if (C.justCompleted(p, id)) { toast(T('packDone', { name: p.student }), T('undo'), function () { C.removeStamp(p, id); save(); render(); }); return; }
     toast(T('stamped', { date: date }), T('undo'), function () { C.removeStamp(p, id); save(); render(); });
   }
   function shareLink(p) {
@@ -479,6 +487,9 @@
     var cloudPanel = cloud && window.CloudPanel ? window.CloudPanel.build({ cloud: cloud, lang: function () { return lang; } }) : null;
     return h('div', { class: 'settings' }, [
       h('label', { for: 's-t' }, T('teacher')), teacher,
+      h('div', { class: 'row', role: 'group', 'aria-label': T('theme'), style: 'margin:14px 0 0' }, [h('span', { class: 'note' }, T('theme') + ':')].concat([['', 'themeAuto'], ['light', 'themeLight'], ['dark', 'themeDark']].map(function (x) {
+        var on = (state.theme || '') === x[0];
+        return h('button', { class: 'ghost sm' + (on ? ' on' : ''), 'aria-pressed': String(on), onclick: function () { if (x[0]) state.theme = x[0]; else delete state.theme; applyTheme(); save(); render(); } }, T(x[1])); }))),
       h('div', { class: 'row', style: 'margin:14px 0' }, [
         h('button', { class: 'ghost', onclick: doBackup }, T('exp')),
         h('button', { class: 'ghost', onclick: function () { var ics = C.toIcs(state.packs, C.todayStr(), 120, Date.now()); if (ics.indexOf('BEGIN:VEVENT') === -1) return toast(T('icsEmpty')); download('stampbook-lessons.ics', ics, 'text/calendar'); } }, T('icsBtn') + ' (.ics)'),

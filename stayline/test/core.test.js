@@ -444,3 +444,31 @@ t2('border sheet clips the start date and flags overlapping trips', () => {
   assert2.equal(b.overlap, true);
   assert2.equal(SL2.borderSheet({ rule: SL2.PRESETS.schengen, trips: [{ id: 'a', from: '2026-04-01', to: '2026-04-05' }] }, '2026-04-20').overlap, false);
 });
+
+/* ---- rules comparison, statistics, share link ---- */
+{
+  const test3 = require('node:test'), assert3 = require('node:assert/strict'), C3 = require('../app/core.js');
+  const tr = { name: 'Ana', rule: C3.PRESETS.schengen, expires: '2027-01-01', trips: [
+    { id: 'a', from: '2026-09-01', to: '2026-09-30', place: 'Café', note: 'secret' }, { id: 'b', from: '2026-10-20', to: '', place: 'Lisbon', note: '' }] };
+  test3('compareRules: own rule first, no duplicates, same trips', () => {
+    const r = C3.compareRules(tr, '2026-11-03');
+    assert3.equal(r.length, 3); assert3.equal(r[0].key, 'schengen'); assert3.equal(r[0].own, true);
+    assert3.deepEqual(r.map(x => x.used), [45, 45, 45]); assert3.equal(r[0].left, 45);
+    const c = C3.compareRules({ rule: { kind: 'rolling', limit: 30, window: 60 }, trips: tr.trips }, '2026-11-03');
+    assert3.equal(c.length, 4); assert3.equal(c[0].key, 'own'); assert3.equal(c[0].left, 30 - c[0].used);
+  });
+  test3('yearStats: days per year, longest stay, places', () => {
+    const s = C3.yearStats(tr, '2026-11-03');
+    assert3.deepEqual(s.years, [{ year: 2026, days: 45 }]); assert3.equal(s.trips, 2); assert3.equal(s.places, 2);
+    assert3.equal(s.longest.days, 30); assert3.equal(s.longest.place, 'Café');
+    assert3.equal(C3.yearStats({ trips: [] }, '2026-11-03').trips, 0);
+  });
+  test3('share link round-trips without notes and rejects junk', () => {
+    const d = C3.decodeShare(C3.encodeShare(tr));
+    assert3.equal(d.name, 'Ana'); assert3.equal(d.trips.length, 2); assert3.ok(d.trips.every(t => t.note === ''));
+    assert3.deepEqual(d.rule, { kind: 'rolling', limit: 90, window: 180 }); assert3.equal(d.expires, '2027-01-01');
+    for (const bad of ['', 'xx', 'eyJ2IjoyfQ', '!!!', 'a'.repeat(50000)]) assert3.equal(C3.decodeShare(bad), null);
+    const evil = Buffer.from(JSON.stringify({ v: 1, n: '<img onerror=1>', r: ['r', 5, 5], e: '', t: [['2026-02-30', '', 'x'], ['2026-01-01', '2026-01-03', 'ok']] })).toString('base64url');
+    const e = C3.decodeShare(evil); assert3.equal(e.trips.length, 1); assert3.equal(e.name, '<img onerror=1>');
+  });
+}
