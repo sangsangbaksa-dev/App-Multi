@@ -2,7 +2,7 @@
   'use strict';
   var C = window.SL, I = window.I18N, CFG = window.SL_CONFIG;
   var KEY = 'stayline.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, upsell = false, pasting = false, calMonth = '';
+  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, pasting = false, calMonth = '';
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.trackers)) { s.trackers = C.sanitize(s.trackers); return s; } } catch (e) {}
@@ -89,7 +89,6 @@
     return h('nav', { class: 'tabs' }, state.trackers.map(function (t) {
       return h('button', { class: 'tab' + (cur && t.id === cur.id ? ' on' : ''), 'aria-pressed': cur && t.id === cur.id ? 'true' : 'false', onclick: function () { state.active = t.id; plan = {}; save(); render(); } }, t.name || T('namePh'));
     }).concat([h('button', { class: 'tab add', 'aria-label': T('newTracker'), onclick: function () {
-      if (!state.pro && state.trackers.length >= CFG.freeLimit) { upsell = true; render(); return; }
       creating = true; render();
     } }, '+')]));
   }
@@ -431,14 +430,28 @@
     ]));
     return dlg;
   }
-  function upsellDialog() {
-    var dlg = h('dialog', { 'aria-labelledby': 'dlg-h' });
-    dlg.appendChild(h('div', null, [
-      h('h2', { id: 'dlg-h' }, T('upH')), h('p', null, T('limitMsg', { max: CFG.freeLimit })),
-      h('div', { class: 'row' }, [h('button', { class: 'ghost', onclick: function () { upsell = false; render(); } }, T('later')),
-        h('a', { class: 'pri btnlink', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))])
-    ]));
-    return dlg;
+  /* Stayline is a paid app: without an activated Pro licence the counter stays behind this screen.
+     Trips stay in local storage and show up again once the key is accepted on this device. */
+  function paywall() {
+    var lic = h('input', { id: 'lic', placeholder: T('licPh'), autocomplete: 'off', spellcheck: 'false', 'aria-label': T('lic') });
+    return h('section', { class: 'paywall', 'aria-labelledby': 'pay-h' }, [
+      h('h2', { id: 'pay-h' }, T('payH')),
+      h('p', null, T('payLead', { price: CFG.price })),
+      h('p', null, [h('a', { class: 'pri btnlink', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))]),
+      h('div', { class: 'settings' }, [
+        h('p', null, T('payHave')),
+        h('label', null, [T('lic'), lic]),
+        h('button', { class: 'pri', onclick: function () { activate(lic); } }, T('activate'))
+      ]),
+      h('p', { class: 'fine' }, T('payRefund')),
+      h('p', { class: 'fine' }, [h('a', { href: legal('privacy') }, T('privacyLink')), ' · ', h('a', { href: legal('terms') }, T('termsLink')), ' · ', h('a', { href: 'mailto:' + CFG.supportEmail }, CFG.supportEmail)])
+    ]);
+  }
+  function activate(input) {
+    verifyKey(input.value.trim()).then(function (r) {
+      if (r === 'ok') { state.pro = true; save(); toast(T('okKey')); render(); }
+      else toast(T(r === 'net' ? 'licNet' : 'badKey'));
+    });
   }
   function quickStart() {
     var t = { id: uid(), name: '', rule: C.cleanRule(C.PRESETS.schengen), expires: '', trips: [] };
@@ -478,7 +491,6 @@
       };
       r.readAsText(f);
     } });
-    var lic = h('input', { id: 'lic', placeholder: T('licPh'), autocomplete: 'off', spellcheck: 'false' });
     var cloudPanel = cloud && window.CloudPanel ? window.CloudPanel.build({ cloud: cloud, lang: function () { return lang; } }) : null;
     return h('footer', { class: 'foot' }, [
       h('div', { class: 'row wrap' }, [
@@ -498,17 +510,7 @@
       ]),
       tr ? h('p', { class: 'fine' }, T('shareHint')) : null,
       cloudPanel ? h('div', { style: 'margin:14px 0' }, [cloudPanel.el]) : null,
-      h('div', { class: 'settings' }, state.pro ? h('span', { class: 'chip' }, T('pro') + ' ✓') : [
-        h('label', null, [T('lic'), lic]),
-        h('button', { class: 'pri', onclick: function () {
-          var key = lic.value.trim();
-          verifyKey(key).then(function (r) {
-            if (r === 'ok') { state.pro = true; save(); toast(T('okKey')); render(); }
-            else toast(T(r === 'net' ? 'licNet' : 'badKey'));
-          });
-        } }, T('activate')),
-        h('a', { class: 'ghost link', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))
-      ]),
+      h('div', { class: 'settings' }, h('span', { class: 'chip' }, T('pro') + ' ✓')),
       h('div', null, [h('button', { class: 'ghost', onclick: function () { state.theme = state.theme === 'light' ? 'dark' : state.theme === 'dark' ? '' : 'light'; save(); render(); } }, T(state.theme === 'light' ? 'themeLight' : state.theme === 'dark' ? 'themeDark' : 'themeAuto'))]),
       h('div', null, [h('button', { class: 'ghost', onclick: toggleRemind }, state.remind ? T('remindOff') : T('remindOn')), h('p', { class: 'fine' }, T('remindHint'))]),
       tr ? h('button', { class: 'ghost danger', onclick: function () {
@@ -559,6 +561,7 @@
     applyTheme();
     document.documentElement.lang = lang; document.title = T('app');
     if (shared) { sharedView(shared); return; }
+    if (!state.pro) { root.replaceChildren(header(), paywall()); return; }
     var tr = current(), kids = [header()];
     if (!tr) kids.push(h('p', { class: 'tag' }, T('tag')), empty());
     else {
@@ -576,10 +579,9 @@
     if ((adding || editing) && tr) { var d = tripDialog(tr); root.appendChild(d); d.showModal(); }
     if (pasting && tr) { var d5 = pasteDialog(tr); root.appendChild(d5); d5.showModal(); }
     if (editCounter && tr) { var d3 = counterDialog(tr); root.appendChild(d3); d3.showModal(); }
-    if (upsell) { var d4 = upsellDialog(); root.appendChild(d4); d4.showModal(); }
     if (creating) { var d2 = trackerDialog(); root.appendChild(d2); d2.showModal(); }
   }
-  document.addEventListener('cancel', function () { adding = creating = editCounter = upsell = pasting = false; editing = ''; setTimeout(render, 0); }, true);
+  document.addEventListener('cancel', function () { adding = creating = editCounter = pasting = false; editing = ''; setTimeout(render, 0); }, true);
   render();
   if (!shared && /^#s=/.test(location.hash)) toast(T('shareBad'));
   if (!shared) remind();
