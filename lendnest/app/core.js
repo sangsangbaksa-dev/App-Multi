@@ -38,7 +38,7 @@
   /* installment plan: the due date follows the next unpaid monthly installment */
   function applyPlan(e) {
     if (e.kind !== 'money' || !e.plan || isClosed(e) || !(e.amount > 0)) return;
-    var k = Math.min(e.plan.n - 1, Math.floor(paid(e) / (e.amount / e.plan.n) + 1e-9)); e.due = addDays(e.date, e.plan.every * (k + 1));
+    var k = Math.min(e.plan.n - 1, Math.floor(paid(e) / (e.amount / e.plan.n) + 1e-9)); var d = addDays(e.date, e.plan.every * (k + 1)); var ex = e.extended && e.extended.length ? e.extended[e.extended.length - 1].due : ''; e.due = ex && ex > d ? ex : d;
   }
   function installment(e) {
     if (e.kind !== 'money' || !e.plan) return null;
@@ -247,7 +247,7 @@
       e.returnedAt = isDate(o.returnedAt) ? o.returnedAt : null; e.writtenOff = !!o.writtenOff;
       e.extended = (Array.isArray(o.extended) ? o.extended : []).filter(function (x) { return x && isDate(x.date) && isDate(x.due); }).map(function (x) { return { date: x.date, due: x.due }; });
       if (Number.isFinite(o.created)) e.created = o.created;
-      e.reopened = !!o.reopened; if (e.plan === null && o.plan) e.plan = makeEntry({ kind: 'money', amount: 1, title: 'x', plan: o.plan }).plan; e.gone = (Array.isArray(o.gone) ? o.gone : []).filter(function (g) { return typeof g === 'string' && ID_RE.test(g); }).slice(-200);
+      e.reopened = !!o.reopened; if (e.kind === 'money' && e.plan === null && o.plan) e.plan = makeEntry({ kind: 'money', amount: 1, title: 'x', plan: o.plan }).plan; e.gone = (Array.isArray(o.gone) ? o.gone : []).filter(function (g) { return typeof g === 'string' && ID_RE.test(g); }).slice(-200);
       if (e.kind === 'money' && !(e.amount > 0)) return; normalize(e);
       st.entries.push(e);
     });
