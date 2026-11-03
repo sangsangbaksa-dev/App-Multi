@@ -56,7 +56,7 @@ dialog .in{padding:18px}dialog .row{display:flex;gap:8px;justify-content:flex-en
 .seg span{display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--field);border-radius:10px;cursor:pointer;text-align:center;padding:4px 8px}
 .seg input:checked+span{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
 .seg input:focus-visible+span{outline:3px solid var(--pri);outline-offset:2px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.two>div{min-width:0}input[type=date]{min-width:0;max-width:100%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .err{color:var(--danger);font-size:14px;font-weight:600;min-height:20px;margin-top:8px}
 .hint{font-size:14px;margin:8px 0 0;padding:8px 10px;border-radius:10px;background:var(--ok-soft);color:var(--ok-ink)}.hint.warn{background:var(--warn-soft);color:var(--warn-ink)}
@@ -71,3 +71,4 @@ dialog .in{padding:18px}dialog .row{display:flex;gap:8px;justify-content:flex-en
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 .tl .link{min-width:44px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}

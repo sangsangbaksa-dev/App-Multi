@@ -43,9 +43,9 @@ const plus = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return y
   assert.ok((await pg.evaluate(() => navigator.clipboard.readText())).includes('last reminder')); assert.ok(await pg.locator('#toast').isVisible(), 'copy confirmation is visible above the dialog'); assert.equal(await pg.evaluate(() => document.getElementById('toast').matches(':popover-open')), true, 'toast sits in the top layer'); await pg.screenshot({ path: out + '/nudge.png' }); await pg.keyboard.press('Escape');
   // money lent, partial repayment, completion with undo
   await add({ kind: 'money', title: 'Dinner', person: 'Joon', amount: 100, due: plus(10) });
-  await pg.waitForSelector('.card >> nth=1'); await pg.click('.card:has-text("Joon") .pri'); await pg.waitForSelector('#ask-in'); await pg.fill('#ask-in', '40'); await pg.click('dialog button[type=submit]');
+  await pg.waitForSelector('.card >> nth=1'); await pg.click('.card:has-text("Joon") .pri'); await pg.waitForSelector('#rp-amt'); await pg.fill('#rp-amt', '40'); await pg.click('dialog button[type=submit]');
   await pg.waitForSelector('.bar'); assert.ok((await pg.locator('.card:has-text("Joon")').textContent()).includes('$40.00 of $100.00 repaid'));
-  await pg.click('.card:has-text("Joon") .pri'); await pg.fill('#ask-in', '999'); await pg.click('dialog button[type=submit]'); await pg.waitForFunction(() => !document.body.textContent.includes('Joon') || ![...document.querySelectorAll('.card')].some(c => c.textContent.includes('Joon')));
+  await pg.click('.card:has-text("Joon") .pri'); await pg.fill('#rp-amt', '999'); await pg.click('dialog button[type=submit]'); await pg.waitForFunction(() => !document.body.textContent.includes('Joon') || ![...document.querySelectorAll('.card')].some(c => c.textContent.includes('Joon')));
   assert.equal(await pg.locator('.card:has-text("Joon")').count(), 0, 'finished entry leaves the open list'); await pg.click('#toast button'); await pg.waitForSelector('.card:has-text("Joon")');
   // returned item (undo path tested above); mark Drill returned
   await pg.click('.card:has-text("Drill") .pri'); assert.equal(await pg.locator('.card:has-text("Drill")').count(), 0); await pg.click('button.link'); assert.equal(await pg.locator('.card.closed').count(), 1);
@@ -108,8 +108,23 @@ const plus = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return y
   const pi = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); await pi.goto(base + '/app/');
   await pi.evaluate(() => localStorage.setItem('lendnest.v1', JSON.stringify({ v: 1, people: [{ id: 'a', name: 'A' }], entries: [{ id: 'e1', title: 'ok', personId: 'a', dir: 'out', kind: 'item' }, { id: 'e2', title: 'orphan', personId: 'zzz' }], settings: {} })));
   await pi.reload(); await pi.reload(); await pi.reload(); assert.equal(await pi.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('lendnest.v1.corrupt')).length), 1);
+  // no room for the unreadable-data copy: edits pause, nothing is overwritten until the user downloads it
+  const qp = await (await b.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true })).newPage(); await qp.goto(base + '/app/');
+  await qp.evaluate(() => { const pad = 'x'.repeat(200000), es = [{ id: 'orph', title: 'orphan', personId: 'zzz' }]; for (let i = 0; i < 9; i++) es.push({ id: 'e' + i, title: 'ok' + i, personId: 'a', dir: 'out', kind: 'item', junk: pad }); localStorage.setItem('lendnest.v1', JSON.stringify({ v: 1, people: [{ id: 'a', name: 'A' }], entries: es, settings: {} })); const filler = 'y'.repeat(1000000); try { for (let i = 0; i < 9; i++) localStorage.setItem('fill' + i, filler); } catch (e) {} });
+  await qp.reload(); await qp.waitForSelector('.banner.bad'); const locked = await qp.evaluate(() => !document.getElementById('fab'));
+  assert.ok(locked || await qp.evaluate(() => Object.keys(localStorage).some(k => k.startsWith('lendnest.v1.corrupt'))), 'either a verified copy exists or the app is locked');
+  if (locked) { assert.equal((await qp.locator('#dl-corrupt').textContent()).trim(), 'Download unreadable data'); assert.ok((await qp.evaluate(() => localStorage.getItem('lendnest.v1'))).includes('orphan')); const [dl2] = await Promise.all([qp.waitForEvent('download'), qp.click('#dl-corrupt')]); assert.ok(fs.readFileSync(await dl2.path(), 'utf8').includes('orphan')); await qp.waitForSelector('#fab'); assert.ok((await qp.locator('.banner.bad').textContent()).includes('downloaded')); }
   // language picked on the landing page carries into the app
   const lc = await (await b.newContext({ locale: 'en-US', viewport: { width: 390, height: 844 } })).newPage(); await lc.goto(base + '/'); await lc.selectOption('#lang', 'ja'); await lc.goto(base + '/app/'); await lc.waitForSelector('.empty'); assert.equal(await lc.evaluate(() => document.documentElement.lang), 'ja');
+  // item kind hides the money fields; a person's note survives an unrelated edit and people are pruned only when unlinked
+  const nn = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); await nn.goto(base + '/app/'); await nn.waitForSelector('.empty'); await nn.click('.empty button');
+  await nn.check('input[name=kind][value=item]', { force: true }); assert.equal(await nn.locator('#f-amount').isVisible(), false); await nn.check('input[name=kind][value=money]', { force: true }); assert.equal(await nn.locator('#f-amount').isVisible(), true);
+  await nn.check('input[name=kind][value=item]', { force: true }); await nn.fill('#f-title', 'Drill'); await nn.fill('#f-person', 'Ann'); await nn.click('#f-save'); await nn.waitForSelector('.card:has-text("Drill")');
+  await nn.evaluate(() => { const s = window.__ln.state; s.people.find(p => p.name === 'Ann').note = 'call first'; localStorage.setItem('lendnest.v1', JSON.stringify(s)); }); await nn.reload(); await nn.waitForSelector('.card');
+  await nn.click('#fab'); await nn.fill('#f-title', 'Tent'); await nn.fill('#f-person', 'Bo'); await nn.click('#f-save'); await nn.waitForSelector('.card:has-text("Tent")');
+  await nn.click('.card:has-text("Drill") .head'); await nn.click('dialog button:has-text("Delete")'); await nn.click('#confirm-ok'); await nn.waitForFunction(() => !document.body.textContent.includes('Drill'));
+  await nn.click('.card:has-text("Tent") .head'); await nn.click('dialog button:has-text("Edit")'); await nn.fill('#f-title', 'Tent 2'); await nn.click('#f-save'); await nn.waitForSelector('.card:has-text("Tent 2")');
+  assert.equal(await nn.evaluate(() => window.__ln.state.people.some(p => p.name === 'Ann' && p.note === 'call first')), true, 'note survives');
   // Korean first-run detection
   const ko = await (await b.newContext({ locale: 'ko-KR', viewport: { width: 390, height: 844 } })).newPage(); await ko.goto(base + '/app/'); await ko.waitForSelector('.empty'); assert.ok((await ko.locator('.empty h2').textContent()).includes('빌려준'));
   assert.deepEqual(errs, [], 'console/page errors: ' + errs.join(' | '));

@@ -11,7 +11,7 @@
   function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return ymd(d); }
   function diffDays(a, b) { return Math.round((parse(a) - parse(b)) / DAY); } /* a - b */
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
-  function round2(x) { return Math.round(x * 100) / 100; }
+  function round2(x) { return Math.round(x * 100 + (x >= 0 ? 1e-9 : -1e-9)) / 100; }
   function str(v, max) { return typeof v === 'string' ? Array.from(v.trim().replace(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, '\ufffd')).slice(0, max || MAX.text).join('') : ''; }
 
   function newState() { return { v: 1, people: [], entries: [], settings: { lang: '', currency: 'USD', days: 14, tone: 'gentle' } }; }
@@ -51,17 +51,22 @@
   function writeOff(e) { if (isClosed(e)) return false; e.writtenOff = true; e.reopened = false; return true; }
   function reopen(e) {
     if (!isClosed(e)) return false;
-    if (e.kind === 'money' && e.returnedAt) { e.gone = (e.gone || []).concat(e.repayments.filter(function (r) { return r.auto; }).map(function (r) { return r.id; })).slice(-200); e.repayments = e.repayments.filter(function (r) { return !r.auto; }); if (remaining(e) === 0) return false; }
+    if (e.kind === 'money' && e.returnedAt) { if (round2(e.amount - e.repayments.filter(function (r) { return !r.auto; }).reduce(function (a, r) { return a + r.amount; }, 0)) <= 0) return false; e.gone = (e.gone || []).concat(e.repayments.filter(function (r) { return r.auto; }).map(function (r) { return r.id; })).slice(-200); e.repayments = e.repayments.filter(function (r) { return !r.auto; }); if (remaining(e) === 0) return false; }
     e.returnedAt = null; e.writtenOff = false; e.reopened = true; return true;
   }
   /* after an edit: keep the closed flag consistent with the money left */
   function normalize(e) {
     if (e.kind !== 'money') { e.repayments = []; e.amount = 0; return; }
     if (e.writtenOff) return;
-    if (remaining(e) > 0) e.returnedAt = null; else if (e.amount > 0 && !e.returnedAt) e.returnedAt = e.repayments.length ? e.repayments[e.repayments.length - 1].date : today();
+    var autos = e.repayments.filter(function (r) { return r.auto; });
+    if (autos.length && e.returnedAt) { /* a settled loan stays settled: keep manual + settlement equal to the amount */
+      var manual = round2(e.repayments.filter(function (r) { return !r.auto; }).reduce(function (a, r) { return a + r.amount; }, 0)), rem = round2(e.amount - manual);
+      e.repayments = e.repayments.filter(function (r) { return !r.auto; }); if (rem > 0) e.repayments.push({ id: autos[0].id, date: autos[0].date, amount: rem, auto: true });
+    }
+    if (remaining(e) > 0) { if (e.returnedAt) { e.gone = (e.gone || []).concat(e.repayments.filter(function (r) { return r.auto; }).map(function (r) { return r.id; })).slice(-200); e.repayments = e.repayments.filter(function (r) { return !r.auto; }); } e.returnedAt = null; } else if (e.amount > 0 && !e.returnedAt) e.returnedAt = e.repayments.length ? e.repayments[e.repayments.length - 1].date : today();
   }
   function extend(e, newDue, now) {
-    if (isClosed(e) || !isDate(newDue) || newDue < e.date) return false;
+    if (isClosed(e) || !isDate(newDue) || newDue < e.date || (e.due && newDue < e.due)) return false;
     e.extended = e.extended || []; e.extended.push({ date: now || today(), due: newDue }); e.due = newDue; return true;
   }
   function makeEntry(o) {
@@ -182,7 +187,7 @@
   }
   function toCSV(st, now) {
     var head = ['direction', 'kind', 'title', 'person', 'amount', 'repaid', 'currency', 'date', 'due', 'status', 'returned', 'note'];
-    var rows = st.entries.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (e) {
+    var rows = st.entries.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }).map(function (e) {
       var p = findPerson(st, e.personId);
       return [e.dir === 'out' ? 'lent' : 'borrowed', e.kind, e.title, p ? p.name : '', e.kind === 'money' ? e.amount : '', e.kind === 'money' ? paid(e) : '', e.kind === 'money' ? e.currency : '', e.date, e.due, status(e, now), e.returnedAt || '', e.note].map(csvCell).join(',');
     });
@@ -205,7 +210,7 @@
       var what = e.kind === 'money' ? e.currency + ' ' + remaining(e) : e.title;
       var sum = (e.dir === 'out' ? labels.out : labels.in) + ': ' + what + ' · ' + nm;
       return ['BEGIN:VEVENT', 'UID:' + e.id + '@lendnest', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + d, 'DTEND;VALUE=DATE:' + nx, fold('SUMMARY:' + icsEsc(sum)),
-        'BEGIN:VALARM', 'ACTION:DISPLAY', fold('DESCRIPTION:' + icsEsc(sum)), 'TRIGGER;VALUE=DATE-TIME:' + addDays(e.due, -1).replace(/-/g, '') + 'T090000', 'END:VALARM', 'END:VEVENT'].join('\r\n');
+        'BEGIN:VALARM', 'ACTION:DISPLAY', fold('DESCRIPTION:' + icsEsc(sum)), 'TRIGGER:-PT15H', 'END:VALARM', 'END:VEVENT'].join('\r\n');
     });
     return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Lendnest//EN', 'CALSCALE:GREGORIAN'].concat(ev, ['END:VCALENDAR']).join('\r\n') + '\r\n';
   }
@@ -227,7 +232,7 @@
       e.returnedAt = isDate(o.returnedAt) ? o.returnedAt : null; e.writtenOff = !!o.writtenOff;
       e.extended = (Array.isArray(o.extended) ? o.extended : []).filter(function (x) { return x && isDate(x.date) && isDate(x.due); }).map(function (x) { return { date: x.date, due: x.due }; });
       if (Number.isFinite(o.created)) e.created = o.created;
-      e.reopened = !!o.reopened; e.gone = (Array.isArray(o.gone) ? o.gone : []).filter(function (g) { return typeof g === 'string' && ID_RE.test(g); }).slice(0, 200);
+      e.reopened = !!o.reopened; e.gone = (Array.isArray(o.gone) ? o.gone : []).filter(function (g) { return typeof g === 'string' && ID_RE.test(g); }).slice(-200);
       if (e.kind === 'money' && !(e.amount > 0)) return; normalize(e);
       st.entries.push(e);
     });

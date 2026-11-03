@@ -4,14 +4,14 @@
   var st, lang, T, tab = 'out', q = '', showClosed = false, saveFailed = false, toastTimer;
 
   /* ---------- storage ---------- */
-  var corrupt = false, saveSeq = 0;
+  var corrupt = false, saveSeq = 0, corruptRaw = '', rawSafe = true, copyKept = true;
   function load() {
     var raw = null;
-    try { raw = localStorage.getItem(KEY); if (raw) { var obj = JSON.parse(raw), s = C.sanitize(obj); if (s) { if (s.entries.length !== obj.entries.length || s.people.length !== obj.people.length) { corrupt = true; var k0 = KEY + '.corrupt'; try { var has = Object.keys(localStorage).some(function (k) { return k.indexOf(k0) === 0 && localStorage.getItem(k) === raw; }); if (!has) localStorage.setItem(localStorage.getItem(k0) ? k0 + '.' + Date.now() : k0, raw); } catch (e2) {} } return s; } } } catch (e) {}
-    if (raw) { corrupt = true; try { var dup = Object.keys(localStorage).some(function (k) { return k.indexOf(KEY + '.corrupt') === 0 && localStorage.getItem(k) === raw; }); if (!dup) localStorage.setItem(KEY + '.corrupt' + (localStorage.getItem(KEY + '.corrupt') ? '.' + Date.now() : ''), raw); } catch (e) {} }
+    try { raw = localStorage.getItem(KEY); if (raw) { var obj = JSON.parse(raw), s = C.sanitize(obj); if (s) { if (s.entries.length !== obj.entries.length || s.people.length !== obj.people.length) { corrupt = true; corruptRaw = raw; rawSafe = false; copyKept = false; var k0 = KEY + '.corrupt'; try { var has = Object.keys(localStorage).some(function (k) { return k.indexOf(k0) === 0 && localStorage.getItem(k) === raw; }); if (!has) localStorage.setItem(localStorage.getItem(k0) ? k0 + '.' + Date.now() : k0, raw); rawSafe = copyKept = Object.keys(localStorage).some(function (k) { return k.indexOf(k0) === 0 && localStorage.getItem(k) === raw; }); } catch (e2) {} } return s; } } } catch (e) {}
+    if (raw) { corrupt = true; corruptRaw = raw; rawSafe = false; copyKept = false; try { var dup = Object.keys(localStorage).some(function (k) { return k.indexOf(KEY + '.corrupt') === 0 && localStorage.getItem(k) === raw; }); if (!dup) localStorage.setItem(KEY + '.corrupt' + (localStorage.getItem(KEY + '.corrupt') ? '.' + Date.now() : ''), raw); rawSafe = copyKept = Object.keys(localStorage).some(function (k) { return k.indexOf(KEY + '.corrupt') === 0 && localStorage.getItem(k) === raw; }); } catch (e) {} }
     return C.newState();
   }
-  function save() { saveSeq++; hideToast(); if (stale) { stale = false; var other = storedState(); if (other) { st = other; conflict = true; setTimeout(function () { conflict = false; }, 0); setTimeout(render, 0); return; } } try { localStorage.setItem(KEY, JSON.stringify(st)); saveFailed = false; } catch (e) { saveFailed = true; } }
+  function save() { saveSeq++; hideToast();  if (stale) { stale = false; var other = storedState(); if (other) { st = other; conflict = true; setTimeout(function () { conflict = false; }, 0); setTimeout(render, 0); return; } } try { localStorage.setItem(KEY, JSON.stringify(st)); saveFailed = false; } catch (e) { saveFailed = true; } }
   var stale = false, conflict = false;
   function storedState() { try { var raw = localStorage.getItem(KEY); return raw ? C.sanitize(JSON.parse(raw)) : null; } catch (e) { return null; } }
   window.addEventListener('storage', function (ev) {
@@ -94,7 +94,7 @@
     var dl = h('datalist', { id: 'f-people' }, st.people.map(function (p) { return h('option', { value: p.name }); }));
     var pn = base.personId ? (C.findPerson(st, base.personId) || {}).name : '';
     var person = h('input', { type: 'text', id: 'f-person', maxlength: 60, list: 'f-people', placeholder: t('whoPh'), value: pn || '', autocomplete: 'off', required: true });
-    var amount = h('input', { type: 'number', id: 'f-amount', min: '0', step: 'any', inputmode: 'decimal', value: base.amount || '' });
+    var amount = h('input', { type: 'number', id: 'f-amount', placeholder: '0.00', min: '0', step: 'any', inputmode: 'decimal', value: base.amount || '' });
     var cur = h('input', { type: 'text', id: 'f-cur', maxlength: 8, value: base.currency || st.settings.currency, autocapitalize: 'characters' });
     var date = h('input', { type: 'date', id: 'f-date', value: base.date || today });
     var due = h('input', { type: 'date', id: 'f-due', value: base.due !== undefined ? base.due : (existing ? '' : C.addDays(today, st.settings.days)) });
@@ -102,7 +102,7 @@
     var err = h('div', { class: 'err', id: 'f-err', role: 'alert' }), hint = h('div', { id: 'f-hint', role: 'status' });
     var moneyBox = h('div', { class: 'two' }, h('div', null, h('label', { for: 'f-amount', text: t('amount') }), amount), h('div', null, h('label', { for: 'f-cur', text: t('currency') }), cur));
     var photoBox = h('div'), file = h('input', { type: 'file', accept: 'image/*', id: 'f-photo', hidden: true });
-    var quick = h('div', { class: 'chips' }, [7, 14, 30].map(function (n) { return h('button', { type: 'button', class: 'sm', text: '+' + n + ' ' + t('daysUnit'), onclick: function () { due.value = C.addDays(date.value || today, n); } }); }),
+    var quick = h('div', { class: 'chips' }, [7, 14, 30].map(function (n) { return h('button', { type: 'button', class: 'sm', text: '+' + n + (/^[a-z]/i.test(t('daysUnit')) ? ' ' : '') + t('daysUnit'), onclick: function () { due.value = C.addDays(date.value || today, n); } }); }),
       h('button', { type: 'button', class: 'sm', text: t('noDue'), onclick: function () { due.value = ''; } }));
     function drawPhoto() {
       photoBox.textContent = '';
@@ -147,13 +147,15 @@
       if (o.kind === 'money' && !(Math.round(Number(o.amount) * 100) > 0 && Number(o.amount) <= 1e12)) { setErr(t('needAmount'), amount); return; }
       if (o.due && o.date && o.due < o.date) { setErr(t('needDue'), due); return; }
       if (existing && o.kind !== existing.kind && (existing.repayments.length || C.isClosed(existing))) { setErr(t('kindLocked'), null); return; }
-      if (existing && o.kind === 'money' && Number(o.amount) < C.paid(existing)) { setErr(t('amountBelowPaid'), amount); return; }
+      if (existing && o.kind === 'money' && Number(o.amount) < C.round2(C.paid(existing) - existing.repayments.filter(function (r) { return r.auto; }).reduce(function (a, r) { return a + r.amount; }, 0)) - 0.000001) { setErr(t('amountBelowPaid'), amount); return; }
       var p = C.addPerson(st, name); o.personId = p.id;
       if (existing) {
+        var prevPerson = existing.personId;
         var n = C.makeEntry(o); ['dir', 'kind', 'title', 'personId', 'amount', 'currency', 'date', 'due', 'note', 'photo'].forEach(function (k) { existing[k] = n[k]; });
         C.normalize(existing);
+        var old = C.findPerson(st, prevPerson); if (old && old.id !== existing.personId && !old.note && !st.entries.some(function (x) { return x.personId === old.id; })) C.removePerson(st, old.id);
       } else { st.entries.push(C.makeEntry(o)); }
-      q = ''; tab = o.dir; save(); d.close(); render(); toast(saveFailed ? t('storageErr') : t('saved'));
+      q = '';  tab = o.dir; save(); d.close(); render(); toast(saveFailed ? t('storageErr') : t('saved'));
     });
     d = dialog([form]); sync(); title.focus();
     form.addEventListener('input', function () { dirty = true; }); form.addEventListener('change', function () { dirty = true; });
@@ -168,14 +170,24 @@
   function undoable(msg, fn) { var before = snapshot(); fn(); save(); var mine = saveSeq, after = rawNow(); render(); toast(msg, function () { if (saveSeq !== mine) return; if (rawNow() !== after) { var f = storedState(); if (f) st = f; render(); toast(t('conflict')); return; } st = C.sanitize(JSON.parse(before)); save(); render(); }); }
   function doReturned(e) { undoable(t('returnedToast'), function () { C.markReturned(e, C.today()); }); }
   function doRepay(e) {
-    askText(t('repay'), t('repayAmt') + ' (' + e.currency + ')', C.remaining(e), 'number').then(function (v) {
-      if (v == null) return; var a = Number(v); if (!isFinite(a) || !(Math.round(a * 100) > 0)) { toast(t('needAmount')); return; }
-      var capped = a > C.remaining(e); undoable(capped ? t('capped', { a: fmtMoney(C.remaining(e), e.currency) }) : t('saved'), function () { C.repay(e, a, C.today()); });
+    var amt = h('input', { type: 'number', id: 'rp-amt', step: 'any', inputmode: 'decimal', value: C.remaining(e) }), dt = h('input', { type: 'date', id: 'rp-date', value: C.today(), min: e.date, max: C.today() }), out = null;
+    var d = dialog([h('form', { onsubmit: function (ev) { ev.preventDefault(); out = { a: Number(amt.value), date: dt.value }; d.close(); } }, h('h2', { text: t('repay') }),
+      h('label', { for: 'rp-amt', text: t('repayAmt') + ' (' + e.currency + ')' }), amt, h('label', { for: 'rp-date', text: t('repayDate') }), dt,
+      h('div', { class: 'row' }, h('button', { type: 'button', text: t('cancel'), onclick: function () { d.close(); } }), h('button', { type: 'submit', class: 'pri', text: t('save') })))], function () {
+      if (!out) return; var a = out.a; if (!isFinite(a) || !(Math.round(a * 100) > 0)) { toast(t('needAmount')); return; }
+      var date = C.isDate(out.date) && out.date >= e.date && out.date <= C.today() ? out.date : C.today();
+      var capped = a > C.remaining(e); undoable(capped ? t('capped', { a: fmtMoney(C.remaining(e), e.currency) }) : t('saved'), function () { C.repay(e, a, date); });
+    }); amt.focus(); amt.select();
+  }
+  function doReturnedOn(e) {
+    askText(t('markReturned'), t('repayDate'), C.today(), 'date').then(function (v) {
+      if (v == null) return; if (!C.isDate(v) || v < e.date || v > C.today()) { toast(t('needDue')); return; }
+      undoable(t('returnedToast'), function () { C.markReturned(e, v); });
     });
   }
   function doExtend(e) {
-    askText(t('extend'), t('dueOn'), e.due ? C.addDays(e.due, 7) : C.addDays(C.today(), 7), 'date').then(function (v) {
-      if (!v || !C.isDate(v)) return; if (v < e.date) { toast(t('needDue')); return; } undoable(t('extended', { date: fmtDate(v) }), function () { C.extend(e, v, C.today()); });
+    askText(t('extend'), t('dueOn'), C.addDays(e.due && e.due > C.today() ? e.due : C.today(), 7), 'date').then(function (v) {
+      if (v == null) return; if (!C.isDate(v) || v < e.date) { toast(t('needDue')); return; } if (e.due && v < e.due) { toast(t('extendEarlier')); return; } undoable(t('extended', { date: fmtDate(v) }), function () { C.extend(e, v, C.today()); });
     });
   }
   function doDelete(e) { confirmBox(t('delConfirm'), t('del'), true).then(function (ok) { if (ok) undoable(t('deleted'), function () { st.entries = st.entries.filter(function (x) { return x.id !== e.id; }); }); }); }
@@ -196,17 +208,17 @@
   function nudgeText(e, tone) {
     var p = C.findPerson(st, e.personId) || { name: '' }, today = C.today();
     var v = { name: p.name, what: whatOf(e), due: e.due ? fmtDate(e.due) : '', date: fmtDate(e.date), days: dayPhrase(C.daysLate(e, today)), by: fmtDate(C.addDays(today, 3)) };
-    if (e.dir === 'in') return C.fill(e.due ? T.nIn : T.nInNoDue, v);
+    if (e.dir === 'in') return C.fill(!e.due ? T.nInNoDue : C.daysLate(e, today) > 0 ? T.nInLate : T.nIn, v);
     if (!e.due) return C.fill(T.nNoDue, v);
-    if (C.daysLate(e, today) === 0) return C.fill(T.nBefore, v);
+    if (C.daysLate(e, today) === 0) return C.fill(C.daysLeft(e, today) === 0 ? T.nGentle : T.nBefore, v);
     return C.fill(tone === 'final' ? T.nFinal : tone === 'firm' ? T.nFirm : T.nGentle, v);
   }
   function nudgeDialog(e) {
     var tone = st.settings.tone, p = C.findPerson(st, e.personId) || { name: '' };
-    var ta = h('textarea', { id: 'n-text', rows: 6 }); ta.value = nudgeText(e, tone);
+    var edited = false, ta = h('textarea', { id: 'n-text', rows: 6, oninput: function () { edited = true; } }); ta.value = nudgeText(e, tone);
     var late = e.dir === 'out' && C.daysLate(e) > 0;
     var seg = h('div', { class: 'seg', role: 'group', 'aria-label': t('nudgeTone') }, ['gentle', 'firm', 'final'].map(function (k) {
-      return h('label', null, h('input', { type: 'radio', name: 'tone', value: k, checked: k === tone, onchange: function () { tone = k; ta.value = nudgeText(e, tone); } }), h('span', { text: t({ gentle: 'tGentle', firm: 'tFirm', final: 'tFinal' }[k]) }));
+      return h('label', null, h('input', { type: 'radio', name: 'tone', value: k, checked: k === tone, onchange: function () { tone = k; if (!edited) ta.value = nudgeText(e, tone); } }), h('span', { text: t({ gentle: 'tGentle', firm: 'tFirm', final: 'tFinal' }[k]) }));
     }));
     var row = h('div', { class: 'row' }, h('button', { type: 'button', text: t('close'), onclick: function () { d.close(); } }));
     if (navigator.share) row.appendChild(h('button', { type: 'button', text: t('nudgeShare'), onclick: function () { navigator.share({ text: ta.value }).catch(function () {}); } }));
@@ -234,6 +246,7 @@
     var acts = h('div', { class: 'actions' });
     if (!closed) {
       acts.appendChild(act(e.kind === 'money' ? t('repay') : t('markReturned'), function () { e.kind === 'money' ? doRepay(e) : doReturned(e); }, 'pri'));
+      acts.appendChild(act(t('markReturnedOn'), function () { doReturnedOn(e); }));
       if (e.kind === 'money') acts.appendChild(act(t('markReturned'), function () { doReturned(e); }));
       acts.appendChild(act(t('nudge'), function () { nudgeDialog(e); }));
       acts.appendChild(act(t('extend'), function () { doExtend(e); }));
@@ -244,7 +257,7 @@
     var d = dialog([h('h2', { text: e.kind === 'money' ? fmtMoney(e.amount, e.currency) + (e.title ? ' · ' + e.title : '') : e.title }),
       h('div', { class: 'sub', text: (e.dir === 'out' ? t('toPerson', { name: p.name }) : t('fromPerson', { name: p.name })) + ' · ' + statusText(e) }),
       e.photo ? h('img', { class: 'thumb', src: e.photo, alt: e.title }) : null, e.kind === 'money' ? progress(e) : null,
-      e.note ? h('p', { text: e.note, style: 'white-space:pre-wrap;overflow-wrap:anywhere' }) : null, h('h2', { class: 'sec', text: t('history') }), history(e, function (r) { d.close(); undoable(t('repayRemoved'), function () { e.repayments = e.repayments.filter(function (x) { return x !== r; }); e.gone = (e.gone || []).concat(r.id).slice(-200); if (e.returnedAt && C.remaining(e) > 0) e.returnedAt = null; }); }), acts,
+      e.note ? h('p', { text: e.note, style: 'white-space:pre-wrap;overflow-wrap:anywhere' }) : null, h('h2', { class: 'sec', text: t('history') }), history(e, function (r) { d.close(); undoable(t('repayRemoved'), function () { e.repayments = e.repayments.filter(function (x) { return x !== r; }); e.gone = (e.gone || []).concat(r.id).slice(-200); C.normalize(e); }); }), acts,
       h('div', { class: 'row' }, h('button', { type: 'button', text: t('close'), onclick: function () { d.close(); } }))]);
   }
 
@@ -269,15 +282,15 @@
       h('span', { class: 'chip ' + s, text: statusText(e) }));
     var card = h('div', { class: 'card ' + s + (C.isClosed(e) ? ' closed' : ''), 'data-status': s }, head, e.kind === 'money' && !C.isClosed(e) ? progress(e) : null);
     if (!C.isClosed(e)) {
-      var a = h('div', { class: 'actions' }, h('button', { type: 'button', class: 'pri sm', 'data-id': e.id, 'data-act': 'p', text: e.kind === 'money' ? t('repay') : t('markReturned'), onclick: function () { e.kind === 'money' ? doRepay(e) : doReturned(e); } }),
-        h('button', { type: 'button', class: 'sm', 'data-id': e.id, 'data-act': 's', text: e.dir === 'out' ? t('nudge') : t('extend'), onclick: function () { e.dir === 'out' ? nudgeDialog(e) : doExtend(e); } }));
+      var a = h('div', { class: 'actions' }, h('button', { type: 'button', class: 'pri sm', 'data-id': e.id, 'data-act': 'p', 'aria-label': (e.kind === 'money' ? t('repay') : t('markReturned')) + ': ' + (e.title || fmtMoney(e.amount, e.currency)), text: e.kind === 'money' ? t('repay') : t('markReturned'), onclick: function () { e.kind === 'money' ? doRepay(e) : doReturned(e); } }),
+        h('button', { type: 'button', class: 'sm', 'data-id': e.id, 'data-act': 's', 'aria-label': (e.dir === 'out' ? t('nudge') : t('extend')) + ': ' + (e.title || fmtMoney(e.amount, e.currency)), text: e.dir === 'out' ? t('nudge') : t('extend'), onclick: function () { e.dir === 'out' ? nudgeDialog(e) : doExtend(e); } }));
       card.appendChild(a);
     }
     return card;
   }
   function viewList(dir) {
     var list = st.entries.filter(function (e) { return e.dir === dir && C.match(e, C.findPerson(st, e.personId), q); });
-    var open = C.sortOpen(list.filter(function (e) { return !C.isClosed(e); })), closed = list.filter(C.isClosed).sort(function (a, b) { return (b.returnedAt || '') < (a.returnedAt || '') ? -1 : 1; });
+    var open = C.sortOpen(list.filter(function (e) { return !C.isClosed(e); })), closed = list.filter(C.isClosed).sort(function (a, b) { return (b.returnedAt || '') < (a.returnedAt || '') ? -1 : (b.returnedAt || '') > (a.returnedAt || '') ? 1 : 0; });
     var out = h('div'), sm = C.summary(st);
     if (!st.entries.some(function (e) { return e.dir === dir; })) return h('div', { class: 'empty' }, h('h2', { text: t(dir === 'out' ? 'emptyOutH' : 'emptyInH') }), h('p', { text: t(dir === 'out' ? 'emptyOutB' : 'emptyInB') }), h('button', { class: 'pri', type: 'button', text: t('add'), onclick: function () { entryForm(null); } }));
     var allOpen = st.entries.filter(function (e) { return e.dir === dir && !C.isClosed(e); }), bad = allOpen.filter(function (e) { return C.status(e) === 'overdue'; }).length;
@@ -314,7 +327,7 @@
     var d = dialog([h('h2', { text: p.name }), h('div', { class: 'pill-row' }, scoreChip(s)), facts.length ? h('p', { class: 'sub', text: facts.join(' · ') }) : null,
       list.length ? h('div', null, list.map(function (e) { return h('p', { style: 'margin:6px 0' }, h('span', { class: 'chip ' + C.status(e), text: statusText(e) }), ' ' + (e.kind === 'money' ? fmtMoney(C.remaining(e), e.currency) : e.title)); })) : null,
       h('label', { for: 'p-note', text: t('pNote') }), note,
-      h('div', { class: 'row' }, h('button', { type: 'button', text: t('close'), onclick: function () { d.close(); } }), h('button', { type: 'button', class: 'danger', text: t('delPerson'), onclick: function () { if (!C.removePerson(st, p.id)) { toast(t('delPersonBlocked')); return; } save(); d.close(); render(); } }),
+      h('div', { class: 'row' }, h('button', { type: 'button', text: t('close'), onclick: function () { d.close(); } }), h('button', { type: 'button', class: 'danger', text: t('delPerson'), onclick: function () { if (st.entries.some(function (x) { return x.personId === p.id; })) { toast(t('delPersonBlocked')); return; } d.close(); confirmBox(t('delPerson') + ': ' + p.name + '?' + (p.note ? ' ' + t('pNote') + '!' : ''), t('delPerson'), true).then(function (ok) { if (ok) undoable(t('deleted'), function () { C.removePerson(st, p.id); }); }); } }),
         h('button', { type: 'button', text: t('renamePerson'), onclick: function () { d.close(); askText(t('renamePerson'), t('renamePrompt'), p.name).then(function (v) { if (!v || !v.trim()) return; var o = C.personByName(st, v); if (o && o.id !== p.id) { toast(t('nameTaken')); return; } p.name = C.str(v, 60); save(); render(); }); } }),
         h('button', { type: 'button', class: 'pri', text: t('save'), onclick: function () { p.note = note.value.slice(0, 1000); save(); d.close(); toast(t('saved')); } }))]);
   }
@@ -367,7 +380,7 @@
       h('button', { type: 'button', id: 's-csv', text: t('exportCsv'), onclick: function () { download('lendnest-' + C.today() + '.csv', C.toCSV(st), 'text/csv'); } }),
       h('button', { type: 'button', id: 's-ics', text: t('exportIcs'), onclick: function () { if (!st.entries.some(function (e) { return e.due && !C.isClosed(e); })) { toast(t('icsEmpty')); return; } download('lendnest-reminders.ics', C.toICS(st, { out: t('ics_out'), in: t('ics_in') }), 'text/calendar'); } })),
       h('p', { text: t('icsHint') }), file));
-    out.appendChild(h('div', { class: 'card' }, h('button', { type: 'button', class: 'danger', id: 's-wipe', text: t('wipe'), onclick: function () { confirmBox(t('wipeConfirm') + ' ' + t('wipeNote'), t('wipe'), true).then(function (ok) { if (ok) { var keep = st.settings; try { Object.keys(localStorage).filter(function (k) { return k.indexOf(KEY + '.corrupt') === 0; }).forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {} corrupt = false; st = C.newState(); st.settings = keep; save(); render(); toast(t('wiped')); } }); } }),
+    out.appendChild(h('div', { class: 'card' }, h('button', { type: 'button', class: 'danger', id: 's-wipe', text: t('wipe'), onclick: function () { confirmBox(t('wipeConfirm') + ' ' + t('wipeNote'), t('wipe'), true).then(function (ok) { if (ok) eraseAll(); }); } }),
       h('p', { text: t('privacy') }), h('p', { text: t('installHint') })));
     return out;
   }
@@ -375,13 +388,24 @@
   /* ---------- shell ---------- */
   var TABS = [['out', 'tabOut'], ['in', 'tabIn'], ['people', 'tabPeople'], ['ins', 'tabIns'], ['set', 'tabSet']];
   function buildView() { return tab === 'out' || tab === 'in' ? viewList(tab) : tab === 'people' ? viewPeople() : tab === 'ins' ? viewInsights() : viewSettings(); }
+  function eraseAll() {
+    var keep = st.settings; try { Object.keys(localStorage).filter(function (k) { return k.indexOf(KEY + '.corrupt') === 0; }).forEach(function (k) { localStorage.removeItem(k); }); localStorage.removeItem(KEY); } catch (e) {}
+    corrupt = false; corruptRaw = ''; rawSafe = true; copyKept = true; st = C.newState(); st.settings = keep; save(); render(); toast(t('wiped'));
+  }
+  function lockedView() {
+    var root = document.getElementById('root'); root.textContent = '';
+    root.appendChild(h('main', { id: 'main', class: 'wrap', style: 'padding-top:24px' }, h('h1', { class: 'brand', text: t('app') }), h('div', { class: 'banner bad', role: 'alert', text: t('corruptNoCopy') }),
+      h('div', { class: 'actions' }, h('button', { type: 'button', class: 'pri', id: 'dl-corrupt', text: t('downloadRaw'), onclick: function () { download('lendnest-unreadable.txt', corruptRaw, 'text/plain'); rawSafe = true; render(); } }),
+        h('button', { type: 'button', class: 'danger', id: 's-wipe', text: t('wipe'), onclick: function () { confirmBox(t('wipeConfirm') + ' ' + t('wipeNote'), t('wipe'), true).then(function (ok) { if (ok) eraseAll(); }); } }))));
+  }
   function render() {
+    if (corruptRaw && !rawSafe) { lockedView(); return; }
     var root = document.getElementById('root'), keepScroll = window.scrollY, view, ae = document.activeElement, sel = ae && ae !== document.body ? (ae.getAttribute('data-tab') ? '[data-tab="' + ae.getAttribute('data-tab') + '"]' : ae.getAttribute('data-act') ? '[data-id="' + ae.getAttribute('data-id') + '"][data-act="' + ae.getAttribute('data-act') + '"]' : ae.getAttribute('data-id') ? '[data-id="' + ae.getAttribute('data-id') + '"]' : ae.id ? '#' + ae.id : '') : '';
     var search = (tab === 'out' || tab === 'in' || tab === 'people') && st.entries.length ? h('div', { class: 'search' }, h('input', { type: 'search', id: 'q', value: q, placeholder: t('search'), 'aria-label': t('search'), oninput: function () { q = this.value; var w = document.getElementById('listwrap'); if (w) { w.textContent = ''; w.appendChild(buildView()); } } })) : null;
     view = h('div', { id: 'listwrap' }, buildView());
     root.textContent = '';
     root.appendChild(h('header', { class: 'top' }, h('div', { class: 'wrap' }, h('h1', { class: 'brand' }, logo(), h('span', { text: t('app') })))));
-    root.appendChild(h('main', { id: 'main', class: 'wrap', tabindex: '-1' }, saveFailed ? h('div', { class: 'banner bad', role: 'alert', text: t('storageErr') }) : null, corrupt ? h('div', { class: 'banner bad', role: 'alert' }, t('corrupt') + ' ', h('button', { type: 'button', class: 'link', id: 'dl-corrupt', text: t('backup'), onclick: function () { try { var k = Object.keys(localStorage).filter(function (x) { return x.indexOf(KEY + '.corrupt') === 0; })[0]; download('lendnest-unreadable.txt', localStorage.getItem(k) || '', 'text/plain'); } catch (e) {} } })) : null, search, view));
+    root.appendChild(h('main', { id: 'main', class: 'wrap', tabindex: '-1' }, saveFailed ? h('div', { class: 'banner bad', role: 'alert', text: t('storageErr') }) : null, corrupt ? h('div', { class: 'banner bad', role: 'alert' }, t(copyKept ? 'corrupt' : 'corruptFile') + ' ', h('button', { type: 'button', class: 'link', id: 'dl-corrupt', text: t('downloadRaw'), onclick: function () { var txt = corruptRaw; try { if (!txt) { var k = Object.keys(localStorage).filter(function (x) { return x.indexOf(KEY + '.corrupt') === 0; })[0]; txt = k ? localStorage.getItem(k) : ''; } } catch (e) {} if (!txt) return; download('lendnest-unreadable.txt', txt, 'text/plain'); rawSafe = true; saveFailed = false; render(); } })) : null, search, view));
     if (tab !== 'set') root.appendChild(h('button', { type: 'button', class: 'pri fab', id: 'fab', text: '+ ' + t('add'), onclick: function () { entryForm(null); } }));
     root.appendChild(h('nav', { class: 'tabs', 'aria-label': t('app') }, h('div', { class: 'wrap' }, TABS.map(function (x) {
       return h('button', { type: 'button', 'data-tab': x[0], 'aria-current': tab === x[0] ? 'page' : null, onclick: function () { if (tab !== x[0]) { tab = x[0]; q = ''; render(); window.scrollTo(0, 0); } } }, svgIcon(ICON[x[0]]), h('span', { text: t(x[1]) }));

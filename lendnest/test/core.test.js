@@ -68,7 +68,7 @@ test('ICS has open dated entries only, escapes text, folds', () => {
   const { s, p } = mk(); s.people[0].name = 'Mi;na,'; s.entries.push(C.makeEntry({ title: 'Long ' + 'y'.repeat(120), personId: p.id, due: '2026-10-09', date: '2026-10-01' }));
   const done = C.makeEntry({ title: 'done', personId: p.id, due: '2026-10-09', date: '2026-10-01' }); C.markReturned(done, '2026-10-02'); s.entries.push(done); s.entries.push(C.makeEntry({ title: 'nodue', personId: p.id }));
   const ics = C.toICS(s, { out: 'Get back', in: 'Give back' }, '2026-10-02T00:00:00Z'); assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 1);
-  assert.ok(ics.includes('DTSTART;VALUE=DATE:20261009') && ics.includes('Mi\\;na\\,') && ics.includes('TRIGGER;VALUE=DATE-TIME:20261008T090000')); ics.split('\r\n').forEach(l => assert.ok(l.length <= 75));
+  assert.ok(ics.includes('DTSTART;VALUE=DATE:20261009') && ics.includes('Mi\\;na\\,') && ics.includes('TRIGGER:-PT15H')); ics.split('\r\n').forEach(l => assert.ok(l.length <= 75));
 });
 test('sanitize rejects junk and orphan entries; merge unions by id', () => {
   assert.equal(C.sanitize(null), null); assert.equal(C.sanitize({ people: 1 }), null);
@@ -159,4 +159,16 @@ test('merge never puts money on an item; created must be numeric', () => {
   const bak = JSON.parse(JSON.stringify(s)); bak.entries[0].kind = 'money'; bak.entries[0].amount = 100; bak.entries[0].repayments = [{ id: 'r1', date: '2026-10-01', amount: 40 }];
   const m = C.merge(s, C.sanitize(bak)); const x = m.state.entries[0]; assert.equal(x.kind, 'item'); assert.equal(x.repayments.length, 0); assert.equal(x.amount, 0);
   assert.ok(Number.isFinite(C.makeEntry({ title: 'x', personId: p.id, created: { evil: 1 } }).created));
+});
+test('tombstones keep the newest 200 on import', () => {
+  const { s, p } = mk(); const e = C.makeEntry({ kind: 'money', amount: 5, title: 't', personId: p.id }); s.entries.push(e); const raw = JSON.parse(JSON.stringify(s)); raw.entries[0].gone = Array.from({ length: 250 }, (_, i) => 'g' + i);
+  const g = C.sanitize(raw).entries[0].gone; assert.equal(g.length, 200); assert.equal(g[199], 'g249');
+});
+test('round2 handles half cents', () => { assert.equal(C.round2(1.005), 1.01); assert.equal(C.round2(0.1 + 0.2), 0.3); assert.equal(C.round2(-1.005), -1.01); });
+test('settled loans stay consistent when the amount is lowered or a manual repayment is deleted; extend only moves forward', () => {
+  const { p } = mk(); const mkSettled = () => { const e = C.makeEntry({ kind: 'money', amount: 100, title: 't', personId: p.id, date: '2026-10-01', due: '2026-11-30' }); C.repay(e, 30, '2026-10-02'); C.markReturned(e, '2026-10-05'); return e; };
+  let e = mkSettled(); e.amount = 30; C.normalize(e); assert.equal(C.paid(e), 30); assert.equal(e.returnedAt, '2026-10-05');
+  e = mkSettled(); e.repayments = e.repayments.filter(r => r.auto); C.normalize(e); assert.equal(C.paid(e), 100); assert.equal(C.remaining(e), 0);
+  e = mkSettled(); e.amount = 150; C.normalize(e); assert.equal(C.paid(e), 150); assert.ok(e.returnedAt);
+  const f = C.makeEntry({ title: 'x', personId: p.id, date: '2026-10-01', due: '2026-11-30' }); assert.ok(!C.extend(f, '2026-10-20')); assert.ok(C.extend(f, '2026-12-05'));
 });
