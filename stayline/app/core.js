@@ -564,8 +564,46 @@
     } catch (e) { return null; }
   }
 
+  /* .ics import: each VEVENT becomes a trip. Summary is the place. All-day DTEND is exclusive, so the last day is one day before it.
+     Timed events use the calendar date of start and end. Returns [{place, from, to}] (to '' for a single day). */
+  function parseIcs(text) {
+    var lines = String(text || '').replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n');
+    var out = [], cur = null;
+    function day(v) { var m = /^(\d{4})(\d{2})(\d{2})/.exec(v || ''); return m ? m[1] + '-' + m[2] + '-' + m[3] : ''; }
+    lines.forEach(function (ln) {
+      if (ln === 'BEGIN:VEVENT') { cur = {}; return; }
+      if (ln === 'END:VEVENT') {
+        if (cur && validDate(cur.start)) {
+          var to = cur.end && validDate(cur.end) ? cur.end : cur.start;
+          if (cur.allDay && dn(to) > dn(cur.start)) to = addDays(to, -1);
+          if (dn(to) < dn(cur.start)) to = cur.start;
+          out.push({ place: oneLine(cur.summary || '', 60), from: cur.start, to: to === cur.start ? '' : to });
+        }
+        cur = null; return;
+      }
+      if (!cur) return;
+      var i = ln.indexOf(':'); if (i < 0) return;
+      var key = ln.slice(0, i), val = ln.slice(i + 1), head = key.split(';')[0];
+      if (head === 'DTSTART') { cur.start = day(val); cur.allDay = /VALUE=DATE(?!-TIME)/.test(key) || /^\d{8}$/.test(val); }
+      else if (head === 'DTEND') cur.end = day(val);
+      else if (head === 'SUMMARY') cur.summary = val.replace(/\\,/g, ',').replace(/\;/g, ';').replace(/\\n/gi, ' ');
+    });
+    return out.slice(0, 500);
+  }
+  /* counters whose permit or visa ends within `days` days, or ended up to 30 days ago. Soonest first. */
+  function permitWatch(trackers, today, days) {
+    today = today || todayStr(); days = days == null ? 90 : days;
+    var out = [];
+    (trackers || []).forEach(function (tr) {
+      if (!tr.expires || !validDate(tr.expires)) return;
+      var left = dn(tr.expires) - dn(today);
+      if (left < -30 || left > days) return;
+      out.push({ id: tr.id, name: tr.name || '', expires: tr.expires, left: left });
+    });
+    return out.sort(function (a, b) { return a.left - b.left; });
+  }
   var API = {
-    oneLine: oneLine,
+    oneLine: oneLine, parseIcs: parseIcs, permitWatch: permitWatch,
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
     validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, placeStats: placeStats, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,

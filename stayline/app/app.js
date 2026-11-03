@@ -453,6 +453,18 @@
       else toast(T(r === 'net' ? 'licNet' : 'badKey'));
     });
   }
+  /* permits and visas across all counters, soonest first; links to the counter */
+  function permitCard() {
+    var items = C.permitWatch(state.trackers, C.todayStr(), 90);
+    if (!items.length) return null;
+    return h('section', { class: 'card permits', 'aria-labelledby': 'permit-h' }, [
+      h('h2', { id: 'permit-h' }, T('permitH')),
+      h('ul', null, items.map(function (p) {
+        return h('li', null, [h('button', { class: 'ghost small', onclick: function () { state.active = p.id; plan = {}; save(); render(); } }, p.name || T('namePh')), ' ',
+          p.left < 0 ? T('permitGone', { date: fmt(p.expires) }) : T('permitIn', { n: p.left, date: fmt(p.expires) })]);
+      }))
+    ]);
+  }
   function quickStart() {
     var t = { id: uid(), name: '', rule: C.cleanRule(C.PRESETS.schengen), expires: '', trips: [] };
     state.trackers.push(t); state.active = t.id; save(); render();
@@ -491,11 +503,21 @@
       };
       r.readAsText(f);
     } });
+    var icsIn = h('input', { type: 'file', accept: '.ics,text/calendar', hidden: '', onchange: function () {
+      var f = icsIn.files[0]; if (!f || !tr) return; var r = new FileReader();
+      r.onload = function () {
+        var found = C.parseIcs(r.result);
+        if (!found.length) { toast(T('icsNone')); return; }
+        undoable(T('icsDone', { n: found.length }), function () { found.forEach(function (t) { C.addTrip(tr, t); }); save(); render(); });
+      };
+      r.readAsText(f);
+    } });
     var cloudPanel = cloud && window.CloudPanel ? window.CloudPanel.build({ cloud: cloud, lang: function () { return lang; } }) : null;
     return h('footer', { class: 'foot' }, [
       h('div', { class: 'row wrap' }, [
         h('button', { class: 'ghost', onclick: function () { download('stayline-backup.json', JSON.stringify({ v: 1, trackers: state.trackers, active: state.active }), 'application/json'); toast(T('backupDone')); } }, T('exp')),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
+        tr ? h('button', { class: 'ghost', onclick: function () { icsIn.click(); } }, T('icsImport')) : null, icsIn,
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; download('stayline.csv', C.toCsv(state.trackers, C.todayStr()), 'text/csv'); } }, T('csv')),
         h('button', { class: 'ghost', onclick: function () { download('stayline.ics', C.toIcs(state.trackers, C.todayStr()), 'text/calendar'); } }, T('ics')),
         h('button', { class: 'ghost', onclick: function () {
@@ -566,6 +588,7 @@
     if (!tr) kids.push(h('p', { class: 'tag' }, T('tag')), empty());
     else {
       var bn = banner(); if (bn) kids.push(bn);
+      var pc = permitCard(); if (pc) kids.push(pc);
       kids.push(tabs());
       if (state.trackers.length > 1) kids.push(overview());
       kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr), rulesCard(tr));

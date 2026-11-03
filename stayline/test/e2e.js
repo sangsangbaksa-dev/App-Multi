@@ -44,7 +44,7 @@ const ymd = d => d.toISOString().slice(0, 10), add = (n) => ymd(new Date(Date.no
   assert.equal(await pg.locator('.digits').textContent(), '45');
   await pg.fill('#p-arrive', add(15)); await pg.fill('#p-days', '10'); assert.ok((await pg.locator('#plan-out').textContent()).includes('past your permit'));
   // restore tolerates a malformed file
-  await pg.locator('input[type=file]').setInputFiles({ name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ trackers: [{ name: 'Z', rule: { kind: 'rolling', limit: 99999 }, trips: [{ from: 'x' }, { from: '2026-01-01', to: '2026-01-02' }] }] })) });
+  await pg.locator('input[accept="application/json"]').setInputFiles({ name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ trackers: [{ name: 'Z', rule: { kind: 'rolling', limit: 99999 }, trips: [{ from: 'x' }, { from: '2026-01-01', to: '2026-01-02' }] }] })) });
   await pg.waitForSelector('.tab:has-text("Z")'); assert.equal(await pg.locator('.trips li').count(), 1);
   await pg.evaluate(() => { localStorage.setItem('stayline.v1', JSON.stringify({ v: 1, trackers: [], active: '', pro: false, lang: '' })); }); await pg.reload(); await pg.waitForSelector('.paywall');
   await pg.route('**/api/license', r => r.fulfill({ json: { configured: true, valid: true } }));
