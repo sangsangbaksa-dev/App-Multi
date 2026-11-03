@@ -106,6 +106,7 @@
 
   /* ---------- main ---------- */
   function render() {
+    C.setClosures(state.closures || []);
     root.textContent = '';
     document.documentElement.lang = lang; document.title = T('app');
     var m = location.hash.match(/^#c=([\w-]+)$/);
@@ -144,6 +145,7 @@
   }
   function packsView(today) {
     if (C.backupDue(state.packs, state.lastBackup, Date.now())) root.appendChild(h('div', { class: 'warnbar', role: 'status' }, [T('backupNudge') + ' ', h('button', { class: 'ghost sm', onclick: doBackup }, T('backupNow'))]));
+    root.appendChild(waitlistCard());
     var plan = C.agenda(state.packs, today, 1);
     if (plan.length) root.appendChild(h('div', { class: 'card todaybox' }, [h('h3', {}, T('todayH')), h('ul', { class: 'evs' }, plan.map(function (e) {
       var p = state.packs.filter(function (x) { return x.id === e.packId; })[0];
@@ -437,6 +439,30 @@
     state.packs.splice(at, 1); save(); render();
     toast(T('delDone') + ': ' + p.student, T('undo'), function () { state.packs.splice(Math.min(at, state.packs.length), 0, p); save(); render(); }, true);
   }
+  /* waitlist: prospective students; "Start a pack" opens the new-pack dialog with the name filled in */
+  function waitlistCard() {
+    var list = state.waitlist || [];
+    var name = h('input', { id: 'wl-name', maxlength: 80, autocomplete: 'off', 'aria-label': T('student') });
+    var note = h('input', { id: 'wl-note', maxlength: 160, autocomplete: 'off', 'aria-label': T('wlNote'), placeholder: T('wlNote') });
+    var rows = list.map(function (w) {
+      return h('li', {}, [h('b', {}, w.name), w.note ? h('span', { class: 'ln' }, ' · ' + w.note) : null, h('span', { class: 'ln' }, ' · ' + T('wlSince', { date: w.added })),
+        h('button', { class: 'ghost sm', onclick: function () { openNew(); document.getElementById('f-name').value = w.name; } }, T('wlStart')),
+        h('button', { class: 'ghost sm', onclick: function () { state.waitlist = list.filter(function (x) { return x.id !== w.id; }); save(); render(); } }, T('wlRemove'))]);
+    });
+    return h('div', { class: 'card wl' }, [h('h3', {}, T('wlH') + ' (' + list.length + ')'),
+      h('form', { onsubmit: function (e) { e.preventDefault(); if (!name.value.trim()) return; state.waitlist = list.concat([{ id: uid(), name: name.value.trim(), note: note.value.trim(), added: C.todayStr() }]); save(); render(); } },
+        [h('div', { class: 'row' }, [name, note, h('button', { type: 'submit', class: 'ghost sm' }, T('wlAdd'))])]),
+      list.length ? h('ul', { class: 'evs' }, rows) : h('p', { class: 'note' }, T('wlEmpty'))]);
+  }
+  /* class closures: a date the teacher is off for everyone; planned lessons on it are not drawn for any student */
+  function closuresCard() {
+    var list = (state.closures || []).slice().sort();
+    var d = h('input', { id: 'cl-date', type: 'date', 'aria-label': T('clAdd') });
+    return h('div', { class: 'card cl' }, [h('h3', {}, T('clH')), h('p', { class: 'note' }, T('clHint')),
+      h('form', { onsubmit: function (e) { e.preventDefault(); if (!d.value || list.indexOf(d.value) !== -1) return; state.closures = list.concat([d.value]); save(); render(); } },
+        [h('div', { class: 'row' }, [d, h('button', { type: 'submit', class: 'ghost sm' }, T('clAdd'))])]),
+      h('ul', { class: 'evs' }, list.map(function (x) { return h('li', {}, [h('b', {}, x), h('button', { class: 'ghost sm', onclick: function () { state.closures = list.filter(function (y) { return y !== x; }); save(); render(); } }, T('wlRemove'))]); }))]);
+  }
   /* bulk: packs that need renewal and have no successor yet (a renewal records renewsFrom, so pressing twice never doubles a pack) */
   function dueForRenewal(today) {
     return state.packs.filter(function (p) { var st = C.status(p, today); return (st === 'low' || st === 'expired' || st === 'done') && !state.packs.some(function (q) { return q.renewsFrom === p.id; }); });
@@ -578,6 +604,7 @@
         h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); download('stampbook.csv', C.toCsv(state.packs), 'text/csv'); } }, T('csv')),
         h('button', { class: 'ghost', onclick: function () { if (!state.pro) return needPro(); var ym = C.todayStr().slice(0, 7); download('stampbook-' + ym + '.csv', C.monthReport(state.packs, ym), 'text/csv'); } }, T('monthCsv'))
       ]),
+      closuresCard(),
       cloudPanel ? h('div', { style: 'margin:14px 0' }, [cloudPanel.el]) : null,
       state.pro ? null : h('div', {}, [
         h('label', { for: 'lic' }, T('lic')),
