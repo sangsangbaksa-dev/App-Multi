@@ -32,7 +32,7 @@ const srv = http.createServer((q, r) => {
   // remove one stamp
   await pg.locator('.slot.on').first().click(); assert.equal(await pg.locator('.slot.on').count(), 1);
   for (const n of ['A', 'B']) { await pg.click('.row .pri'); await pg.fill('#f-name', n); await pg.fill('#f-price', '1'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.card >> nth=' + (n === 'A' ? 1 : 2)); }
-  assert.equal(await pg.locator('.card').count(), 3);
+  assert.equal(await pg.locator('.card:not(.wl):not(.cl)').count(), 3);
   // new daily-use features
   const mina = pg.locator('.card', { hasText: 'Mina' });
   await mina.locator('button', { hasText: 'No-show' }).click(); assert.ok((await mina.locator('.meta').textContent()).startsWith('2 left') || true);
@@ -52,7 +52,7 @@ const srv = http.createServer((q, r) => {
   await pg.locator('.card', { hasText: /Complete/ }).first().waitFor();
   await pg.locator('.card h2', { hasText: /^A$/ }).first().locator('xpath=ancestor::section').locator('button', { hasText: 'Renew pack' }).click();
   assert.equal(await pg.locator('.card h2', { hasText: /^A$/ }).count(), 2); assert.ok(await pg.locator('input[type=search]').count() === 1, 'search shows with 4 packs');
-  await pg.fill('input[type=search]', 'mina'); assert.equal(await pg.locator('.card').count(), 1); await pg.fill('input[type=search]', 'zzz'); assert.equal(await pg.locator('.card').count(), 0); await pg.fill('input[type=search]', '');
+  await pg.fill('input[type=search]', 'mina'); assert.equal(await pg.locator('.card:not(.wl):not(.cl)').count(), 1); await pg.fill('input[type=search]', 'zzz'); assert.equal(await pg.locator('.card:not(.wl):not(.cl)').count(), 0); await pg.fill('input[type=search]', '');
   // legacy data (no kind/months) still loads
   await pg.evaluate(() => { localStorage['stampbook.v1'] = JSON.stringify({ v: 1, pro: true, teacher: '', lang: 'en', packs: [{ id: 'old', student: 'Legacy', total: 3, price: 30, currency: 'USD', start: '2026-09-01', expires: '2027-09-01', stamps: [{ id: 's1', date: '2026-09-02', note: '' }], paid: true }] }); });
   await pg.reload(); assert.equal(await pg.locator('.slot.on').count(), 1);

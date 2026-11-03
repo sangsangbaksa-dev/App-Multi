@@ -187,6 +187,9 @@
     if (skip.length) p.schedule.skip = skip;
     return p.schedule;
   }
+  /* class closures (dates the teacher is off for everyone); the app sets them before it draws anything */
+  var closures = [];
+  function setClosures(list) { closures = Array.isArray(list) ? list.slice() : []; }
   /* planned lessons for one pack from `from` for `n` days: only while lessons remain, inside the validity window, skipping dates already stamped */
   function upcoming(p, from, n) {
     var out = [], left = remaining(p);
@@ -196,7 +199,7 @@
       var d = addDays(from, i);
       if (p.start && d < p.start) continue;
       if (p.expires && d > p.expires) break;
-      if (taken[d] || p.schedule.days.indexOf(parse(d).getDay()) === -1 || (p.schedule.skip && p.schedule.skip.indexOf(d) !== -1)) continue;
+      if (taken[d] || p.schedule.days.indexOf(parse(d).getDay()) === -1 || (p.schedule.skip && p.schedule.skip.indexOf(d) !== -1) || closures.indexOf(d) !== -1) continue;
       out.push({ date: d, time: p.schedule.time || '', packId: p.id, student: p.student });
     }
     return out;
@@ -486,7 +489,7 @@
   function justCompleted(p, id) { return remaining(p) === 0 && p.stamps.length > 0 && counted(p).slice(-1)[0].id === id; }
 
   var API = {
-    INK_COUNT: INK_COUNT, inkOf: inkOf, setInk: setInk, weekPlan: weekPlan, justCompleted: justCompleted,
+    INK_COUNT: INK_COUNT, setClosures: setClosures, inkOf: inkOf, setInk: setInk, weekPlan: weekPlan, justCompleted: justCompleted,
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, setNext: setNext, NEXT_MAX: NEXT_MAX, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
