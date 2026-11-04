@@ -32,6 +32,8 @@
   /* Order matters: an earlier rule claims its text first, so a card number is not also a phone number. */
   var RULES = [
     { kind: 'PRIVATE_KEY', re: /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g },
+    /* Credentials in a URL: scheme://user:password@host. Only the password is hidden. */
+    { kind: 'SECRET', re: /\b[a-z][a-z0-9+.-]*:\/\/[^\s:\/@"']+:([^\s\/@"']{4,})@/gi, group: 1 },
     { kind: 'API_KEY', re: /\bsk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}/g },
     { kind: 'API_KEY', re: /\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bgithub_pat_[A-Za-z0-9_]{40,}\b/g },
     { kind: 'API_KEY', re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g },
@@ -39,7 +41,14 @@
     { kind: 'API_KEY', re: /\bxox[abposr]-[A-Za-z0-9-]{10,}/g },
     { kind: 'API_KEY', re: /\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g },
     { kind: 'TOKEN', re: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g },
-    { kind: 'SECRET', re: /\b[\w.-]*?(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|client[_-]?secret)\b\s*[:=]\s*["']?([^\s"',;&]{4,})/gi, group: 1 },
+    /* Key then : or =, with optional quotes around the key (JSON) and the value (quoted values may hold spaces). */
+    {
+      kind: 'SECRET',
+      re: /\b[\w.-]*?(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|client[_-]?secret)\b["']?\s*[:=]\s*(?:"([^"\r\n]{4,})"|'([^'\r\n]{4,})'|([^\s"',;&]{4,}))/gi,
+      group: [1, 2, 3]
+    },
+    /* Bearer and Basic credentials in an Authorization header or a curl line. */
+    { kind: 'TOKEN', re: /\b(?:Bearer|Basic)\s+([A-Za-z0-9._~+\/=-]{16,})/g, group: 1 },
     { kind: 'ID_NUMBER', re: /(?<!\d)\d{6}-[1-4]\d{6}(?!\d)/g },
     {
       kind: 'CARD', re: /(?<![\w-])(?:\d[ -]?){12,18}\d(?![\w-])/g,
@@ -63,6 +72,13 @@
     }
   ];
 
+  /* The first capture group that matched; a rule may list several alternatives. */
+  function groupValue(m, group) {
+    var list = [].concat(group);
+    for (var i = 0; i < list.length; i++) if (m[list[i]]) return m[list[i]];
+    return '';
+  }
+
   /* Returns [{ kind, value, start, end }] sorted by position. Overlaps keep the earlier rule. */
   function findAll(text) {
     var src = String(text == null ? '' : text);
@@ -72,7 +88,7 @@
       var m;
       while ((m = re.exec(src)) !== null) {
         if (m[0].length === 0) { re.lastIndex++; continue; }
-        var value = rule.group ? m[rule.group] : m[0];
+        var value = rule.group ? groupValue(m, rule.group) : m[0];
         if (!value) continue;
         var start = rule.group ? m.index + m[0].lastIndexOf(value) : m.index;
         var end = start + value.length;

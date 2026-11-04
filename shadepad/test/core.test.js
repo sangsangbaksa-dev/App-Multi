@@ -104,3 +104,34 @@ test('key=value and key: value assignments with generic values are hidden', () =
   assert.equal(SP.redact('secret: xK9bQ2mZ7vLp4RtY8wNc3HsE6uJd1FgA').text, 'secret: [SECRET_1]');
   assert.equal(SP.redact('access_key=AKIDEXAMPLE1').text, 'access_key=[SECRET_1]');
 });
+
+test('JSON keys with quotes around the key are hidden', () => {
+  const r = SP.redact('{"password": "hunter2hunter2", "apiKey": "abcd1234efgh"}');
+  assert.equal(r.text, '{"password": "[SECRET_1]", "apiKey": "[SECRET_2]"}');
+  assert.equal(SP.redact('{"api_key":"abcd1234efgh"}').text, '{"api_key":"[SECRET_1]"}');
+});
+
+test('quoted secret values that contain spaces are hidden whole', () => {
+  const r = SP.redact('password="correct horse battery"');
+  assert.equal(r.text, 'password="[SECRET_1]"');
+  assert.equal(r.map['[SECRET_1]'], 'correct horse battery');
+  assert.equal(SP.redact("token='abc def ghi'").text, "token='[SECRET_1]'");
+});
+
+test('Bearer and Basic credentials are hidden', () => {
+  const r = SP.redact('Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123456789');
+  assert.equal(r.text, 'Authorization: Bearer [TOKEN_1]');
+  assert.equal(r.map['[TOKEN_1]'], 'abcdefghijklmnopqrstuvwxyz0123456789');
+  assert.equal(SP.redact('curl -H "Authorization: Basic dXNlcjpwYXNzd29yZA=="').text.includes('dXNlcjpwYXNzd29yZA'), false);
+});
+
+test('the password in a URL with credentials is hidden, the host is kept', () => {
+  const r = SP.redact('DATABASE_URL=postgres://user:s3cretpass@db.example.com:5432/app');
+  assert.equal(r.text, 'DATABASE_URL=postgres://user:[SECRET_1]@db.example.com:5432/app');
+  assert.equal(r.map['[SECRET_1]'], 's3cretpass');
+});
+
+test('restore brings back values from quoted and JSON secrets', () => {
+  const r = SP.redact('{"password": "hunter2hunter2"}');
+  assert.equal(SP.restore('Use the value [SECRET_1] in the config.', r.map).text, 'Use the value hunter2hunter2 in the config.');
+});
