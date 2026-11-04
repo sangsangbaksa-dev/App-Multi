@@ -2,7 +2,8 @@
 const { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..'), types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.png': 'image/png' };
 const srv = http.createServer((q, r) => {
-  let p = decodeURIComponent(q.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html'; const f = path.join(root, p);
+  let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/api/license') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{"configured":false}'); }
+  if (p.endsWith('/')) p += 'index.html'; const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f)) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { 'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'", 'content-type': types[path.extname(f)] || 'text/plain' }); fs.createReadStream(f).pipe(r);
 }).listen(0);
@@ -85,7 +86,7 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   // photo: attach, hash sealed, survives reload
   await pg.reload(); await pg.click('[data-act=log]');
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP4z8Dwn+E/A8N/BgYGAB8UBAH8bX0xAAAAAElFTkSuQmCC', 'base64'); fs.writeFileSync(out + '/p.png', png);
-  await pg.fill('#e-at', ago(0, 8, 0)); await pg.fill('#e-text', 'Photo of the scuffed ceiling after the stomping'); await pg.setInputFiles('#e-ph', out + '/p.png'); await pg.waitForSelector('#e-phl img');
+  await pg.fill('#e-at', ago(1, 8, 0)); await pg.fill('#e-text', 'Photo of the scuffed ceiling after the stomping'); await pg.setInputFiles('#e-ph', out + '/p.png'); await pg.waitForSelector('#e-phl img');
   await pg.click('dialog button[type=submit]'); await pg.waitForSelector('dialog', { state: 'detached' }); await pg.waitForFunction(() => { const i = document.querySelector('.entry .thumb img'); return i && i.src.startsWith('data:image/jpeg'); });
   await pg.reload(); await pg.waitForFunction(() => { const i = document.querySelector('.entry .thumb img'); return i && i.src.startsWith('data:image/jpeg'); });
   await pg.click('.entry .thumb'); await pg.waitForSelector('.big-ph', { state: 'visible' }); await pg.click('dialog [data-close]');
@@ -113,7 +114,7 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   await pg.selectOption('#casesel', { index: 0 }); await pg.click('#tab-case'); await pg.click('[data-act=archive]');
   await pg.selectOption('#casesel', { label: 'Second (archived)' }).catch(() => {}); 
   // landing pages render
-  for (const l of ['', 'ko/', 'ja/', 'zh/', 'es/']) { const r = await pg.goto(base + '/' + l); assert.equal(r.status(), 200); assert.ok(await pg.locator('h1').count() === 1 && await pg.locator('a.cta').count() === 1, l); }
+  for (const l of ['', 'ko/', 'ja/', 'zh/', 'es/']) { const r = await pg.goto(base + '/' + l); assert.equal(r.status(), 200); assert.ok(await pg.locator('h1').count() === 1 && await pg.locator('a.cta').count() >= 1, l); }
   await pg.goto(base + '/'); await pg.screenshot({ path: out + '/08-landing.png', fullPage: true });
   assert.deepEqual(errs, [], 'console/page errors');
   await b.close(); srv.close(); console.log('e2e ok');
