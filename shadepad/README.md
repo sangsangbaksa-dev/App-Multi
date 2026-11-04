@@ -9,6 +9,9 @@ Working name: the folder and the product name are not final. Check trademarks (K
 - **Hide details**: finds the values with patterns and checks (Luhn for card numbers, digit counts for phones) and replaces each with a numbered tag such as `[EMAIL_1]`. The same value always gets the same tag. The app lists what was found, with a partly masked preview.
 - **Restore**: paste the AI reply into the restore box and the tags become the original values again. Only tags from the most recent "Hide details" on the page can be restored.
 - **Keep visible**: each found value has a button to leave it unhidden, for false positives. The output updates at once.
+- **Summary by kind**: the result line says how many of each kind were hidden, and how many values you chose to keep visible.
+- **Unknown tags**: a bracketed tag in the AI reply that this text did not produce is reported after restore.
+- **Ctrl+Enter / Cmd+Enter** hides the details from the input box.
 - **Tolerant restore**: a tag the AI escaped, spaced or re-wrapped (for example `\[EMAIL_1\]` or `EMAIL_1`) is restored too.
 - **Copy** the masked text or the restored text.
 - **Nothing stored**: the text and the originals stay in memory on the page. Reloading clears them. Only the language and, after unlocking, the licence key are kept in `localStorage`.
@@ -47,6 +50,6 @@ If the server answers `configured: false`, the app opens without a key. If licen
 
 ## Known limits
 
-- Detection is pattern based. Recognised: API keys (OpenAI, Anthropic, GitHub, AWS, Google, Slack incl. webhooks, Stripe, npm), JWTs, bare hex and random tokens, Bearer/Basic credentials, URL passwords, IBANs (checksum), US SSNs. It can miss secrets in unusual formats and can flag harmless numbers, so the output must be checked before sharing.
+- Detection is pattern based. Recognised: API keys (OpenAI, Anthropic, GitHub, AWS, Google, Slack incl. webhooks, Stripe, npm), JWTs, bare hex and random tokens, Bearer/Basic credentials, URL passwords, IBANs (checksum), US SSNs, Stripe webhook secrets, Google OAuth client secrets, Twilio key SIDs, SendGrid, Hugging Face and Discord webhook tokens. It can miss secrets in unusual formats and can flag harmless numbers, so the output must be checked before sharing.
 - Restore works only in the same page session. Reloading clears the originals.
 - Names are not detected (a person's name is not a pattern), and free text such as addresses is not detected.
