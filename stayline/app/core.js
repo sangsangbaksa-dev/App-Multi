@@ -509,12 +509,122 @@
     return !!m && keySum(m[1] + m[2]) === m[3];
   }
 
+  /* the same trips measured against the common limits side by side, plus the counter's own rule when it is custom */
+  function compareRules(tr, today) {
+    today = today || todayStr();
+    var rows = [], seen = {};
+    function add(key, rule) {
+      var r = cleanRule(rule), id = r.kind + r.limit + '/' + (r.window || 0);
+      if (seen[id]) return; seen[id] = true;
+      var s = summary({ rule: r, trips: tr.trips }, today);
+      rows.push({ key: key, rule: r, used: s.used, left: s.left, state: s.state, freesOn: s.freesOn });
+    }
+    var own = cleanRule(tr.rule);
+    add('schengen', PRESETS.schengen); add('visitor180', PRESETS.visitor180); add('tax183', PRESETS.tax183);
+    add('own', own);
+    var mine = rows.filter(function (r) { return JSON.stringify(r.rule) === JSON.stringify(own); })[0];
+    if (mine) { mine.own = true; rows.splice(rows.indexOf(mine), 1); rows.unshift(mine); }
+    return rows;
+  }
+  /* travel statistics from the whole trip list: days per calendar year, longest single stay, trip and place counts */
+  function yearStats(tr, today) {
+    today = today || todayStr();
+    var set = stayDays(tr.trips, today), byYear = {}, total = 0, k;
+    for (k in set) { var y = new Date(+k * 86400000).getUTCFullYear(); byYear[y] = (byYear[y] || 0) + 1; total++; }
+    var years = Object.keys(byYear).map(Number).sort(function (a, b) { return b - a; }).map(function (y) { return { year: y, days: byYear[y] }; });
+    var longest = null, places = {}, t = dn(today), count = 0;
+    (tr.trips || []).forEach(function (x) {
+      var a = dn(x.from), b = x.to ? dn(x.to) : t;
+      if (isNaN(a) || isNaN(b) || b < a) return;
+      count++;
+      var n = b - a + 1;
+      if (!longest || n > longest.days) longest = { days: n, place: x.place || '', from: x.from, to: x.to || '' };
+      var p = String(x.place || '').trim().toLowerCase();
+      if (p) places[p] = true;
+    });
+    return { years: years, total: total, trips: count, places: Object.keys(places).length, longest: longest };
+  }
+
+  /* read-only share link: the counter's rule and trips packed into a URL fragment (never sent to a server). Notes are left out. */
+  function b64url(s) { return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function unb64url(s) { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return decodeURIComponent(escape(atob(s))); }
+  function encodeShare(tr) {
+    var r = cleanRule(tr.rule);
+    var o = { v: 1, n: oneLine(tr.name, 40), r: r.kind === 'year' ? ['y', r.limit] : ['r', r.limit, r.window], e: tr.expires || '', t: (tr.trips || []).slice(0, 200).map(function (x) { return [x.from, x.to || '', oneLine(x.place, 60)]; }) };
+    return b64url(JSON.stringify(o));
+  }
+  function decodeShare(code) {
+    try {
+      if (!code || code.length > 40000) return null;
+      var o = JSON.parse(unb64url(code));
+      if (!o || o.v !== 1 || !Array.isArray(o.t) || !Array.isArray(o.r)) return null;
+      var rule = o.r[0] === 'y' ? { kind: 'year', limit: o.r[1] } : { kind: 'rolling', limit: o.r[1], window: o.r[2] };
+      var list = sanitize([{ id: 'shared', name: o.n, rule: rule, expires: o.e, trips: o.t.slice(0, 200).map(function (x, i) { return { id: 's' + i, from: x && x[0], to: x && x[1], place: x && x[2] }; }) }]);
+      return list[0] || null;
+    } catch (e) { return null; }
+  }
+
+  /* .ics import: each VEVENT becomes a trip. Summary is the place. All-day DTEND is exclusive, so the last day is one day before it.
+     Timed events use the calendar date of start and end. Returns [{place, from, to}] (to '' for a single day). */
+  function parseIcs(text) {
+    var lines = String(text || '').replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n');
+    var out = [], cur = null;
+    function day(v) { var m = /^(\d{4})(\d{2})(\d{2})/.exec(v || ''); return m ? m[1] + '-' + m[2] + '-' + m[3] : ''; }
+    lines.forEach(function (ln) {
+      if (ln === 'BEGIN:VEVENT') { cur = {}; return; }
+      if (ln === 'END:VEVENT') {
+        if (cur && validDate(cur.start)) {
+          var to = cur.end && validDate(cur.end) ? cur.end : cur.start;
+          if (cur.allDay && dn(to) > dn(cur.start)) to = addDays(to, -1);
+          if (dn(to) < dn(cur.start)) to = cur.start;
+          out.push({ place: oneLine(cur.summary || '', 60), from: cur.start, to: to === cur.start ? '' : to });
+        }
+        cur = null; return;
+      }
+      if (!cur) return;
+      var i = ln.indexOf(':'); if (i < 0) return;
+      var key = ln.slice(0, i), val = ln.slice(i + 1), head = key.split(';')[0];
+      if (head === 'DTSTART') { cur.start = day(val); cur.allDay = /VALUE=DATE(?!-TIME)/.test(key) || /^\d{8}$/.test(val); }
+      else if (head === 'DTEND') cur.end = day(val);
+      else if (head === 'SUMMARY') cur.summary = val.replace(/\\,/g, ',').replace(/\;/g, ';').replace(/\\n/gi, ' ');
+    });
+    return out.slice(0, 500);
+  }
+  /* counters whose permit or visa ends within `days` days, or ended up to 30 days ago. Soonest first. */
+  function permitWatch(trackers, today, days) {
+    today = today || todayStr(); days = days == null ? 90 : days;
+    var out = [];
+    (trackers || []).forEach(function (tr) {
+      if (!tr.expires || !validDate(tr.expires)) return;
+      var left = dn(tr.expires) - dn(today);
+      if (left < -30 || left > days) return;
+      out.push({ id: tr.id, name: tr.name || '', expires: tr.expires, left: left });
+    });
+    return out.sort(function (a, b) { return a.left - b.left; });
+  }
+  /* plain-text (Markdown) report for every counter: rule, days counted now, days per calendar year, places, longest stay, permit date */
+  function yearReport(trackers, today) {
+    today = today || todayStr();
+    var out = ['# Stayline report', '', 'Generated ' + today + '. These are estimates from the dates entered; official records decide.', ''];
+    (trackers || []).forEach(function (tr) {
+      var r = cleanRule(tr.rule), st = yearStats(tr, today), s = summary(tr, today);
+      out.push('## ' + (tr.name || 'Counter'), '');
+      out.push('- Rule: ' + (r.kind === 'year' ? r.limit + ' days per calendar year' : r.limit + ' days in any ' + r.window + ' days'));
+      out.push('- Counted now: ' + s.used + ' days, ' + (s.left >= 0 ? s.left + ' left' : (-s.left) + ' over'));
+      if (tr.expires && validDate(tr.expires)) out.push('- Permit or visa valid until: ' + tr.expires);
+      out.push('- Trips: ' + st.trips + ', places: ' + st.places + ', days inside in total: ' + st.total);
+      if (st.longest) out.push('- Longest stay: ' + st.longest.days + ' days' + (st.longest.place ? ' (' + st.longest.place + ')' : '') + ', from ' + st.longest.from);
+      if (st.years.length) { out.push('', '| Year | Days inside |', '| --- | --- |'); st.years.forEach(function (y) { out.push('| ' + y.year + ' | ' + y.days + ' |'); }); }
+      out.push('');
+    });
+    return out.join('\n');
+  }
   var API = {
-    oneLine: oneLine,
+    oneLine: oneLine, parseIcs: parseIcs, permitWatch: permitWatch, yearReport: yearReport,
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
     validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, placeStats: placeStats, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
-    safeLastDay: safeLastDay, borderSheet: borderSheet, cleanBuffer: cleanBuffer, cleanNote: cleanNote, validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
+    compareRules: compareRules, yearStats: yearStats, encodeShare: encodeShare, decodeShare: decodeShare, safeLastDay: safeLastDay, borderSheet: borderSheet, cleanBuffer: cleanBuffer, cleanNote: cleanNote, validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;
 })(typeof window !== 'undefined' ? window : globalThis);

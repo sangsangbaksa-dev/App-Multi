@@ -70,7 +70,7 @@ function renderList() {
     return `<div class="card" data-id="${esc(i.id)}" role="button" tabindex="0"><div><b>${esc(i.number)}</b> · ${esc(i.client)}<br>
       <span class="muted">${q ? I.t("validUntil") : I.t("dueWord")} ${esc(I.formatDate(i.dueDate))} · ${I.t(i.status)}${i.recur ? " · " + I.t(i.recur) : ""}</span>
       ${L.overdue(i) ? `<span class="late"> ${I.t("overdue")}</span>` : ""}</div>
-      <div class="r"><b>${money(L.totalOf(i), i.currency)}</b>${!q && i.paid > 0 && bal > 0 ? `<br><span class="muted">${I.t("balance")} ${money(bal, i.currency)}</span>` : ""}</div></div>`;
+      <div class="r"><b>${money(L.totalOf(i), i.currency)}</b>${L.withheldOf(i) > 0 ? `<br><span class="muted">${I.t("payableL")} ${money(L.payableOf(i), i.currency)}</span>` : ""}${!q && i.paid > 0 && bal > 0 ? `<br><span class="muted">${I.t("balance")} ${money(bal, i.currency)}</span>` : ""}</div></div>`;
   }).join("");
   renderDash();
   renderAgeing();
@@ -86,7 +86,7 @@ function renderDash() {
   const rows = L.byClient(invoices);
   $("#clientsum").innerHTML = !rows.length ? "" : isPro()
     ? `<details open><summary>${I.t("byClient")}</summary><table class="mini">${rows.map((r) =>
-        `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td></tr>`).join("")}</table></details>`
+        `<tr><td>${esc(r.client)}</td><td class="r">${r.count}× ${I.t("billed")} ${money(r.billed, r.currency)}</td><td class="r">${I.t("balance")} ${money(r.balance, r.currency)}</td><td class="r"><button type="button" data-stmt="${esc(r.client)}" data-cur="${esc(r.currency)}">${I.t("stmtBtn")}</button></td></tr>`).join("")}</table></details>`
     : `<p class="muted">${I.t("byClientPro")}</p>`;
 }
 
@@ -204,6 +204,8 @@ function readForm() {
   delete inv[""];
   inv.taxRate = Number(inv.taxRate) || 0;
   inv.discount = Number(inv.discount) || 0;
+  inv.withholdingRate = Math.min(Math.max(Number(inv.withholdingRate) || 0, 0), L.MAX_WITHHOLDING);
+  inv.taxId = String(inv.taxId || "").trim().slice(0, 40);
   inv.recur = inv.recur || "";
   inv.paid = Number(inv.paid) || 0;
   inv.lateFeePct = Number(inv.lateFeePct) || 0;
@@ -219,8 +221,10 @@ function readForm() {
 function renderPreview() {
   if (!editing) return;
   const i = readForm();
-  const t = L.calcTotals(i.items, i.taxRate, i.discount);
+  const t = L.calcTotals(i.items, i.taxRate, i.discount, i.withholdingRate);
   const m = (n) => money(n, i.currency);
+  const habit = !L.isQuote(i) && i.client ? L.clientHabits(invoices.filter((x) => x.id !== i.id))[L.habitKey(i.client)] : null;
+  $("#client-hint").textContent = habit ? `${I.t("insCashHistory", { d: habit.avgDays })} · ${I.t("insPayOnTime")} ${habit.onTimePct}% · ${I.t("habitFrom", { n: habit.count })}` : "";
   const late = L.overdue({ ...i, paid: L.isQuote(i) ? 0 : i.paid }, today());
   $("#btn-latefee").hidden = !late;
   $("#btn-remind").hidden = !late;
@@ -229,11 +233,11 @@ function renderPreview() {
   const showLogo = logo && isPro();
   $("#btn-logo-rm").hidden = !logo;
   $("#preview").innerHTML = `${showLogo ? `<img class="logo" alt="" src="${esc(logo)}">` : ""}<h2>${I.t(L.isQuote(i) ? "quote" : "invoice")} ${esc(i.number)}</h2>
-    <p><b>${I.t("fromL")}:</b> ${esc(i.from)}<br><b>${I.t("toL")}:</b> ${esc(i.client)}<br>
+    <p><b>${I.t("fromL")}:</b> ${esc(i.from)}${i.taxId ? ` (${esc(I.t("taxIdShort"))} ${esc(i.taxId)})` : ""}<br><b>${I.t("toL")}:</b> ${esc(i.client)}<br>
     ${I.t("issuedL")} ${esc(I.formatDate(i.issueDate))} · ${I.t(L.isQuote(i) ? "validUntil" : "dueL")} ${esc(I.formatDate(i.dueDate))}${i.convertedFrom ? `<br><small>${esc(I.t("quoteOf", { n: i.convertedFrom }))}</small>` : ""}</p>
     <table><tr><th>${I.t("desc")}</th><th class="r">${I.t("qty")}</th><th class="r">${I.t("price")}</th><th class="r">${I.t("total")}</th></tr>
     ${i.items.map((x) => `<tr><td>${esc(x.desc)}</td><td class="r">${x.qty}</td><td class="r">${m(x.price)}</td><td class="r">${m(x.qty * x.price)}</td></tr>`).join("")}</table>
-    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b>${!L.isQuote(i) && i.paid > 0 ? `<br>− ${m(Math.min(i.paid, t.total))}<br><b>${I.t("balance")} ${m(L.balanceOf(i))}</b>` : ""}</p>
+    <p class="r">${I.t("subtotal")} ${m(t.subtotal)}<br>${t.discount ? `${I.t("discountL")} −${m(t.discount)}<br>` : ""}${I.t("taxL")} ${m(t.tax)}<br><b>${I.t("total")} ${m(t.total)}</b>${t.withholding ? `<br>${I.t("whL")} (${i.withholdingRate}%) −${m(t.withholding)}<br><b>${I.t("payableL")} ${m(t.payable)}</b>` : ""}${!L.isQuote(i) && i.paid > 0 ? `<br>− ${m(Math.min(i.paid, t.payable))}<br><b>${I.t("balance")} ${m(L.balanceOf(i))}</b>` : ""}</p>
     <p>${esc(i.notes)}</p>${i.payinfo ? `<p><b>${I.t("payinfo").replace(/\s*[（(].*$/, "")}</b><br>${esc(i.payinfo).replace(/\n/g, "<br>")}</p>` : ""}
     ${isPro() ? "" : `<p class="wm">${I.t("watermark")}</p>`}`;
 }
@@ -335,9 +339,9 @@ function newDoc(type, extra = {}) {
   if (!L.canSave(invoices, isPro(), null)) return openUpgrade(limitMsg());
   const last = invoices[0];
   const doc = {
-    id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", client: "",
+    id: crypto.randomUUID(), type, number: L.nextNumber(invoices, type), from: last?.from ?? "", taxId: last?.taxId ?? "", client: "",
     currency: last?.currency ?? I.LANGS[I.getLang()].currency, issueDate: today(), dueDate: L.addDays(today(), type === "quote" ? 30 : 14),
-    taxRate: last?.taxRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", clientEmail: "", recur: "", nextRun: "",
+    taxRate: last?.taxRate ?? 0, withholdingRate: last?.withholdingRate ?? 0, discount: 0, paid: 0, payments: [], status: "draft", notes: "", payinfo: last?.payinfo ?? "", payLink: last?.payLink ?? "", clientEmail: "", recur: "", nextRun: "",
     items: [{ desc: "", qty: 1, price: 0 }], lateFeePct: last?.lateFeePct ?? 0, ...extra,
   };
   openEditor(doc);
@@ -393,7 +397,7 @@ $("#form").elements.client.addEventListener("change", () => {
   const p = profiles[CL.keyOf($("#form").elements.client.value)];
   if (!p || !editing || invoices.some((x) => x.id === editing.id) || !isPro()) return;
   const next = CL.applyDefaults(readForm(), p);
-  for (const k of ["currency", "taxRate", "dueDate", "clientEmail", "payinfo", "payLink"]) $("#form").elements[k].value = next[k] ?? "";
+  for (const k of ["currency", "taxRate", "withholdingRate", "dueDate", "clientEmail", "payinfo", "payLink"]) $("#form").elements[k].value = next[k] ?? "";
   renderPreview();
   toast(I.t("clientApplied", { client: next.client }));
 });
@@ -447,7 +451,7 @@ $("#f").onchange = (e) => { filters.f = e.target.value; renderList(); };
 $("#btn-dup").onclick = () => {
   const src = readForm();
   const copy = newDoc(src.type, {
-    from: src.from, client: src.client, currency: src.currency, taxRate: src.taxRate, discount: src.discount,
+    from: src.from, taxId: src.taxId, client: src.client, currency: src.currency, taxRate: src.taxRate, withholdingRate: src.withholdingRate, discount: src.discount,
     notes: src.notes, payinfo: src.payinfo, payLink: src.payLink, clientEmail: src.clientEmail, lateFeePct: src.lateFeePct,
     items: src.items.filter((x) => !x.lateFee).map((x) => ({ ...x })),
   });
@@ -565,3 +569,27 @@ const account = initAccount({ auth, cloud, cloudPanel });
 auth.init().then(() => account.paint()).catch(() => account.paint());
 if (cloudPanel && cloud.user()) cloud.sync().then((r) => { if (r.status === "pulled") toast(globalThis.CloudI18n.t(I.getLang(), "pulled")); });
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+// Statement of account: a printable page per client, built on the device from saved invoices.
+let stmtOpen = null;
+function openStatement(client, currency) {
+  const st = L.statement(invoices, client, currency, today());
+  stmtOpen = st;
+  const m = (n) => money(n, currency);
+  const from = esc(invoices.find((x) => x.from)?.from || "");
+  $("#stmt-doc").innerHTML = `<h2 id="stmt-title">${esc(I.t("stmtTitle"))}</h2>
+    <p>${from ? `<b>${esc(I.t("fromL"))}:</b> ${from}<br>` : ""}<b>${esc(I.t("toL"))}:</b> ${esc(client)}<br><span class="sub">${esc(I.t("stmtAsOf", { d: I.formatDate(st.asOf) }))}</span></p>
+    <table><thead><tr><th>${esc(I.t("stmtCol"))}</th><th>${esc(I.t("dueL"))}</th><th class="r">${esc(I.t("total"))}</th><th class="r">${esc(I.t("paidAmt").replace(/\s*\/.*$/, ""))}</th><th class="r">${esc(I.t("stmtOwed"))}</th></tr></thead><tbody>${st.rows.map((r) =>
+      `<tr><td>${esc(r.number)}<br><span class="sub">${esc(I.formatDate(r.issueDate))}</span></td><td>${esc(I.formatDate(r.dueDate))}${r.overdue ? ` <span class="late">${esc(I.t("overdue"))}</span>` : ""}</td><td class="r">${m(r.total)}${r.withheld ? `<br><span class="sub">${esc(I.t("whL"))} −${m(r.withheld)}</span>` : ""}</td><td class="r">${m(r.paid)}${r.payments.map((p) => `<br><span class="sub">${esc(I.t("stmtPaidOn", { d: I.formatDate(p.date) }))}</span>`).join("")}</td><td class="r">${m(r.balance)}</td></tr>`).join("")}</tbody></table>
+    <p class="r"><b>${esc(I.t("stmtLatest"))}: ${m(st.totals.balance)}</b>${st.totals.overdue ? `<br><span class="late">${esc(I.t("dashOverdue"))}: ${m(st.totals.overdue)}</span>` : ""}</p>
+    <p class="sub">${esc(I.t("stmtNote"))}</p>`;
+  $("#stmt").showModal();
+}
+$("#clientsum").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-stmt]");
+  if (b && isPro()) openStatement(b.dataset.stmt, b.dataset.cur);
+});
+$("#stmt-close").onclick = () => $("#stmt").close();
+$("#stmt-csv").onclick = () => { if (stmtOpen) download(`statement-${stmtOpen.client.replace(/[^\w-]+/g, "_")}.csv`, "text/csv", L.statementCSV(stmtOpen)); };
+$("#stmt-print").onclick = () => { document.body.classList.add("print-stmt"); window.print(); };
+window.addEventListener("afterprint", () => document.body.classList.remove("print-stmt"));

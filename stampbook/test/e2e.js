@@ -17,7 +17,9 @@ const srv = http.createServer((q, r) => {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', permissions: ['clipboard-read', 'clipboard-write'] });
   const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('response', r => r.status() === 404 && console.log('404', r.url())); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
   let promptVal; pg.on('dialog', d => d.accept(promptVal));
-  await pg.goto(base + '/app/'); await pg.waitForSelector('.empty');
+  // paid app: a new visitor sees the lock screen, then enters a licence key (offline scheme, server not configured)
+  await pg.goto(base + '/app/'); await pg.waitForSelector('.lock'); assert.equal(await pg.locator('.empty').count(), 0, 'locked without a key');
+  await pg.fill('#lic', require('../app/core.js').makeKey('TESTKEY1')); await pg.click('#act'); await pg.waitForSelector('.empty');
   // create pack
   await pg.click('.empty button'); await pg.fill('#f-name', 'Mina <b>Kim</b>'); await pg.fill('#f-total', '5'); await pg.fill('#f-price', '250'); await pg.fill('#f-cur', 'usd');
   await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.card');
@@ -29,18 +31,8 @@ const srv = http.createServer((q, r) => {
   await pg.screenshot({ path: out + '/app-en.png', fullPage: true });
   // remove one stamp
   await pg.locator('.slot.on').first().click(); assert.equal(await pg.locator('.slot.on').count(), 1);
-  // free limit: add 2 more ok, 4th blocked
   for (const n of ['A', 'B']) { await pg.click('.row .pri'); await pg.fill('#f-name', n); await pg.fill('#f-price', '1'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.card >> nth=' + (n === 'A' ? 1 : 2)); }
-  await pg.click('.row .pri'); await pg.waitForSelector('#up[open]'); await pg.click('#up .ghost >> nth=0'); await pg.waitForSelector('#up:not([open])', { state: 'attached' });
-  assert.equal(await pg.locator('.card').count(), 3);
-  // pro gating + activation
-  await pg.waitForTimeout(2300);
-  await pg.locator('.foot button', { hasText: /Pro$/ }).first().click(); await pg.waitForSelector('#up[open]'); assert.ok(!(await pg.evaluate(() => navigator.clipboard.readText())).includes('#c=')); await pg.click('#up .ghost >> nth=0');
-  const key = require('../app/core.js').makeKey('TESTKEY1');
-  await pg.fill('#lic', 'SB-AAAA-AAAA-ZZZ'); await pg.click('#act'); await pg.waitForSelector('.toast'); assert.equal(await pg.locator('.chip.c-active').count() >= 0, true);
-  assert.equal(await pg.evaluate(() => JSON.parse(localStorage['stampbook.v1']).pro), false);
-  await pg.waitForTimeout(2300); await pg.fill('#lic', key); await pg.click('#act');
-  await pg.waitForFunction(() => JSON.parse(localStorage['stampbook.v1']).pro === true);
+  assert.equal(await pg.locator('.card:not(.wl):not(.cl)').count(), 3);
   // new daily-use features
   const mina = pg.locator('.card', { hasText: 'Mina' });
   await mina.locator('button', { hasText: 'No-show' }).click(); assert.ok((await mina.locator('.meta').textContent()).startsWith('2 left') || true);
@@ -60,7 +52,7 @@ const srv = http.createServer((q, r) => {
   await pg.locator('.card', { hasText: /Complete/ }).first().waitFor();
   await pg.locator('.card h2', { hasText: /^A$/ }).first().locator('xpath=ancestor::section').locator('button', { hasText: 'Renew pack' }).click();
   assert.equal(await pg.locator('.card h2', { hasText: /^A$/ }).count(), 2); assert.ok(await pg.locator('input[type=search]').count() === 1, 'search shows with 4 packs');
-  await pg.fill('input[type=search]', 'mina'); assert.equal(await pg.locator('.card').count(), 1); await pg.fill('input[type=search]', 'zzz'); assert.equal(await pg.locator('.card').count(), 0); await pg.fill('input[type=search]', '');
+  await pg.fill('input[type=search]', 'mina'); assert.equal(await pg.locator('.card:not(.wl):not(.cl)').count(), 1); await pg.fill('input[type=search]', 'zzz'); assert.equal(await pg.locator('.card:not(.wl):not(.cl)').count(), 0); await pg.fill('input[type=search]', '');
   // legacy data (no kind/months) still loads
   await pg.evaluate(() => { localStorage['stampbook.v1'] = JSON.stringify({ v: 1, pro: true, teacher: '', lang: 'en', packs: [{ id: 'old', student: 'Legacy', total: 3, price: 30, currency: 'USD', start: '2026-09-01', expires: '2027-09-01', stamps: [{ id: 's1', date: '2026-09-02', note: '' }], paid: true }] }); });
   await pg.reload(); assert.equal(await pg.locator('.slot.on').count(), 1);
@@ -74,16 +66,16 @@ const srv = http.createServer((q, r) => {
   assert.ok((await p2.locator('.bal').textContent()).includes('Quedan'), 'es card'); assert.ok((await p2.locator('.bal').textContent()).includes('Prof. Park'));
   await p2.screenshot({ path: out + '/card-es.png' });
   // tampered link falls back to app
-  await p2.goto(base + '/app/#c=garbage'); await p2.waitForSelector('.empty');
+  await p2.goto(base + '/app/#c=garbage'); await p2.waitForSelector('.lock');
   // csv download
-  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('text=CSV (Pro)')]); assert.equal(dl.suggestedFilename(), 'stampbook.csv');
+  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('button:text-is("CSV")')]); assert.equal(dl.suggestedFilename(), 'stampbook.csv');
   // languages screenshots + landing
   for (const l of ['ko', 'ja', 'zh', 'es']) { await pg.selectOption('header select', l); await pg.waitForTimeout(100); await pg.screenshot({ path: `${out}/app-${l}.png`, fullPage: true }); }
   const lp = await ctx.newPage(); lp.on('pageerror', e => errs.push(e.message)); lp.on('console', m => m.type() === 'error' && errs.push(m.text()));
   for (const l of ['en', 'ko', 'ja', 'zh', 'es']) {
     await lp.goto(base + (l === 'en' ? '/' : `/${l}/`)); assert.equal(await lp.getAttribute('html', 'lang'), l);
     assert.equal(await lp.locator('link[rel=alternate][hreflang]').count(), 6); assert.ok((await lp.getAttribute('link[rel=canonical]', 'href')).startsWith('https://'));
-    assert.ok((await lp.locator('h1').textContent()).length > 8); assert.equal(await lp.locator('a.btn[href="/app/"]').count(), 2);
+    assert.ok((await lp.locator('h1').textContent()).length > 8); assert.ok(await lp.locator('a.btn[href^="https://quickbillapp.lemonsqueezy.com"]').count() >= 2, 'buy links');
     assert.equal(await lp.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal scroll ' + l);
     await lp.screenshot({ path: `${out}/landing-${l}.png`, fullPage: true });
   }
@@ -94,7 +86,7 @@ const srv = http.createServer((q, r) => {
     delete process.env.LEMONSQUEEZY_DISABLED; const realFetch = global.fetch; global.fetch = async (u, o) => { const k = new URLSearchParams(o.body.toString()).get('license_key'); const ok = k === 'REAL-KEY-12345';
     return { status: ok ? 200 : 404, json: async () => ok ? { valid: true, license_key: { status: 'active' }, meta: {} } : { valid: false, error: 'license_key not found' } }; };
   const c3 = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'en-US' }); const p3 = await c3.newPage(); p3.on('pageerror', e => errs.push(e.message));
-  await p3.goto(base + '/app/'); await p3.waitForSelector('.empty');
+  await p3.goto(base + '/app/'); await p3.waitForSelector('.lock');
   await p3.fill('#lic', require('../app/core.js').makeKey('TESTKEY1')); await p3.click('#act'); await p3.waitForSelector('.toast'); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false, 'offline key refused once the server is configured');
   await p3.waitForTimeout(2400); await p3.fill('#lic', 'WRONG-KEY-00000'); await p3.click('#act'); await p3.waitForTimeout(500); assert.equal(await p3.evaluate(() => JSON.parse(localStorage['stampbook.v1'] || '{}').pro === true), false);
   await p3.waitForTimeout(2400); await p3.fill('#lic', 'REAL-KEY-12345'); await p3.click('#act'); await p3.waitForFunction(() => (localStorage['stampbook.v1'] && JSON.parse(localStorage['stampbook.v1']).pro === true));

@@ -230,11 +230,121 @@
     return { id: String(c.id || uid()).slice(0, 40), name: String(c.name || 'Case').slice(0, 80), kind: kind, counterpart: String(c.counterpart || '').slice(0, 80), goal: String(c.goal || '').slice(0, 200), quiet: q, created: isFinite(c.created) ? +c.created : Date.now(), archived: !!c.archived, entries: entries, steps: steps, live: c.live && isFinite(c.live.start) ? { start: +c.live.start } : null };
   }
 
+  /* ---------- tags, readiness, letter, calendar ---------- */
+  function tagCounts(evs, limit) {
+    var m = {}; evs.forEach(function (e) { (e.tags || []).forEach(function (x) { m[x] = (m[x] || 0) + 1; }); });
+    return Object.keys(m).map(function (k) { return { tag: k, n: m[k] }; }).sort(function (a, b) { return b.n - a.n || (a.tag < b.tag ? -1 : 1); }).slice(0, limit || 6);
+  }
+  function readiness(c, nowTs) {
+    var evs = events(c.entries), st = stats(c, nowTs), spanDays = 0;
+    if (st.first && st.last) spanDays = dayNum(st.last) - dayNum(st.first);
+    var checks = [
+      { key: 'count', ok: evs.length >= 3 },
+      { key: 'span', ok: spanDays >= 7 },
+      { key: 'strength', ok: caseStrength(c) >= 60 },
+      { key: 'parties', ok: !!(c.counterpart && c.goal) },
+      { key: 'written', ok: (c.steps || []).some(function (s) { return s.kind === 'written'; }) },
+      { key: 'late', ok: evs.length > 0 && st.late * 5 < evs.length }
+    ];
+    return { checks: checks, met: checks.filter(function (x) { return x.ok; }).length, total: checks.length };
+  }
+  function addDays(day, n) { var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day); var d = new Date(Date.UTC(+p[1], +p[2] - 1, +p[3] + n)); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
+  function fill(s, v) { for (var x in v) s = s.split('{' + x + '}').join(v[x]); return s; }
+  /* A plain factual notice built only from what the log holds. L is the language table (ltr* keys). */
+  function noticeLetter(c, L, nowTs, days) {
+    var evs = events(c.entries).slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; }), st = stats(c, nowTs), today = toLocalStamp(new Date(nowTs)).slice(0, 10), out = [];
+    days = clampInt(days || 14, 1, 90);
+    out.push(fill(L.ltrDate, { d: today }));
+    out.push(fill(L.ltrTo, { who: c.counterpart || '[ ]' }), '');
+    out.push(fill(L.ltrSubj, { name: c.name }), '', L.ltrOpen, '');
+    if (evs.length) out.push(fill(L.ltrFacts, { a: st.first.slice(0, 10), b: st.last.slice(0, 10), n: evs.length }));
+    if (c.quiet && st.quiet) out.push(fill(L.ltrQuiet, { n: st.quiet, a: pad(c.quiet[0]) + ':00', b: pad(c.quiet[1]) + ':00' }));
+    if (st.minutes) out.push(fill(L.ltrMin, { n: st.minutes }));
+    out.push('', L.ltrList);
+    var shown = evs.slice(-12);
+    if (evs.length > shown.length) out.push(fill(L.ltrMore, { n: evs.length - shown.length }));
+    shown.forEach(function (e) { var t = e.text.replace(/\s+/g, ' ').trim(); out.push('- ' + e.at.replace('T', ' ') + (e.dur ? ' (' + e.dur + ' min)' : '') + ': ' + (t.length > 140 ? t.slice(0, 137) + '...' : t)); });
+    out.push('', c.goal ? fill(L.ltrAsk, { goal: c.goal }) : L.ltrAskDef, fill(L.ltrDue, { date: addDays(today, days) }), '', L.ltrPref, '', L.ltrClose, L.ltrYou);
+    return out.join('\n') + '\n';
+  }
+  function icsEsc(v) { return String(v).replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/[,;]/g, function (m) { return '\\' + m; }); }
+  function icsFold(line) {
+    var out = [], b = line, n = /[^\x00-\x7f]/.test(line) ? 24 : 70;
+    while (b.length > n) { var k = n; if (/[\ud800-\udbff]/.test(b.charAt(k - 1))) k--; out.push(b.slice(0, k)); b = ' ' + b.slice(k); }
+    out.push(b); return out.join('\r\n');
+  }
+  /* All-day calendar events for steps still waiting on an answer. */
+  function toIcs(c, L, nowTs) {
+    var names = L.stepNames || {}, d = new Date(nowTs), stamp = d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+    var open = (c.steps || []).filter(function (s) { return s.due && !s.done && /^\d{4}-\d{2}-\d{2}$/.test(s.due); });
+    if (!open.length) return '';
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Marginlog//EN', 'CALSCALE:GREGORIAN'];
+    open.forEach(function (s) {
+      lines.push('BEGIN:VEVENT', 'UID:' + String(s.id).replace(/[^A-Za-z0-9-]/g, '') + '@marginlog', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + s.due.replace(/-/g, ''), 'DTEND;VALUE=DATE:' + addDays(s.due, 1).replace(/-/g, ''),
+        'SUMMARY:' + icsEsc(fill(L.icsSummary, { step: names[s.kind] || s.kind, 'case': c.name })), 'END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    return lines.map(icsFold).join('\r\n') + '\r\n';
+  }
+
+  /* ---------- all-cases deadlines: one .ics file with every open reply deadline ---------- */
+  function calendarAll(cases, L, nowTs) {
+    var parts = cases.filter(function (c) { return !c.archived; }).map(function (c) { var s = toIcs(c, L, nowTs); var m = s.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT\r\n/g); return m ? m.join('') : ''; }).join('');
+    if (!parts) return '';
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Marginlog//EN', 'CALSCALE:GREGORIAN'].map(function (x) { return x + '\r\n'; }).join('') + parts + 'END:VCALENDAR\r\n';
+  }
+  /* ---------- digest: Markdown summary of every active case, overdue items first ---------- */
+  function digest(cases, L, nowTs) {
+    var names = L.stepNames || {}, today = toLocalStamp(new Date(nowTs)).slice(0, 10), rows = overview(cases.filter(function (c) { return !c.archived; }), nowTs), att = [];
+    cases.forEach(function (c) {
+      if (c.archived) return;
+      (c.steps || []).forEach(function (s) { if (s.due && !s.done && /^\d{4}-\d{2}-\d{2}$/.test(s.due) && s.due < today) att.push({ due: s.due, text: fill(L.dgOverdueItem, { step: names[s.kind] || s.kind, 'case': c.name || '', d: s.due }) }); });
+    });
+    att.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+    var out = ['# ' + L.dgTitle + ' ' + today, '', '## ' + L.dgAttention];
+    out = out.concat(att.length ? att.map(function (a) { return '- ' + a.text; }) : ['- ' + L.dgNone]);
+    out.push('', '## ' + L.dgCases);
+    out = out.concat(rows.length ? rows.map(function (r) {
+      return '- ' + (r.name || L['kind_' + r.kind] || r.kind) + ' (' + (L['kind_' + r.kind] || r.kind) + '): ' + fill(L.ovEntries, { n: r.total }) + ', ' + fill(L.dgRecent, { n: r.last30 }) + ', ' + fill(L.ovStrength, { s: r.strength }) + ', ' + fill(L.ovOpen, { n: r.openSteps }) + (r.overdue ? ', ' + fill(L.ovOverdue, { n: r.overdue }) : '');
+    }) : ['- ' + L.ovNone]);
+    return out.join('\n') + '\n';
+  }
+
+  /* ---------- encrypted backup: AES-GCM, key from a passphrase via PBKDF2-SHA256 (WebCrypto, no library) ---------- */
+  function b64(bytes) { var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s); }
+  function unb64(s) { var bin = atob(String(s)), out = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+  async function deriveKey(pass, salt, iter, usage) {
+    var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(pass)), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, [usage]);
+  }
+  async function encryptText(text, pass) {
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 310000;
+    var key = await deriveKey(pass, salt, iter, 'encrypt');
+    var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(text));
+    return { alg: 'AES-GCM', kdf: 'PBKDF2-SHA256', iter: iter, salt: b64(salt), iv: b64(iv), data: b64(new Uint8Array(ct)) };
+  }
+  /* throws when the passphrase is wrong or the file was altered (GCM tag check) */
+  async function decryptText(env, pass) {
+    if (!env || env.alg !== 'AES-GCM' || env.kdf !== 'PBKDF2-SHA256' || !(env.iter >= 100000 && env.iter <= 1000000)) throw new Error('format');
+    var key = await deriveKey(pass, unb64(env.salt), env.iter, 'decrypt');
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv) }, key, unb64(env.data));
+    return new TextDecoder().decode(pt);
+  }
+  /* ---------- all-cases overview: one row per case ---------- */
+  function overview(cases, nowTs) {
+    var today = toLocalStamp(new Date(nowTs)).slice(0, 10);
+    return cases.map(function (c) {
+      var st = stats(c, nowTs), open = (c.steps || []).filter(function (s) { return s.due && !s.done; });
+      return { id: c.id, kind: c.kind, name: c.name || '', archived: !!c.archived, total: st.total, last30: st.last30, lastAt: st.last,
+        openSteps: open.length, overdue: open.filter(function (s) { return /^\d{4}-\d{2}-\d{2}$/.test(s.due) && s.due < today; }).length, strength: caseStrength(c) };
+    });
+  }
   var api = {
     KINDS: KINDS, STEP_KINDS: STEP_KINDS, LATE_HOURS: LATE_HOURS,
     uid: uid, pad: pad, toLocalStamp: toLocalStamp, parseAt: parseAt, dayNum: dayNum, sha256Hex: sha256Hex, seal: seal, verifyChain: verifyChain, cleanTags: cleanTags, clampInt: clampInt,
     events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, inRange: inRange, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
-    strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase
+    strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase,
+    tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs, encryptText: encryptText, decryptText: decryptText, overview: overview, calendarAll: calendarAll, digest: digest
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.MLCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

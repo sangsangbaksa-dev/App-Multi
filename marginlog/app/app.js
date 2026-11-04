@@ -90,7 +90,7 @@
     document.documentElement.lang = S.lang; document.title = 'Marginlog';
     var c = cur(), h = '<header class="top"><h1>Marginlog</h1><div class="topbtns"><label class="sr" for="lang">' + esc(t('language')) + '</label><select id="lang">' +
       Object.keys(I.L).map(function (k) { return '<option value="' + k + '"' + (k === S.lang ? ' selected' : '') + '>' + esc(I.L[k].name) + '</option>'; }).join('') +
-      '</select><button type="button" class="ghost" data-act="data">' + esc(t('dataBtn')) + '</button></div></header>';
+      '</select><button type="button" class="ghost" data-act="overview">' + esc(t('overviewBtn')) + '</button><button type="button" class="ghost" data-act="data">' + esc(t('dataBtn')) + '</button></div></header>';
     h += '<main id="main">';
     h += c ? caseView(c) : emptyView();
     h += '</main><footer class="foot"><p>' + esc(t('privacy')) + '</p><p>' + esc(t('disclaimer')) + '</p></footer>';
@@ -184,11 +184,14 @@
       (c.quiet ? '<li>' + esc(t('fact_quiet', { n: st.quiet, a: C.pad(c.quiet[0]) + ':00', b: C.pad(c.quiet[1]) + ':00' })) + '</li>' : '') +
       (st.late ? '<li>' + esc(t('fact_late', { n: st.late })) + '</li>' : '') +
       '<li>' + esc(t('fact_trend_' + st.trend, { a: st.last30, b: st.prev30 })) + '</li></ul>';
+    var tc = C.tagCounts(evs, 6);
+    if (tc.length) h += '<h3>' + esc(t('tagsH')) + '</h3><ul class="tagbars">' + tc.map(function (x) { return '<li><span class="tn">#' + esc(x.tag) + '</span><span class="tbar" aria-hidden="true"><i style="width:' + Math.round(100 * x.n / tc[0].n) + '%"></i></span><span class="tc">' + x.n + '</span></li>'; }).join('') + '</ul>';
     return h;
   }
   function stepsTab(c) {
     var names = I.stepNames(S.lang), done = {}; (c.steps || []).forEach(function (s) { done[s.kind] = 1; });
     var h = '<h3>' + esc(t('ladderH')) + '</h3><ol class="ladder">' + C.ladder(c).map(function (k, i) { return '<li class="' + (done[k] ? 'dn' : '') + '"><span class="num">' + (done[k] ? '✓' : i + 1) + '</span><div><b>' + esc(names[k]) + '</b><span>' + esc(t('stepHint_' + k)) + '</span></div><button type="button" class="ghost" data-act="addstep" data-kind="' + k + '">' + esc(t('logStep')) + '</button></li>'; }).join('') + '</ol>';
+    h += '<div class="btns wrap"><button type="button" class="sec" data-act="letter">' + esc(t('ltrBtn')) + '</button>' + ((c.steps || []).some(function (s) { return s.due && !s.done; }) ? '<button type="button" class="ghost" data-act="dlics">' + esc(t('icsBtn')) + '</button>' : '') + '</div>';
     h += '<h3>' + esc(t('stepsH')) + '</h3>';
     if (!(c.steps || []).length) return h + '<div class="empty small"><p>' + esc(t('stepsEmpty')) + '</p></div>';
     h += '<ul class="steps">' + c.steps.slice().sort(function (a, b) { return a.at < b.at ? 1 : -1; }).map(function (s) {
@@ -199,7 +202,8 @@
   }
   function reportTab(c) {
     if (!c.entries.some(function (e) { return e.type === 'event'; })) return '<div class="empty small"><h3>' + esc(t('repEmptyH')) + '</h3><p>' + esc(t('repEmptyB')) + '</p></div>';
-    return '<div class="btns wrap"><button type="button" class="pri" data-act="copyrep">' + esc(t('copyRep')) + '</button><button type="button" class="sec" data-act="print">' + esc(t('printRep')) + '</button><button type="button" class="ghost" data-act="dlmd">' + esc(t('dlMd')) + '</button><button type="button" class="ghost" data-act="dlcsv">' + esc(t('dlCsv')) + '</button></div>' +
+    var rd = C.readiness(c, now()), rh = '<section class="ready" aria-labelledby="rd-h"><h3 id="rd-h">' + esc(t('rdH')) + '</h3><p class="cap">' + esc(t('rdScore', { n: rd.met, m: rd.total })) + '</p><ul class="rdl">' + rd.checks.map(function (x) { return '<li class="' + (x.ok ? 'ok' : 'no') + '"><span aria-hidden="true">' + (x.ok ? '✓' : '○') + '</span> ' + esc(t('rd_' + x.key)) + '</li>'; }).join('') + '</ul></section>';
+    return rh + '<div class="btns wrap"><button type="button" class="pri" data-act="copyrep">' + esc(t('copyRep')) + '</button><button type="button" class="sec" data-act="print">' + esc(t('printRep')) + '</button><button type="button" class="ghost" data-act="dlmd">' + esc(t('dlMd')) + '</button><button type="button" class="ghost" data-act="dlcsv">' + esc(t('dlCsv')) + '</button></div>' +
       '<p class="hint">' + esc(t('repHint')) + '</p><p id="chainline" class="chain" role="status">' + esc(t('verifying')) + '</p><button type="button" class="ghost" data-act="verify">' + esc(t('verifyNow')) + '</button><pre id="repview" class="rep" tabindex="0" aria-label="' + esc(t('tab_report')) + '"></pre><div id="repphotos" class="repphotos"></div>';
   }
   function caseTab(c) {
@@ -353,8 +357,34 @@
     });
     if (!c) $('#c-kind', dlg).addEventListener('change', function (ev) { var q2 = C.KINDS[ev.target.value].quiet; $('#c-qon', dlg).checked = !!q2; if (q2) { $('#c-qa', dlg).value = q2[0]; $('#c-qb', dlg).value = q2[1]; } });
   }
+  function letterLabels() { return Object.assign({}, I.L[S.lang], { stepNames: I.stepNames(S.lang) }); }
+  function letterDialog(c) {
+    if (!C.events(c.entries).length) return toast(t('ltrNone'));
+    var dirty = false, L = letterLabels();
+    var d = openDialog('<h2 id="dlg-h">' + esc(t('ltrH')) + '</h2><p class="hint">' + esc(t('ltrHelp')) + '</p>' +
+      '<label for="l-days">' + esc(t('ltrDays')) + '</label><select id="l-days">' + [7, 14, 21, 30].map(function (n) { return '<option value="' + n + '"' + (n === 14 ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select>' +
+      '<label class="sr" for="l-text">' + esc(t('ltrH')) + '</label><textarea id="l-text" class="letter" rows="14" maxlength="6000"></textarea>' +
+      '<p class="err" role="alert" hidden></p><div class="btns wrap"><button type="button" class="pri" id="l-copy">' + esc(t('ltrCopy')) + '</button><button type="button" class="ghost" id="l-dl">' + esc(t('ltrDl')) + '</button><button type="submit" class="sec">' + esc(t('ltrLog')) + '</button><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>',
+      function (form) {
+        var days = +$('#l-days', form).value, today = C.toLocalStamp(new Date(now())).slice(0, 10);
+        (c.steps = c.steps || []).push({ id: C.uid(), kind: 'written', at: today, note: t('ltrSubj', { name: c.name }).slice(0, 300), due: C.addDays(today, days), done: false });
+        if (!save()) { c.steps.pop(); return err(saveMsg()); } closeDialog(); S.tab = 'steps'; render(); toast(t('ltrLogged'));
+      });
+    function gen() { $('#l-text', d).value = C.noticeLetter(c, L, now(), +$('#l-days', d).value); }
+    gen();
+    var shownDue = C.addDays(C.toLocalStamp(new Date(now())).slice(0, 10), +$('#l-days', d).value);
+    $('#l-days', d).addEventListener('change', function () {
+      var nd = C.addDays(C.toLocalStamp(new Date(now())).slice(0, 10), +this.value);
+      if (!dirty) gen(); else { var ta = $('#l-text', d); ta.value = ta.value.split(shownDue).join(nd); }
+      shownDue = nd;
+    });
+    $('#l-text', d).addEventListener('input', function () { dirty = true; });
+    $('#l-copy', d).addEventListener('click', async function () { var ta = $('#l-text', d); try { await navigator.clipboard.writeText(ta.value); toast(t('ltrCopied')); } catch (e) { ta.focus(); ta.select(); } });
+    $('#l-dl', d).addEventListener('click', function () { download('marginlog-notice-' + slug(c.name) + '.txt', 'text/plain', '\ufeff' + $('#l-text', d).value); });
+    return d;
+  }
   function dataDialog() {
-    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(persisted === null ? '' : t(persisted ? 'persistYes' : 'persistNo')) + '</p><p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
+    openDialog('<h2 id="dlg-h">' + esc(t('dataH')) + '</h2><p class="hint">' + esc(t('dataHelp')) + '</p><div class="btns wrap"><button type="button" class="pri" id="d-exp">' + esc(t('backup')) + '</button><label class="btn sec" for="d-imp">' + esc(t('restore')) + '</label><input id="d-imp" class="sr" type="file" accept="application/json,.json"></div><label for="d-pass">' + esc(t('passLabel')) + '</label><input id="d-pass" type="password" autocomplete="new-password"><p class="hint">' + esc(t('passHint')) + '</p>' + (corruptKey ? '<p><button type="button" class="sec" id="d-corrupt">' + esc(t('dlCorrupt')) + '</button></p>' : '') + '<p class="hint">' + esc(persisted === null ? '' : t(persisted ? 'persistYes' : 'persistNo')) + '</p><p class="hint">' + esc(t('installHint')) + '</p><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
     $('#d-exp', dlg).addEventListener('click', backup);
     if (corruptKey) $('#d-corrupt', dlg).addEventListener('click', function () { try { download('marginlog-unreadable.txt', 'text/plain', localStorage.getItem(corruptKey) || ''); } catch (e) { err(saveMsg()); } });
     $('#d-imp', dlg).addEventListener('change', function (ev) { var f = ev.target.files[0]; if (f) restore(f); });
@@ -364,15 +394,48 @@
     S.cases.forEach(function (c) { c.entries.forEach(function (e) { e.photos.forEach(function (p) { ids.push(p.id); }); }); });
     var missing = 0; for (var i = 0; i < ids.length; i++) { var d = await photoGet(ids[i]); if (d) photos[ids[i]] = d; else missing++; }
     var cp = {}; S.cases.forEach(function (c) { if (c.entries.length) cp[c.id] = { n: c.entries.length, head: c.entries[c.entries.length - 1].hash }; });
-    try { download('marginlog-backup-' + C.toLocalStamp(new Date(now())).slice(0, 10) + '.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos, cp: cp })); err(''); try { localStorage.setItem(KEY + ':lastbackup', String(now())); } catch (e4) { /* optional */ } toast(t('backupDone') + (missing ? ' ' + t('backupMissing', { n: missing }) : '')); }
+    var pass = dlg && $('#d-pass', dlg) ? $('#d-pass', dlg).value : '', stamp = C.toLocalStamp(new Date(now())).slice(0, 10);
+    if (pass && pass.length < 8) return err(t('passShort'));
+    try {
+      var body = JSON.stringify({ app: 'marginlog', v: 1, cases: S.cases, photos: photos, cp: cp });
+      if (pass) { var env = await C.encryptText(body, pass); download('marginlog-backup-' + stamp + '-encrypted.json', 'application/json', JSON.stringify({ app: 'marginlog', v: 2, enc: env })); }
+      else download('marginlog-backup-' + stamp + '.json', 'application/json', body);
+      err(''); try { localStorage.setItem(KEY + ':lastbackup', String(now())); } catch (e4) { /* optional */ } toast(t('backupDone') + (missing ? ' ' + t('backupMissing', { n: missing }) : ''));
+    }
     catch (e) { err(saveMsg()); }
+  }
+  function overviewDialog() {
+    var rows = C.overview(S.cases, now()), items = rows.length ? rows.map(function (r) {
+      var lab = esc(r.name || t('kind_' + r.kind));
+      return '<li><button type="button" class="ghost" data-ov="' + esc(r.id) + '" style="width:100%;text-align:left"><strong>' + lab + '</strong>' + (r.archived ? ' <span class="pill">' + esc(t('ovArchived')) + '</span>' : '') +
+        '<br><span class="hint">' + esc(t('kind_' + r.kind)) + ' · ' + esc(t('ovEntries', { n: r.total })) + (r.lastAt ? ' · ' + esc(t('ovLast', { d: r.lastAt.slice(0, 10) })) : '') + '</span><br>' +
+        (r.overdue ? '<span class="pill warn">' + esc(t('ovOverdue', { n: r.overdue })) + '</span> ' : '') + (r.openSteps ? '<span class="pill">' + esc(t('ovOpen', { n: r.openSteps })) + '</span> ' : '') +
+        '<span class="pill">' + esc(t('ovStrength', { s: r.strength })) + '</span></button></li>'; }).join('') : '<li class="hint">' + esc(t('ovNone')) + '</li>';
+    openDialog('<h2 id="dlg-h">' + esc(t('overviewH')) + '</h2><p class="hint">' + esc(t('overviewHelp')) + '</p><ul class="facts">' + items + '</ul><p class="err" role="alert" hidden></p><div class="btns"><button type="button" class="sec" data-ov-act="ics">' + esc(t('ovIcs')) + '</button><button type="button" class="sec" data-ov-act="digest">' + esc(t('ovDigest')) + '</button></div><div class="btns"><button type="button" class="ghost" data-close>' + esc(t('close')) + '</button></div>');
+    dlg.addEventListener('click', function (ev) {
+      var a = ev.target.closest('[data-ov-act]');
+      if (a) {
+        var lb = Object.assign({}, I.L[S.lang], { stepNames: I.stepNames(S.lang) }), stamp = C.toLocalStamp(new Date(now())).slice(0, 10);
+        if (a.getAttribute('data-ov-act') === 'ics') { var ics = C.calendarAll(S.cases, lb, now()); if (!ics) return err(t('ovNoDeadlines')); download('marginlog-deadlines-' + stamp + '.ics', 'text/calendar', ics); }
+        else download('marginlog-digest-' + stamp + '.md', 'text/markdown', C.digest(S.cases, lb, now()));
+        return;
+      }
+      var b = ev.target.closest('[data-ov]'); if (!b) return;
+      S.cur = b.getAttribute('data-ov'); S.tab = 'log'; S.f = { q: '', tag: '', sev: 0, voided: false }; save(); closeDialog(); render();
+    });
   }
   function restore(file) {
     var fr = new FileReader();
     fr.onerror = function () { err(t('badFile')); };
     fr.onload = async function () {
       try {
-        var d = JSON.parse(fr.result); if (!d || d.app !== 'marginlog' || !Array.isArray(d.cases)) throw new Error('shape');
+        var d = JSON.parse(fr.result);
+        if (d && d.enc) {
+          var pw = dlg && $('#d-pass', dlg) ? $('#d-pass', dlg).value : '';
+          if (!pw) return err(t('passNeeded'));
+          try { d = JSON.parse(await C.decryptText(d.enc, pw)); } catch (e6) { return err(t('passWrong')); }
+        }
+        if (!d || d.app !== 'marginlog' || !Array.isArray(d.cases)) throw new Error('shape');
         var cs = d.cases.map(C.sanitizeCase).filter(Boolean), broken = 0, ph = d.photos && typeof d.photos === 'object' ? d.photos : {}, fcp = d.cp && typeof d.cp === 'object' ? d.cp : {}, n = 0, skipped = 0, photoBad = 0, newCp = {};
         var vok = [], rejected = 0;
         for (var i = 0; i < cs.length; i++) { var v = await C.verifyChain(cs[i].entries, fcp[cs[i].id]); vok.push(v.ok); }
@@ -432,6 +495,7 @@
     var b = ev.target.closest('[data-act]'); if (!b) return;
     var act = b.getAttribute('data-act'), c = cur(), id = b.getAttribute('data-id'); lastTrig = act + '|' + (id || '');
     if (act === 'data') return dataDialog();
+    if (act === 'overview') return overviewDialog();
     if (act === 'newcase') return caseDialog(b.getAttribute('data-kind') || 'other');
     if (act === 'copycase') return caseDialog(null, null, c);
     if (!c) return;
@@ -461,6 +525,8 @@
     if (act === 'verify') { var l = $('#chainline'); if (l) l.textContent = t('verifying'); return fillReport(); }
     if (act === 'copyrep') { var pv = $('#repview'), md = pv && pv.textContent ? pv.textContent : await fillReport(); try { await navigator.clipboard.writeText(md); toast(t('copied')); } catch (e) { var pre = $('#repview'); var r = document.createRange(); r.selectNodeContents(pre); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t('copyFail')); } return; }
     if (act === 'dlmd') { var md2 = await fillReport(); return download('marginlog-' + slug(c.name) + '.md', 'text/markdown', md2); }
+    if (act === 'letter') return letterDialog(c);
+    if (act === 'dlics') { var ics = C.toIcs(c, letterLabels(), now()); if (!ics) return toast(t('icsNone')); return download('marginlog-deadlines-' + slug(c.name) + '.ics', 'text/calendar', ics); }
     if (act === 'dlcsv') return download('marginlog-' + slug(c.name) + '.csv', 'text/csv', '﻿' + C.toCsv(c));
     if (act === 'print') { await fillReport(); return window.print(); }
   });
@@ -487,9 +553,28 @@
   root.addEventListener('submit', function (ev) { ev.preventDefault(); });
 
   var tel = document.createElement('div'); tel.id = 'toast'; tel.className = 'toast'; tel.setAttribute('role', 'status'); tel.setAttribute('aria-live', 'polite'); tel.addEventListener('click', function (ev) { if (ev.target.tagName !== 'BUTTON') tel.innerHTML = ''; }); document.body.appendChild(tel);
+  /* ---------- paid access ---------- */
+  var CFG = window.ML_CONFIG || {}, Lic = window.MLLicense;
+  function paywall() {
+    var h = '<h2 id="dlg-h">' + esc(t('pwTitle')) + '</h2><p class="hint">' + esc(t('pwLead')) + '</p>';
+    if (CFG.checkoutLive) h += '<p><a class="btn pri" href="' + esc(CFG.checkoutUrl) + '" rel="noopener">' + esc(t('pwBuy')) + '</a></p>';
+    h += '<label for="pw-k">' + esc(t('pwKey')) + '</label><input id="pw-k" name="key" autocomplete="off" autocapitalize="off" spellcheck="false" required>' +
+      '<p class="hint">' + esc(t('pwHint')) + '</p><p class="err" role="alert" hidden></p>' +
+      '<div class="btns wrap"><button type="submit" class="pri">' + esc(t('pwActivate')) + '</button></div>';
+    var d = openDialog(h, function (form) {
+      return Lic.activate({ store: localStorage, fetch: window.fetch.bind(window), api: CFG.licenseApi, key: $('#pw-k', form).value }).then(function (r) {
+        if (r.ok) { closeDialog(); toast(t('pwOk')); } else err(t(r.reason === 'network' ? 'pwNet' : 'pwBad'));
+      });
+    }, { focus: '#pw-k' });
+    /* a locked app cannot be dismissed with Escape; only a valid key unlocks it */
+    d.addEventListener('cancel', function (ev) { ev.preventDefault(); });
+  }
+
   /* ---------- boot ---------- */
   var nl = (navigator.language || 'en').slice(0, 2); if (Object.prototype.hasOwnProperty.call(I.L, nl)) S.lang = nl;
   load(); render(); if (S.tab === 'report') fillReport();
+  if (Lic && CFG.licenseApi) Lic.status({ store: localStorage, fetch: window.fetch.bind(window), api: CFG.licenseApi }).then(function (s) { if (s.locked) paywall(); }, function () { /* could not tell: stay open */ });
+  try { if (/[?&]log=1\b/.test(location.search) && cur() && !blocked && !cur().live) { history.replaceState(null, '', location.pathname); entryDialog(cur()); } } catch (e7) { /* optional */ }
   if (blocked) toast(t('corruptBlocked'));
   else if (corruptKey) toast(t('corrupt', { k: corruptKey }));
   else if (!(window.crypto && window.crypto.subtle)) toast(t('cryptoFail'));

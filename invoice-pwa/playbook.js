@@ -30,7 +30,7 @@ export const PLAYBOOK = [
       en: { title: "Ask for a deposit before you start", points: ["A 30 to 50 percent deposit filters out clients who will not pay later.", "Put the deposit and the due date in the first invoice, not in a chat message.", "Start work after the deposit clears, not after the client says it is coming."] },
       ko: { title: "시작 전에 선금 받기", points: ["선금을 30~50% 받으면 나중에 돈을 안 낼 클라이언트를 미리 걸러낼 수 있습니다.", "선금과 기한은 채팅이 아니라 첫 청구서에 적으세요.", "입금 예정이라는 말이 아니라 입금이 확인된 뒤에 작업을 시작하세요."] },
       ja: { title: "着手前に手付金を受け取る", points: ["手付金を30〜50%もらうと、支払いが滞る相手を事前に見分けられます。", "手付金と支払期限は、チャットではなく最初の請求書に書きます。", "「入金予定です」ではなく、入金を確認してから作業を始めます。"] },
-      zh: { title: "开工前先收定金", points: ["收取 30%–50% 的定金，可以提前筛掉之后不付款的客户。", "定金和付款日期要写在第一张发票上，而不是只在聊天里说。", "等款项到账后再开工，不要因为对方说“马上付”就开始。"] },
+      zh: { title: "开工前先收定金", points: ["收取 30%–50% 的定金，可以提前筛掉之后不付款的客户。", "定金和付款日期要写在第一张账单上，而不是只在聊天里说。", "等款项到账后再开工，不要因为对方说“马上付”就开始。"] },
       es: { title: "Pide un anticipo antes de empezar", points: ["Un anticipo del 30 al 50 % filtra a los clientes que luego no pagarán.", "Pon el anticipo y la fecha límite en la primera factura, no solo en un mensaje.", "Empieza cuando el anticipo esté cobrado, no cuando el cliente diga que lo enviará."] },
     },
   },

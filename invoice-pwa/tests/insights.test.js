@@ -82,7 +82,7 @@ test("yearSummary counts paid income and dated expenses for one year and currenc
     { id: "a", date: "2026-03-01", desc: "x", amount: 150, currency: "USD" },
     { id: "b", date: "2025-03-01", desc: "x", amount: 999, currency: "USD" },
   ];
-  assert.deepEqual(L.yearSummary(list, ex, 2026, "USD"), { income: 1200, expenses: 150, profit: 1050 });
+  assert.deepEqual(L.yearSummary(list, ex, 2026, "USD"), { income: 1200, expenses: 150, profit: 1050, withheld: 0 });
   assert.equal(L.yearSummary([], [], 2026).profit, 0);
 });
 

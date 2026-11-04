@@ -76,3 +76,7 @@ label.btn:has(+ input:focus-visible){outline:3px solid var(--focus);outline-offs
 .toast{top:auto;bottom:max(12px,env(safe-area-inset-bottom));cursor:pointer}.hl,.dl{font-size:.75rem}.wd{font-size:.75rem}.wn{font-size:.8rem}
 .mini dt,.pill,.meter,.sev,.tips,.hint,.cap,.count{font-size:max(.75rem,12px)}.hint,.cap,.count{font-size:.85rem}.meter{font-size:.8rem}
 .toast:empty{opacity:0;pointer-events:none;padding:0}
+
+.tagbars{list-style:none;padding:0;margin:0;display:grid;gap:6px}.tagbars li{display:grid;grid-template-columns:minmax(70px,30%) 1fr 2ch;gap:8px;align-items:center;font-size:.92rem}.tbar{height:10px;border-radius:6px;background:var(--soft);overflow:hidden}.tbar i{display:block;height:100%;background:var(--acc)}.tc{text-align:right;color:var(--mut)}
+.ready{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 14px 12px;margin-bottom:12px}.ready h3{margin-top:.8em}.rdl{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px;font-size:.93rem}.rdl .ok span{color:var(--ok);font-weight:700}.rdl .no{color:var(--mut)}
+textarea.letter{font:.9rem/1.5 ui-monospace,Menlo,Consolas,monospace;margin-top:8px;min-height:16em}

@@ -125,7 +125,26 @@
   </section>
 
 
-  <section class="sec tint">
+  <section class="sec tint" id="highlights">
+    <div class="wrap hl">
+      <div>
+        <h2 data-i18n="hlTitle">실제로 입금되는 금액을 한눈에</h2>
+        <p class="sub" data-i18n="hlLead">원천징수, 늦게 내는 거래처, 월말 정산까지 내 기기 안에서 처리합니다.</p>
+        <ul class="hllist">
+          <li><h3 data-i18n="hl1t">원천징수 내장</h3><p data-i18n="hl1d">원천징수율(한국 3.3%, 일본 10.21%)을 넣으면 실제로 받을 금액이 보입니다. 잔액과 리포트도 그에 맞춰집니다.</p></li>
+          <li><h3 data-i18n="hl2t">입금 예정 금액</h3><p data-i18n="hl2d">미수 청구서를 거래처별 평소 입금일에 맞춰 배치해 월별로 들어올 돈을 보여 줍니다.</p></li>
+          <li><h3 data-i18n="hl3t">거래처별 명세서</h3><p data-i18n="hl3d">거래처마다 청구서, 입금, 잔액을 한 장에. 독촉 전에 인쇄하거나 CSV로 받으세요.</p></li>
+        </ul>
+      </div>
+      <div class="hlmock" aria-hidden="true">
+        <p><span data-i18n="hlMockA">청구 합계</span><b>$1,000.00</b></p>
+        <p><span data-i18n="hlMockB">원천징수 3.3%</span><b>−$33.00</b></p>
+        <p class="hlsum"><span data-i18n="hlMockC">실수령액</span><b>$967.00</b></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
     <div class="wrap">
       <h2 data-i18n="howTitle">사용 방법</h2>
       <ol class="steps">
@@ -171,7 +190,7 @@
           <p class="psub" data-i18n="priceProSub">한 번 결제, 평생 사용</p>
           <ul>
             <li class="lead-in" data-i18n="pr0">무료 기능에 더해</li>
-            <li data-i18n="pr1">인보이스, 견적서, 시트, 문서, 영상 프로젝트 무제한</li><li data-i18n="pr2">하단 문구 제거, 내 로고</li><li data-i18n="pr3">반복 청구와 타이머 청구</li><li data-i18n="pr4">CSV 가져오기·내보내기, 시트로 인보이스</li><li data-i18n="pr5">고객별 장부와 연체 현황</li><li data-i18n="pr6">나만의 문서 템플릿, 이후 모든 업데이트</li>
+            <li data-i18n="pr1">인보이스, 견적서, 시트, 문서 무제한</li><li data-i18n="pr2">하단 문구 제거, 내 로고</li><li data-i18n="pr3">반복 청구와 타이머 청구</li><li data-i18n="pr4">CSV 가져오기·내보내기, 시트로 인보이스</li><li data-i18n="pr5">고객별 장부와 연체 현황</li><li data-i18n="pr6">나만의 문서 템플릿, 이후 모든 업데이트</li>
           </ul>
           <a class="btn accent big" href="/app" data-i18n="ctaStart">무료로 시작</a>
         </div>
@@ -214,9 +233,9 @@
       <h3 data-i18n="footContact">문의</h3>
       <a href="/terms" data-i18n="footTerms">이용약관</a>
       <a href="/privacy" data-i18n="footPrivacy">개인정보 처리방침</a>
-      <a id="foot-mail" href="#" hidden=""></a>
+      <a id="foot-mail" href="mailto:sangsangbaksa@gmail.com">sangsangbaksa@gmail.com</a>
     </div>
-    <p class="fnote" data-i18n="footerNote">데이터는 기기 밖으로 나가지 않습니다.</p>
+    <p class="fnote" data-i18n="footerNote">클라우드 백업을 켜지 않으면 데이터는 기기 밖으로 나가지 않습니다.</p>
   </div>
 </footer>
 

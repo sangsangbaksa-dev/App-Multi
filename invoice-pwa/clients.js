@@ -1,6 +1,6 @@
 // Remembered client terms. A profile is learned from the last saved invoice for that client, and is applied to
 // new invoices when the client name is picked. DOM-free so it is unit tested.
-import { addDays, dayDiff } from "./logic.js";
+import { addDays, dayDiff, MAX_WITHHOLDING } from "./logic.js";
 import { safeLink } from "./share.js";
 
 export const keyOf = (name) => String(name ?? "").trim().toLowerCase();
@@ -9,10 +9,12 @@ export const validEmail = (e) => /^[^\s@<>,;"]{1,64}@[^\s@<>,;"]{1,190}\.[^\s@<>
 export function cleanProfile(p) {
   const terms = Math.round(Number(p?.terms));
   const tax = Number(p?.taxRate);
+  const wh = Number(p?.withholdingRate);
   return {
     email: validEmail(p?.email) ? String(p.email).trim() : "",
     terms: Number.isFinite(terms) && terms >= 0 && terms <= 365 ? terms : 14,
     taxRate: Number.isFinite(tax) && tax >= 0 && tax <= 100 ? tax : 0,
+    withholdingRate: Number.isFinite(wh) && wh >= 0 && wh <= MAX_WITHHOLDING ? wh : 0,
     currency: /^[A-Z]{3}$/.test(p?.currency || "") ? p.currency : "",
     payinfo: String(p?.payinfo ?? "").slice(0, 600),
     payLink: safeLink(p?.payLink),
@@ -21,7 +23,7 @@ export function cleanProfile(p) {
 
 export function profileFrom(inv) {
   return cleanProfile({
-    email: inv.clientEmail, terms: dayDiff(inv.issueDate, inv.dueDate), taxRate: inv.taxRate,
+    email: inv.clientEmail, terms: dayDiff(inv.issueDate, inv.dueDate), taxRate: inv.taxRate, withholdingRate: inv.withholdingRate,
     currency: inv.currency, payinfo: inv.payinfo, payLink: inv.payLink,
   });
 }
@@ -43,7 +45,7 @@ export function applyDefaults(inv, profile) {
   if (!profile) return inv;
   const p = cleanProfile(profile);
   return {
-    ...inv, clientEmail: p.email || inv.clientEmail || "", currency: p.currency || inv.currency, taxRate: p.taxRate,
+    ...inv, clientEmail: p.email || inv.clientEmail || "", currency: p.currency || inv.currency, taxRate: p.taxRate, withholdingRate: p.withholdingRate,
     dueDate: addDays(inv.issueDate, p.terms), payinfo: p.payinfo || inv.payinfo || "", payLink: p.payLink || inv.payLink || "",
   };
 }

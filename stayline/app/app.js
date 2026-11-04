@@ -2,7 +2,7 @@
   'use strict';
   var C = window.SL, I = window.I18N, CFG = window.SL_CONFIG;
   var KEY = 'stayline.v1', root = document.getElementById('root');
-  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, upsell = false, pasting = false, calMonth = '';
+  var state = load(), lang = I.pick(state.lang), plan = {}, adding = false, creating = false, editing = '', editCounter = false, pasting = false, calMonth = '';
 
   function load() {
     try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.trackers)) { s.trackers = C.sanitize(s.trackers); return s; } } catch (e) {}
@@ -25,6 +25,8 @@
     onResult: function (r) { if (r.status === 'pushed') toast(window.CloudI18n.t(lang, 'pushed')); }
   }) : null;
   if (cloud && !cloud.enabled()) cloud = null;
+  var shared = (function () { var m = /^#s=([A-Za-z0-9_-]+)$/.exec(location.hash); return m ? C.decodeShare(m[1]) : null; })();
+  if (shared) cloud = null;
   function T(k, v) { return I.t(lang, k, v); }
   function h(tag, attrs, kids) {
     var e = document.createElement(tag);
@@ -87,12 +89,11 @@
     return h('nav', { class: 'tabs' }, state.trackers.map(function (t) {
       return h('button', { class: 'tab' + (cur && t.id === cur.id ? ' on' : ''), 'aria-pressed': cur && t.id === cur.id ? 'true' : 'false', onclick: function () { state.active = t.id; plan = {}; save(); render(); } }, t.name || T('namePh'));
     }).concat([h('button', { class: 'tab add', 'aria-label': T('newTracker'), onclick: function () {
-      if (!state.pro && state.trackers.length >= CFG.freeLimit) { upsell = true; render(); return; }
       creating = true; render();
     } }, '+')]));
   }
 
-  function board(tr) {
+  function board(tr, ro) {
     var s = C.summary(tr, C.todayStr());
     var big = s.left < 0 ? -s.left : s.left;
     var cells = C.strip(tr, C.todayStr());
@@ -114,7 +115,7 @@
         s.freesOn ? h('span', { class: 'free' }, T('freeOn', { date: fmt(s.freesOn) })) : null,
         s.permit ? h('span', { class: 'permit p-' + s.permit.state }, s.permit.state === 'gone' ? T('permitGone', { date: fmt(tr.expires) }) : s.permit.days === 0 ? T('permitToday') : T('permitLeft', { n: s.permit.days })) : null
       ]),
-      h('button', { class: 'ghost small editc', onclick: function () { editCounter = true; render(); } }, T('editCounter'))
+      ro ? null : h('div', { class: 'row wrap boardbtns' }, [quickBtn(tr), h('button', { class: 'ghost small editc', onclick: function () { editCounter = true; render(); } }, T('editCounter'))])
     ]);
   }
 
@@ -322,7 +323,7 @@
         });
       } }, T('borderCopy'))])]);
   }
-  function tripList(tr) {
+  function tripList(tr, ro) {
     var list = tr.trips.length ? h('ul', { class: 'trips' }, tr.trips.map(function (t) {
       var days = Object.keys(C.stayDays([t], C.todayStr())).length;
       return h('li', null, [
@@ -332,7 +333,7 @@
           t.from > C.todayStr() ? h('span', { class: 'chip plan' }, T('planned')) : null,
           t.note ? h('span', { class: 'dates note' }, t.note) : null
         ]),
-        h('span', { class: 'rowbtns' }, [
+        ro ? null : h('span', { class: 'rowbtns' }, [
           !t.to ? h('button', { class: 'ghost', onclick: function () { t.to = C.todayStr(); save(); render(); } }, T('leftToday')) : null,
           h('button', { class: 'ghost', onclick: function () { editing = t.id; render(); } }, T('edit')),
           h('button', { class: 'ghost x', 'aria-label': T('confTrip'), onclick: function () { if (confirm(T('confTrip'))) undoable(T('tripGone'), function () { C.removeTrip(tr, t.id); save(); render(); }); } }, '×')
@@ -340,7 +341,7 @@
       ]);
     })) : h('p', { class: 'muted' }, T('noTrips'));
     return h('section', { class: 'card' }, [
-      h('div', { class: 'rowhead' }, [h('h2', null, T('trips')), h('span', { class: 'rowbtns' }, [h('button', { class: 'ghost small', onclick: function () { pasting = true; render(); } }, T('pasteBtn')), h('button', { class: 'pri small', onclick: function () { adding = true; render(); } }, '+ ' + T('addTrip'))])]),
+      h('div', { class: 'rowhead' }, [h('h2', null, T('trips')), ro ? null : h('span', { class: 'rowbtns' }, [h('button', { class: 'ghost small', onclick: function () { pasting = true; render(); } }, T('pasteBtn')), h('button', { class: 'pri small', onclick: function () { adding = true; render(); } }, '+ ' + T('addTrip'))])]),
       list]);
   }
 
@@ -429,14 +430,40 @@
     ]));
     return dlg;
   }
-  function upsellDialog() {
-    var dlg = h('dialog', { 'aria-labelledby': 'dlg-h' });
-    dlg.appendChild(h('div', null, [
-      h('h2', { id: 'dlg-h' }, T('upH')), h('p', null, T('limitMsg', { max: CFG.freeLimit })),
-      h('div', { class: 'row' }, [h('button', { class: 'ghost', onclick: function () { upsell = false; render(); } }, T('later')),
-        h('a', { class: 'pri btnlink', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))])
-    ]));
-    return dlg;
+  /* Stayline is a paid app: without an activated Pro licence the counter stays behind this screen.
+     Trips stay in local storage and show up again once the key is accepted on this device. */
+  function paywall() {
+    var lic = h('input', { id: 'lic', placeholder: T('licPh'), autocomplete: 'off', spellcheck: 'false', 'aria-label': T('lic') });
+    return h('section', { class: 'paywall', 'aria-labelledby': 'pay-h' }, [
+      h('h2', { id: 'pay-h' }, T('payH')),
+      h('p', null, T('payLead', { price: CFG.price })),
+      h('p', null, [h('a', { class: 'pri btnlink', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))]),
+      h('div', { class: 'settings' }, [
+        h('p', null, T('payHave')),
+        h('label', null, [T('lic'), lic]),
+        h('button', { class: 'pri', onclick: function () { activate(lic); } }, T('activate'))
+      ]),
+      h('p', { class: 'fine' }, T('payRefund')),
+      h('p', { class: 'fine' }, [h('a', { href: legal('privacy') }, T('privacyLink')), ' · ', h('a', { href: legal('terms') }, T('termsLink')), ' · ', h('a', { href: 'mailto:' + CFG.supportEmail }, CFG.supportEmail)])
+    ]);
+  }
+  function activate(input) {
+    verifyKey(input.value.trim()).then(function (r) {
+      if (r === 'ok') { state.pro = true; save(); toast(T('okKey')); render(); }
+      else toast(T(r === 'net' ? 'licNet' : 'badKey'));
+    });
+  }
+  /* permits and visas across all counters, soonest first; links to the counter */
+  function permitCard() {
+    var items = C.permitWatch(state.trackers, C.todayStr(), 90);
+    if (!items.length) return null;
+    return h('section', { class: 'card permits', 'aria-labelledby': 'permit-h' }, [
+      h('h2', { id: 'permit-h' }, T('permitH')),
+      h('ul', null, items.map(function (p) {
+        return h('li', null, [h('button', { class: 'ghost small', onclick: function () { state.active = p.id; plan = {}; save(); render(); } }, p.name || T('namePh')), ' ',
+          p.left < 0 ? T('permitGone', { date: fmt(p.expires) }) : T('permitIn', { n: p.left, date: fmt(p.expires) })]);
+      }))
+    ]);
   }
   function quickStart() {
     var t = { id: uid(), name: '', rule: C.cleanRule(C.PRESETS.schengen), expires: '', trips: [] };
@@ -476,32 +503,37 @@
       };
       r.readAsText(f);
     } });
-    var lic = h('input', { id: 'lic', placeholder: T('licPh'), autocomplete: 'off', spellcheck: 'false' });
+    var icsIn = h('input', { type: 'file', accept: '.ics,text/calendar', hidden: '', onchange: function () {
+      var f = icsIn.files[0]; if (!f || !tr) return; var r = new FileReader();
+      r.onload = function () {
+        var found = C.parseIcs(r.result);
+        if (!found.length) { toast(T('icsNone')); return; }
+        undoable(T('icsDone', { n: found.length }), function () { found.forEach(function (t) { C.addTrip(tr, t); }); save(); render(); });
+      };
+      r.readAsText(f);
+    } });
     var cloudPanel = cloud && window.CloudPanel ? window.CloudPanel.build({ cloud: cloud, lang: function () { return lang; } }) : null;
     return h('footer', { class: 'foot' }, [
       h('div', { class: 'row wrap' }, [
         h('button', { class: 'ghost', onclick: function () { download('stayline-backup.json', JSON.stringify({ v: 1, trackers: state.trackers, active: state.active }), 'application/json'); toast(T('backupDone')); } }, T('exp')),
         h('button', { class: 'ghost', onclick: function () { file.click(); } }, T('imp')), file,
+        tr ? h('button', { class: 'ghost', onclick: function () { icsIn.click(); } }, T('icsImport')) : null, icsIn,
+        state.trackers.length ? h('button', { class: 'ghost', onclick: function () { download('stayline-report.md', C.yearReport(state.trackers, C.todayStr()), 'text/markdown'); } }, T('report')) : null,
         h('button', { class: 'ghost', onclick: function () { if (needPro()) return; download('stayline.csv', C.toCsv(state.trackers, C.todayStr()), 'text/csv'); } }, T('csv')),
         h('button', { class: 'ghost', onclick: function () { download('stayline.ics', C.toIcs(state.trackers, C.todayStr()), 'text/calendar'); } }, T('ics')),
         h('button', { class: 'ghost', onclick: function () {
           if (needPro()) return;
           download('stayline-key-dates.ics', C.alertsIcs(state.trackers, C.todayStr(), function (k) { return T('icsLabel_' + k); }), 'text/calendar'); toast(T('icsDone'));
         } }, T('icsKey')),
-        h('button', { class: 'ghost', onclick: function () { if (needPro()) return; window.print(); } }, T('print'))
+        h('button', { class: 'ghost', onclick: function () { if (needPro()) return; window.print(); } }, T('print')),
+        tr ? h('button', { class: 'ghost', onclick: function () {
+          var u = shareUrl(tr);
+          (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { toast(T('shareCopied')); }, function () { toast(T('shareFail')); });
+        } }, T('shareBtn')) : null
       ]),
+      tr ? h('p', { class: 'fine' }, T('shareHint')) : null,
       cloudPanel ? h('div', { style: 'margin:14px 0' }, [cloudPanel.el]) : null,
-      h('div', { class: 'settings' }, state.pro ? h('span', { class: 'chip' }, T('pro') + ' ✓') : [
-        h('label', null, [T('lic'), lic]),
-        h('button', { class: 'pri', onclick: function () {
-          var key = lic.value.trim();
-          verifyKey(key).then(function (r) {
-            if (r === 'ok') { state.pro = true; save(); toast(T('okKey')); render(); }
-            else toast(T(r === 'net' ? 'licNet' : 'badKey'));
-          });
-        } }, T('activate')),
-        h('a', { class: 'ghost link', href: CFG.checkoutUrl, rel: 'noopener', target: '_blank' }, T('upgrade'))
-      ]),
+      h('div', { class: 'settings' }, h('span', { class: 'chip' }, T('pro') + ' ✓')),
       h('div', null, [h('button', { class: 'ghost', onclick: function () { state.theme = state.theme === 'light' ? 'dark' : state.theme === 'dark' ? '' : 'light'; save(); render(); } }, T(state.theme === 'light' ? 'themeLight' : state.theme === 'dark' ? 'themeDark' : 'themeAuto'))]),
       h('div', null, [h('button', { class: 'ghost', onclick: toggleRemind }, state.remind ? T('remindOff') : T('remindOn')), h('p', { class: 'fine' }, T('remindHint'))]),
       tr ? h('button', { class: 'ghost danger', onclick: function () {
@@ -513,20 +545,56 @@
     ]);
   }
 
+
+  /* one tap: start a trip today, or close the open one today */
+  function quickBtn(tr) {
+    var today = C.todayStr(), open = tr.trips.filter(function (t) { return !t.to && t.from <= today; })[0];
+    if (open) return h('button', { class: 'pri small', onclick: function () { open.to = today; save(); render(); toast(T('quickOutDone')); } }, T('quickOut'));
+    if (C.summary(tr, today).inside) return null;
+    return h('button', { class: 'pri small', onclick: function () { if (C.addTrip(tr, { from: today, to: '', place: '' })) { save(); render(); toast(T('quickInDone')); } } }, T('quickIn'));
+  }
+  function rulesCard(tr) {
+    var rows = C.compareRules(tr, C.todayStr());
+    return h('section', { class: 'card' }, [h('h2', null, T('rulesH')), h('p', { class: 'muted' }, T('rulesHint')),
+      h('ul', { class: 'rulelist' }, rows.map(function (r) {
+        return h('li', null, [
+          h('span', null, [h('strong', null, T('rule_' + (r.key === 'own' ? 'own' : r.key) + '_s')), r.own ? h('span', { class: 'dates' }, T('rulesOwn')) : null, h('span', { class: 'dates' }, T('usedOf', { u: r.used, l: r.rule.limit }))]),
+          h('span', { class: 'chip st-' + r.state }, leftText(r.left))]);
+      }))]);
+  }
+  function statsCard(tr) {
+    var st = C.yearStats(tr, C.todayStr());
+    if (!st.trips) return h('section', { class: 'card' }, [h('h2', null, T('statsH')), h('p', { class: 'muted' }, T('statsNone'))]);
+    return h('section', { class: 'card' }, [h('h2', null, T('statsH')),
+      h('p', null, T('statsCount', { n: st.trips, p: st.places, t: st.total })),
+      st.longest ? h('p', null, T('statsLongest', { n: st.longest.days, where: st.longest.place || '—', date: fmt(st.longest.from) })) : null,
+      h('ul', { class: 'alerts' }, st.years.slice(0, 6).map(function (y) { return h('li', null, h('span', null, T('statsYear', { year: y.year, n: y.days }))); }))]);
+  }
+  function shareUrl(tr) { return location.origin + location.pathname + '#s=' + C.encodeShare(tr); }
+  function sharedView(tr) {
+    var kids = [header(), h('section', { class: 'banner', role: 'region' }, [h('strong', null, T('shareBadge')), h('div', null, T('shareFor', { name: tr.name || T('namePh') }))]),
+      board(tr, true), keyDates(tr), rulesCard(tr), calendarCard(tr), forecastCard(tr), statsCard(tr), tripList(tr, true),
+      h('div', { class: 'row wrap' }, [h('a', { class: 'pri link', href: location.pathname }, T('shareOpen'))]),
+      h('p', { class: 'fine' }, T('disclaimer'))];
+    root.replaceChildren.apply(root, kids);
+  }
   function applyTheme() { var mt = document.querySelector('meta[name=theme-color]'), lt = state.theme === 'light' || (!state.theme && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches); if (mt) mt.setAttribute('content', lt ? '#f6f3ec' : '#14171a'); var th = state.theme === 'light' || state.theme === 'dark' ? state.theme : ''; if (th) document.documentElement.setAttribute('data-theme', th); else document.documentElement.removeAttribute('data-theme'); }
   if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', function () { applyTheme(); }); } catch (e) {} }
   function render() {
     applyTheme();
     document.documentElement.lang = lang; document.title = T('app');
+    if (shared) { sharedView(shared); return; }
+    if (!state.pro) { root.replaceChildren(header(), paywall()); return; }
     var tr = current(), kids = [header()];
     if (!tr) kids.push(h('p', { class: 'tag' }, T('tag')), empty());
     else {
       var bn = banner(); if (bn) kids.push(bn);
+      var pc = permitCard(); if (pc) kids.push(pc);
       kids.push(tabs());
       if (state.trackers.length > 1) kids.push(overview());
-      kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr));
+      kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr), rulesCard(tr));
       if (state.trackers.length > 1) kids.push(groupCard());
-      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), placesCard(tr), auditCard(tr), borderCard(tr), tripList(tr));
+      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), placesCard(tr), statsCard(tr), auditCard(tr), borderCard(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }
@@ -535,12 +603,12 @@
     if ((adding || editing) && tr) { var d = tripDialog(tr); root.appendChild(d); d.showModal(); }
     if (pasting && tr) { var d5 = pasteDialog(tr); root.appendChild(d5); d5.showModal(); }
     if (editCounter && tr) { var d3 = counterDialog(tr); root.appendChild(d3); d3.showModal(); }
-    if (upsell) { var d4 = upsellDialog(); root.appendChild(d4); d4.showModal(); }
     if (creating) { var d2 = trackerDialog(); root.appendChild(d2); d2.showModal(); }
   }
-  document.addEventListener('cancel', function () { adding = creating = editCounter = upsell = pasting = false; editing = ''; setTimeout(render, 0); }, true);
+  document.addEventListener('cancel', function () { adding = creating = editCounter = pasting = false; editing = ''; setTimeout(render, 0); }, true);
   render();
-  remind();
-  if (cloud && cloud.user()) cloud.sync().then(function (r) { if (r.status === 'pulled') toast(window.CloudI18n.t(lang, 'pulled')); });
+  if (!shared && /^#s=/.test(location.hash)) toast(T('shareBad'));
+  if (!shared) remind();
+  if (!shared && cloud && cloud.user()) cloud.sync().then(function (r) { if (r.status === 'pulled') toast(window.CloudI18n.t(lang, 'pulled')); });
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();

@@ -13,41 +13,50 @@
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://stampbook-5kf.pages.dev/og.png">
 <meta name="theme-color" content="#f3ead6"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png"><link rel="manifest" href="/manifest.webmanifest">
 <link rel="stylesheet" href="/landing.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Stampbook","applicationCategory":"BusinessApplication","operatingSystem":"Any (web browser)","inLanguage":"ja","description":"生徒さんが10回分を前払い。三週間後には、残り6回か7回か誰も覚えていません。スタンプブックは、ブラウザの中にあるスタンプカードです。","url":"https://stampbook-5kf.pages.dev/ja/","offers":[{"@type":"Offer","name":"Free","price":"0","priceCurrency":"USD"},{"@type":"Offer","name":"Pro","price":"19","priceCurrency":"USD"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Stampbook","applicationCategory":"BusinessApplication","operatingSystem":"Any (web browser)","inLanguage":"ja","description":"生徒さんが10回分を前払い。三週間後には、残り6回か7回か誰も覚えていません。スタンプブックは、ブラウザの中にあるスタンプカードです。","url":"https://stampbook-5kf.pages.dev/ja/","offers":{"@type":"Offer","name":"Stampbook","price":"19","priceCurrency":"USD"}}</script>
 </head>
 <body>
 <div class="wrap">
 <nav><a class="logo" href="/ja/"><img src="/icon.svg" alt="" width="28" height="28"> <span>スタンプブック</span></a>
-<select id="lang" aria-label="Language"><option value="en" data-href="/">English</option><option value="ko" data-href="/ko/">한국어</option><option value="ja" data-href="/ja/" selected>日本語</option><option value="zh" data-href="/zh/">中文</option><option value="es" data-href="/es/">Español</option></select></nav>
+<span class="navr"><select id="lang" aria-label="Language"><option value="en" data-href="/">English</option><option value="ko" data-href="/ko/">한국어</option><option value="ja" data-href="/ja/" selected>日本語</option><option value="zh" data-href="/zh/">中文</option><option value="es" data-href="/es/">Español</option></select><a class="btn sm" href="/app/">アプリを開く</a></span></nav>
 <main>
 <section class="hero">
+<div class="hcopy">
 <p class="kick">先生・コーチ・インストラクター向け</p>
 <h1>レッスンごとに一つ、押す。回数で揉めない。</h1>
 <p class="lede">生徒さんが10回分を前払い。三週間後には、残り6回か7回か誰も覚えていません。スタンプブックは、ブラウザの中にあるスタンプカードです。</p>
-<p><a class="btn" href="/app/">アプリを開く</a> <span class="fine">利用中の回数券3件まで無料。登録不要。</span></p>
-<div class="demo" aria-hidden="true"><div class="c on">3/10</div><div class="c on">10/14</div><div class="c on">10/21</div><div class="c on">10/28</div><div class="c n">5</div><div class="c">6</div><div class="c">7</div><div class="c">8</div><div class="c">9</div><div class="c">10</div></div>
+<p class="cta"><a class="btn" href="https://quickbillapp.lemonsqueezy.com/checkout/buy/bb6de2a5-9e61-41f6-b5f6-00296a9302b6" rel="noopener">Stampbookを購入</a> <span class="fine">有料アプリ。買い切り$19、月額なし、会員登録なし。</span></p>
+<ul class="trust"><li>登録不要</li><li>オフラインで動作</li><li>データは端末の中だけ</li></ul>
+</div>
+<div class="hdemo">
+<div class="sheet" id="demo" data-left="残り{n}回" data-done="回数券を使い切りました。更新のタイミングです。" data-reset="最初から">
+<div class="sh-top"><b>Mina</b><span id="demo-left" class="chip" aria-live="polite"></span></div>
+<div class="demo" id="demo-grid" role="group" aria-label="試してみて:次の丸をタップ"></div>
+<p class="sh-hint" id="demo-hint">試してみて:次の丸をタップ</p>
+<button type="button" class="btn ghost sm" id="demo-reset" hidden>最初から</button>
+</div>
+</div>
 </section>
+
+<section class="aud"><p class="audh">こんな方に</p><ul><li>ピアノ・音楽レッスン</li><li>語学の個人レッスン</li><li>パーソナルトレーナー</li><li>ヨガ・ピラティス</li><li>学習コーチング</li><li>絵画・クラフト教室</li></ul></section>
 
 <section><h2>使い方</h2>
-<ol class="steps"><li>回数券を登録します。回数、金額、有効期間。</li><li>レッスンが終わったら次の丸をタップ。日付がスタンプになります。</li><li>残り1回になったら更新のご案内文をコピー。Proなら生徒さんが開ける残数リンクも送れます。</li></ol></section>
+<ol class="steps3"><li><span class="num">1</span><h3>登録</h3><p>回数券を登録します。回数、金額、有効期間。</p></li><li><span class="num">2</span><h3>押印</h3><p>レッスンが終わったら次の丸をタップ。日付がスタンプになります。</p></li><li><span class="num">3</span><h3>更新</h3><p>残り1回になったら更新のご案内文をコピー。生徒さんが開ける残数リンクも送れます。</p></li></ol></section>
 
-<section class="grid3">
-<div><h3>未消化の金額が見える</h3><p>受け取ったけれどまだ消化していない分が分かります。期限切れも別に並び、どう扱うかは先生が決めます。</p></div>
-<div><h3>データは自分のもの</h3><p>登録もサーバーもありません。好きなときにファイルへバックアップ。</p></div>
-<div><h3>自分の言語で</h3><p>English、한국어、日本語、中文、Español をワンタップで切替。</p></div>
-</section>
-<section class="grid3">
-<div><h3>無断欠席と事前キャンセル</h3><p>連絡なしの欠席は消化、事前の連絡があれば記録だけ。どちらもレッスン記録に残ります。</p></div>
-<div><h3>ワンタップで更新</h3><p>最後のスタンプを押したら、同じ条件で次の回数券をすぐ始められます。</p></div>
-<div><h3>レッスンごとのメモ</h3><p>進めた内容と次回の宿題を、日付の横に残します。</p></div>
+<section class="feats">
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.7-1.1 1.5-2.5 1.8-2.5.8-2.5 1.8 1.1 1.7 2.5 1.7 2.5-.7 2.5-1.7"/></svg><h3>未消化の金額が見える</h3><p>受け取ったけれどまだ消化していない分が分かります。期限切れも別に並び、どう扱うかは先生が決めます。</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><h3>データは自分のもの</h3><p>登録なしで使えます。好きなときにファイルへバックアップ、または任意のクラウドバックアップ。</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg><h3>自分の言語で</h3><p>English、한국어、日本語、中文、Español をワンタップで切替。</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg><h3>無断欠席と事前キャンセル</h3><p>連絡なしの欠席は消化、事前の連絡があれば記録だけ。どちらもレッスン記録に残ります。</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></svg><h3>ワンタップで更新</h3><p>最後のスタンプを押したら、同じ条件で次の回数券をすぐ始められます。</p></div>
+<div><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h6"/></svg><h3>レッスンごとのメモ</h3><p>進めた内容と次回の宿題を、日付の横に残します。</p></div>
 </section>
 
 <section class="price"><h2>支払いは一度だけ</h2>
 <div class="plans">
-<div class="plan"><h3>無料</h3><p class="amt">0</p><ul><li>利用中の回数券3件</li><li>スタンプ、期限、更新のご案内</li><li>バックアップと復元</li></ul><a class="btn ghost" href="/app/">アプリを開く</a></div>
-<div class="plan pro"><h3>Pro</h3><p class="amt">$19(買い切り)</p><ul><li>回数券 無制限</li><li>生徒さん向け残数リンク</li><li>CSV書き出し</li></ul><a class="btn" href="https://quickbillapp.lemonsqueezy.com/checkout/buy/bb6de2a5-9e61-41f6-b5f6-00296a9302b6" rel="noopener">Proにする</a></div>
+<div class="plan pro"><h3>Stampbook</h3><p class="amt">$19(買い切り)</p><ul><li>回数券 無制限</li><li>生徒さん向け残数リンク</li><li>CSV書き出し</li></ul><a class="btn" href="https://quickbillapp.lemonsqueezy.com/checkout/buy/bb6de2a5-9e61-41f6-b5f6-00296a9302b6" rel="noopener">Buy Stampbook</a></div>
 </div>
-<p class="fine">価格と購入リンクは、決済を設定するまで仮の値です。</p></section>
+<p class="fine">販売元(merchant of record)であるLemon Squeezyでの買い切り決済です。決済画面で現地の税が加算される場合があります。14日以内なら理由を問わず返金します。</p></section>
 
 <section><h2>よくある質問</h2>
 <details><summary>ブラウザのデータを消すと?</summary><p>スタンプも消えます。ときどきバックアップを保存し、必要なときに復元してください。ホーム画面に追加しても同じです。</p></details>
@@ -58,5 +67,6 @@
 </main>
 <footer><a href="/privacy">プライバシー</a> · <a href="/terms">利用規約</a> · <a href="mailto:sangsangbaksa@gmail.com">sangsangbaksa@gmail.com</a> · <span>教える人のために。</span></footer>
 </div>
+<div class="sticky"><a class="btn" href="/app/">Stampbookを購入</a></div>
 <script src="/landing.js"></script>
 </body></html>

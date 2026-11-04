@@ -1,9 +1,9 @@
 {
  "en": {
   "title": "Marginlog – a sealed incident log for disputes",
-  "desc": "Log noise, landlord, workplace or contractor problems in seconds. Entries are sealed so they cannot be quietly rewritten. See the pattern, escalate step by step, hand over a clean report. Free, private, works offline.",
-  "h1": "Keep a log nobody can say you made up.",
-  "lead": "Marginlog records each incident with a timestamp, seals it into a tamper-evident chain, spots the pattern, and builds the report you give a landlord, HR, mediator or officer. Free, offline, no account.",
+  "desc": "Log noise, landlord, workplace or contractor problems in seconds. Entries are sealed so they cannot be quietly rewritten. See the pattern, escalate step by step, hand over a clean report. One payment, private, works offline.",
+  "h1": "Keep a dated log that shows it was not rewritten.",
+  "lead": "Marginlog records each incident with a timestamp, seals it into a tamper-evident chain, spots the pattern, and builds the report you give a landlord, HR, mediator or officer. One-time purchase, offline, no account.",
   "cta": "Open Marginlog",
   "feat": "What is inside",
   "f": [
@@ -30,6 +30,18 @@
    [
     "Report in one tap",
     "Copy, print to PDF, Markdown or CSV, with photos and a seal check at the bottom."
+   ],
+   [
+    "Draft a written notice",
+    "A plain, factual letter built from your log, with a reply deadline. Edit it, then send it your way."
+   ],
+   [
+    "Deadlines in your calendar",
+    "Export reply deadlines as a calendar file so an ignored letter does not slip by."
+   ],
+   [
+    "Ready to hand over?",
+    "A short checklist tells you what would make the report stronger before you send it."
    ]
   ],
   "how": "How it works",
@@ -40,14 +52,67 @@
   ],
   "priv": "Private by design",
   "privb": "Everything is stored in your browser on this device. No account, no tracking, no upload. Download a backup file whenever you like.",
-  "disc": "A personal record, not legal advice. The seal shows the log was not rewritten; it is not a notarised timestamp.",
-  "nav": "Languages"
+  "disc": "A personal record, not legal advice. The seal shows the log was not rewritten; it is not a notarised timestamp, and times come from your device clock. Record only what you may lawfully record where you live, and keep other people's personal details to what the dispute needs.",
+  "nav": "Languages",
+  "eyebrow": "One-time purchase · Private · Works offline",
+  "demoH": "Flat 3B – upstairs noise",
+  "demo": [
+   "Sat 23:40 · Bass music, 40 min · severity 4",
+   "Fri 02:10 · Stomping, woke the kids · severity 3",
+   "Wed 22:15 · Party, door slammed · severity 3"
+  ],
+  "demoSeal": "Seal intact · 14 records",
+  "demoCap": "A sample case. Yours stays on your device.",
+  "usesH": "Made for the problems that drag on",
+  "uses": [
+   [
+    "Noise and neighbours",
+    "Quiet-hour breaches and the weekday and hour it peaks."
+   ],
+   [
+    "Landlord and housing",
+    "Repairs, mould, heating, entry without notice, with dates."
+   ],
+   [
+    "Workplace",
+    "Remarks, workload and exclusion written down while fresh."
+   ],
+   [
+    "Contractors and sellers",
+    "Missed deadlines, poor work and unanswered messages."
+   ]
+  ],
+  "faqH": "Honest answers",
+  "faq": [
+   [
+    "Will this hold up as evidence?",
+    "It can help you remember accurately and show a clear, consistent record. Whether any record is accepted depends on the country and the body deciding. It is not legal advice."
+   ],
+   [
+    "What does sealing prove?",
+    "That the entries were not quietly changed or removed after they were written. It is not a notarised timestamp, so it cannot prove when an entry was made."
+   ],
+   [
+    "Where is my data?",
+    "Only in this browser on this device. There is no account and nothing is uploaded. Clearing site data erases it, so download a backup now and then."
+   ],
+   [
+    "What does it cost?",
+    "One payment, no subscription. Lemon Squeezy processes the payment and sends your license key."
+   ]
+  ],
+  "tryH": "Start your log today",
+  "tryB": "It takes less than a minute to open a case.",
+  "payH": "One payment. No subscription.",
+  "payB": "Unlock everything: sealed entries, the pattern finder, the escalation ladder, reports, backup and restore. Your records stay on this device.",
+  "buyCta": "Buy Marginlog",
+  "haveKey": "I already have a license key"
  },
  "ko": {
   "title": "Marginlog – 분쟁을 위한 봉인형 사건 기록",
-  "desc": "소음, 집주인, 직장, 업체 문제를 몇 초 만에 기록하세요. 기록은 봉인되어 몰래 고칠 수 없습니다. 패턴을 보고, 단계별로 대응하고, 깔끔한 보고서를 내세요. 무료, 비공개, 오프라인.",
-  "h1": "지어냈다는 말이 나오지 않는 기록.",
-  "lead": "Marginlog는 사건마다 시각을 기록하고 위·변조가 드러나는 사슬로 봉인하며, 패턴을 찾고, 집주인·인사팀·조정위원·담당자에게 낼 보고서를 만듭니다. 무료, 오프라인, 계정 없음.",
+  "desc": "소음, 집주인, 직장, 업체 문제를 몇 초 만에 기록하세요. 기록은 봉인되어 몰래 고칠 수 없습니다. 패턴을 보고, 단계별로 대응하고, 깔끔한 보고서를 내세요. 1회 결제, 비공개, 오프라인.",
+  "h1": "고쳐 쓰지 않았음을 보여 주는 날짜별 기록.",
+  "lead": "Marginlog는 사건마다 시각을 기록하고 위·변조가 드러나는 사슬로 봉인하며, 패턴을 찾고, 집주인·인사팀·조정위원·담당자에게 낼 보고서를 만듭니다. 1회 구매, 오프라인, 계정 없음.",
   "cta": "Marginlog 열기",
   "feat": "들어 있는 기능",
   "f": [
@@ -74,6 +139,18 @@
    [
     "한 번에 보고서",
     "복사, PDF 인쇄, Markdown, CSV. 사진과 봉인 검사 결과가 맨 아래 포함됩니다."
+   ],
+   [
+    "서면 통보문 초안",
+    "기록을 바탕으로 사실만 담은 편지를 답변 기한과 함께 만듭니다. 고쳐서 직접 보내세요."
+   ],
+   [
+    "기한을 캘린더로",
+    "답변 기한을 캘린더 파일로 내보내 무시된 편지가 잊히지 않게 합니다."
+   ],
+   [
+    "제출 준비 점검",
+    "보고서를 내기 전에 무엇을 보강하면 좋을지 짧은 체크리스트로 알려 줍니다."
    ]
   ],
   "how": "사용 방법",
@@ -84,14 +161,67 @@
   ],
   "priv": "처음부터 비공개",
   "privb": "모든 데이터는 이 기기의 브라우저에만 저장됩니다. 계정, 추적, 업로드가 없고 백업 파일은 언제든 내려받을 수 있습니다.",
-  "disc": "개인 기록이며 법률 자문이 아닙니다. 봉인은 기록이 고쳐지지 않았음을 보여 줄 뿐 공증된 시각 증명은 아닙니다.",
-  "nav": "언어"
+  "disc": "개인 기록이며 법률 자문이 아닙니다. 봉인은 기록이 고쳐지지 않았음을 보여 줄 뿐 공증된 시각 증명은 아니며, 시각은 기기 시계를 따릅니다. 사는 곳의 법이 허용하는 것만 기록하고(예: 남의 대화 몰래 녹음 금지), 다른 사람의 개인정보는 분쟁에 필요한 만큼만 적으세요.",
+  "nav": "언어",
+  "eyebrow": "1회 구매 · 비공개 · 오프라인 사용",
+  "demoH": "3B호 – 윗집 소음",
+  "demo": [
+   "토 23:40 · 쿵쿵거리는 음악, 40분 · 심각도 4",
+   "금 02:10 · 발소리, 아이들이 깸 · 심각도 3",
+   "수 22:15 · 파티, 문 쾅 닫힘 · 심각도 3"
+  ],
+  "demoSeal": "봉인 정상 · 기록 14건",
+  "demoCap": "예시 사건입니다. 실제 기록은 내 기기에만 남습니다.",
+  "usesH": "오래 끄는 문제를 위해 만들었습니다",
+  "uses": [
+   [
+    "소음과 이웃",
+    "정숙 시간 위반과 가장 심한 요일·시간대."
+   ],
+   [
+    "집주인과 주거",
+    "수리, 곰팡이, 난방, 사전 통보 없는 출입을 날짜와 함께."
+   ],
+   [
+    "직장",
+    "발언, 업무량, 따돌림을 기억이 생생할 때 적어 둡니다."
+   ],
+   [
+    "업체와 판매자",
+    "지킨 적 없는 기한, 부실한 작업, 답 없는 연락."
+   ]
+  ],
+  "faqH": "솔직한 답변",
+  "faq": [
+   [
+    "증거로 인정되나요?",
+    "정확하게 기억하고 일관된 기록을 보여 주는 데 도움이 됩니다. 인정 여부는 나라와 판단하는 기관에 따라 다릅니다. 법률 자문이 아닙니다."
+   ],
+   [
+    "봉인은 무엇을 증명하나요?",
+    "기록이 작성된 뒤 몰래 바뀌거나 삭제되지 않았다는 점입니다. 공증된 시각 증명이 아니므로 언제 작성됐는지는 증명하지 못합니다."
+   ],
+   [
+    "데이터는 어디에 있나요?",
+    "이 기기의 이 브라우저에만 있습니다. 계정도 업로드도 없습니다. 사이트 데이터를 지우면 사라지니 가끔 백업 파일을 내려받으세요."
+   ],
+   [
+    "비용은 얼마인가요?",
+    "1회 결제이며 구독은 없습니다. 결제와 라이선스 키 발급은 Lemon Squeezy가 처리합니다."
+   ]
+  ],
+  "tryH": "오늘부터 기록을 시작하세요",
+  "tryB": "사건 하나 만드는 데 1분이 걸리지 않습니다.",
+  "payH": "1회 결제, 구독 없음",
+  "payB": "봉인 기록, 패턴 분석, 대응 단계, 보고서, 백업과 복원까지 모든 기능을 씁니다. 기록은 이 기기에만 남습니다.",
+  "buyCta": "Marginlog 구매하기",
+  "haveKey": "이미 라이선스 키가 있어요"
  },
  "ja": {
   "title": "Marginlog – トラブルのための封印つき出来事ログ",
-  "desc": "騒音、大家、職場、業者とのトラブルを数秒で記録。記録は封印され、こっそり書き換えられません。パターンを見て、段階的に対応し、整った報告書を提出。無料・非公開・オフライン対応。",
-  "h1": "作り話と言わせない記録を。",
-  "lead": "Marginlog は出来事ごとに時刻を記録し、改ざんが分かる鎖で封印し、パターンを見つけ、大家・人事・調停人・担当者に渡す報告書を作ります。無料、オフライン、アカウント不要。",
+  "desc": "騒音、大家、職場、業者の問題を数秒で記録。記録は封印され、こっそり書き換えられません。パターンを確認し、段階的に対応し、整った報告書を提出。買い切り、非公開、オフライン対応。",
+  "h1": "書き換えていないことを示せる、日付入りの記録。",
+  "lead": "Marginlog は出来事ごとに時刻を記録し、改ざんが分かる鎖で封印し、パターンを見つけ、大家・人事・調停人・担当者に渡す報告書を作ります。買い切り、オフライン、アカウント不要。",
   "cta": "Marginlog を開く",
   "feat": "主な機能",
   "f": [
@@ -118,6 +248,18 @@
    [
     "ワンタップで報告書",
     "コピー、PDF印刷、Markdown、CSV。写真と封印チェックの結果が末尾に入ります。"
+   ],
+   [
+    "書面通知の下書き",
+    "記録をもとに事実だけの手紙を、返答期限つきで作ります。直してから自分で送れます。"
+   ],
+   [
+    "期限をカレンダーへ",
+    "返答期限をカレンダーファイルに書き出し、無視された手紙を見落としません。"
+   ],
+   [
+    "提出できる状態か点検",
+    "提出前に、報告書を強くするために足りないものを短いチェックリストで示します。"
    ]
   ],
   "how": "使い方",
@@ -128,14 +270,67 @@
   ],
   "priv": "最初から非公開",
   "privb": "データはすべてこの端末のブラウザ内に保存。アカウント・追跡・アップロードなし。バックアップはいつでもダウンロードできます。",
-  "disc": "個人の記録であり法的助言ではありません。封印は記録が書き換えられていないことを示すもので、公証された時刻証明ではありません。",
-  "nav": "言語"
+  "disc": "個人の記録であり法的助言ではありません。封印は記録が書き換えられていないことを示すもので、公証された時刻証明ではなく、時刻は端末の時計に基づきます。お住まいの地域の法律で認められる範囲だけを記録し、他人の個人情報は紛争に必要な分にとどめてください。",
+  "nav": "言語",
+  "eyebrow": "買い切り · 非公開 · オフライン対応",
+  "demoH": "3B号室 – 上階の騒音",
+  "demo": [
+   "土 23:40 · 低音の音楽、40分 · 深刻度4",
+   "金 02:10 · 足音、子どもが起きた · 深刻度3",
+   "水 22:15 · パーティー、ドアを強く閉める · 深刻度3"
+  ],
+  "demoSeal": "封印は正常 · 記録14件",
+  "demoCap": "サンプルの案件です。実際の記録は端末の中だけに残ります。",
+  "usesH": "長引く問題のために",
+  "uses": [
+   [
+    "騒音と近隣",
+    "静穏時間の違反と、ピークの曜日・時間帯。"
+   ],
+   [
+    "大家と住まい",
+    "修理、カビ、暖房、無断立ち入りを日付つきで。"
+   ],
+   [
+    "職場",
+    "言動や業務量、孤立させられたことを記憶が新しいうちに。"
+   ],
+   [
+    "業者と販売者",
+    "守られない納期、粗い仕事、返事のない連絡。"
+   ]
+  ],
+  "faqH": "正直な回答",
+  "faq": [
+   [
+    "証拠として通用しますか？",
+    "正確に思い出し、一貫した記録を示す助けになります。認められるかは国や判断する機関によります。法的助言ではありません。"
+   ],
+   [
+    "封印は何を証明しますか？",
+    "書かれた後に記録がこっそり変更・削除されていないことです。公証された時刻証明ではないので、いつ書いたかは証明できません。"
+   ],
+   [
+    "データはどこにありますか？",
+    "この端末のこのブラウザの中だけです。アカウントもアップロードもありません。サイトデータを消すと失われるので、時々バックアップを。"
+   ],
+   [
+    "料金は？",
+    "買い切りで、サブスクリプションはありません。決済とライセンスキーの発行は Lemon Squeezy が行います。"
+   ]
+  ],
+  "tryH": "今日から記録を始めよう",
+  "tryB": "案件を作るのは1分もかかりません。",
+  "payH": "買い切り、サブスクリプションなし",
+  "payB": "封印記録、パターン分析、対応の段階、報告書、バックアップと復元まで全機能が使えます。記録はこの端末にだけ残ります。",
+  "buyCta": "Marginlog を購入",
+  "haveKey": "ライセンスキーを持っています"
  },
  "zh": {
   "title": "Marginlog – 为纠纷准备的封存式事件记录",
-  "desc": "几秒钟记下噪音、房东、职场或承包商的问题。记录被封存，无法被悄悄改写。查看规律，逐级应对，交出整洁的报告。免费、私密、可离线。",
-  "h1": "一份没人能说你编造的记录。",
-  "lead": "Marginlog 为每次事件记下时间，用可发现篡改的链条封存，找出规律，并生成可交给房东、人事、调解员或主管部门的报告。免费、离线、无需账号。",
+  "desc": "几秒钟记下噪音、房东、职场或承包商的问题。记录被封存，无法被悄悄改写。查看规律，逐级应对，交出整洁的报告。一次付费、私密、可离线。",
+  "h1": "一份能显示没有被改写过的按日期记录。",
+  "lead": "Marginlog 为每次事件记下时间，用可发现篡改的链条封存，找出规律，并生成可交给房东、人事、调解员或主管部门的报告。一次性购买、离线、无需账号。",
   "cta": "打开 Marginlog",
   "feat": "功能一览",
   "f": [
@@ -162,6 +357,18 @@
    [
     "一键报告",
     "复制、打印为 PDF、Markdown、CSV，末尾附照片和封存校验结果。"
+   ],
+   [
+    "起草书面通知",
+    "根据记录生成只陈述事实的信函，并附答复期限。修改后自行发送。"
+   ],
+   [
+    "期限加入日历",
+    "把答复期限导出为日历文件，被无视的信函不会被遗忘。"
+   ],
+   [
+    "可以提交了吗",
+    "提交前用简短清单告诉你，补上什么能让报告更有力。"
    ]
   ],
   "how": "使用方法",
@@ -172,14 +379,67 @@
   ],
   "priv": "天生私密",
   "privb": "所有数据只保存在本设备的浏览器里。无账号、无追踪、不上传，随时可下载备份文件。",
-  "disc": "这是个人记录，不构成法律意见。封存只说明记录没有被改写，并非经公证的时间戳。",
-  "nav": "语言"
+  "disc": "这是个人记录，不构成法律意见。封存只说明记录没有被改写，并非经公证的时间戳，时间取自你的设备时钟。只记录当地法律允许记录的内容，他人的个人信息只写纠纷所需的部分。",
+  "nav": "语言",
+  "eyebrow": "一次性购买 · 私密 · 可离线使用",
+  "demoH": "3B 室 – 楼上噪音",
+  "demo": [
+   "周六 23:40 · 低音音乐，40 分钟 · 严重度 4",
+   "周五 02:10 · 跺脚声，孩子被吵醒 · 严重度 3",
+   "周三 22:15 · 聚会，用力摔门 · 严重度 3"
+  ],
+  "demoSeal": "封存完好 · 14 条记录",
+  "demoCap": "示例事项。你的记录只保存在你的设备上。",
+  "usesH": "为久拖不决的问题而做",
+  "uses": [
+   [
+    "噪音与邻居",
+    "安静时段的违规，以及最严重的星期和时段。"
+   ],
+   [
+    "房东与住房",
+    "维修、发霉、供暖、未经通知进入，附日期。"
+   ],
+   [
+    "职场",
+    "趁记忆清晰，记下言语、工作量和被排挤。"
+   ],
+   [
+    "承包商与卖家",
+    "一再错过的期限、粗糙的做工、石沉大海的消息。"
+   ]
+  ],
+  "faqH": "坦率的回答",
+  "faq": [
+   [
+    "能当作证据吗？",
+    "它能帮你准确回忆，并呈现清晰一致的记录。是否被采纳取决于所在国家和裁决机构。这不是法律意见。"
+   ],
+   [
+    "封存能证明什么？",
+    "证明记录写下之后没有被悄悄修改或删除。它不是公证的时间戳，因此无法证明某条记录写于何时。"
+   ],
+   [
+    "数据存放在哪里？",
+    "只在这台设备的这个浏览器里。没有账号，也不上传任何内容。清除网站数据会删除记录，请不时下载备份。"
+   ],
+   [
+    "要花钱吗？",
+    "一次付费，没有订阅。付款与授权码由 Lemon Squeezy 处理。"
+   ]
+  ],
+  "tryH": "今天就开始记录",
+  "tryB": "建立一个事项不到一分钟。",
+  "payH": "一次付费，无订阅",
+  "payB": "解锁全部功能：封存记录、规律分析、应对阶梯、报告、备份与恢复。记录只保存在这台设备上。",
+  "buyCta": "购买 Marginlog",
+  "haveKey": "我已有授权码"
  },
  "es": {
   "title": "Marginlog – un registro sellado de incidentes para disputas",
-  "desc": "Anota en segundos problemas de ruido, casero, trabajo o contratistas. Las entradas se sellan y no se pueden reescribir a escondidas. Ve el patrón, escala paso a paso y entrega un informe limpio. Gratis, privado, sin conexión.",
-  "h1": "Un registro del que nadie pueda decir que te lo inventaste.",
-  "lead": "Marginlog anota cada incidente con su hora, lo sella en una cadena a prueba de manipulación, detecta el patrón y prepara el informe para casero, RR. HH., mediador o autoridad. Gratis, sin conexión, sin cuenta.",
+  "desc": "Anota en segundos problemas de ruido, casero, trabajo o contratistas. Las entradas se sellan y no se pueden reescribir a escondidas. Ve el patrón, escala paso a paso y entrega un informe limpio. Pago único, privado, sin conexión.",
+  "h1": "Un registro con fechas que muestra que no se reescribió.",
+  "lead": "Marginlog anota cada incidente con su hora, lo sella en una cadena a prueba de manipulación, detecta el patrón y prepara el informe para casero, RR. HH., mediador o autoridad. Pago único, sin conexión, sin cuenta.",
   "cta": "Abrir Marginlog",
   "feat": "Qué incluye",
   "f": [
@@ -206,6 +466,18 @@
    [
     "Informe en un toque",
     "Copia, imprime en PDF, Markdown o CSV, con fotos y la comprobación del sello al final."
+   ],
+   [
+    "Borrador de aviso por escrito",
+    "Una carta sencilla y factual creada con tu registro, con plazo de respuesta. Edítala y envíala tú."
+   ],
+   [
+    "Plazos en tu calendario",
+    "Exporta los plazos de respuesta a un archivo de calendario para que una carta ignorada no se olvide."
+   ],
+   [
+    "¿Listo para entregar?",
+    "Una lista breve te dice qué reforzaría el informe antes de enviarlo."
    ]
   ],
   "how": "Cómo funciona",
@@ -216,7 +488,60 @@
   ],
   "priv": "Privado por diseño",
   "privb": "Todo se guarda en el navegador de este dispositivo. Sin cuenta, sin rastreo, sin subidas. Descarga una copia cuando quieras.",
-  "disc": "Registro personal, no asesoría legal. El sello demuestra que el registro no se reescribió; no es un sello de tiempo notarial.",
-  "nav": "Idiomas"
+  "disc": "Registro personal, no asesoría legal. El sello demuestra que el registro no se reescribió; no es un sello de tiempo notarial, y las horas vienen del reloj de tu dispositivo. Registra solo lo que la ley de tu lugar permita y limita los datos personales de otras personas a lo que la disputa necesite.",
+  "nav": "Idiomas",
+  "eyebrow": "Pago único · Privado · Funciona sin conexión",
+  "demoH": "Piso 3B – ruido de arriba",
+  "demo": [
+   "Sáb 23:40 · Música con graves, 40 min · gravedad 4",
+   "Vie 02:10 · Pisadas, despertó a los niños · gravedad 3",
+   "Mié 22:15 · Fiesta, portazo · gravedad 3"
+  ],
+  "demoSeal": "Sello intacto · 14 registros",
+  "demoCap": "Un caso de ejemplo. El tuyo se queda en tu dispositivo.",
+  "usesH": "Hecho para los problemas que se alargan",
+  "uses": [
+   [
+    "Ruido y vecinos",
+    "Incumplimientos del horario de silencio y el día y la hora de mayor ruido."
+   ],
+   [
+    "Casero y vivienda",
+    "Reparaciones, moho, calefacción y entradas sin aviso, con fechas."
+   ],
+   [
+    "Trabajo",
+    "Comentarios, carga y exclusión anotados mientras están frescos."
+   ],
+   [
+    "Contratistas y vendedores",
+    "Plazos incumplidos, mal trabajo y mensajes sin respuesta."
+   ]
+  ],
+  "faqH": "Respuestas sinceras",
+  "faq": [
+   [
+    "¿Servirá como prueba?",
+    "Puede ayudarte a recordar con precisión y a mostrar un registro claro y coherente. Que se acepte depende del país y de quien decida. No es asesoramiento legal."
+   ],
+   [
+    "¿Qué demuestra el sello?",
+    "Que las entradas no se cambiaron ni se borraron en silencio después de escribirlas. No es una marca de tiempo notarial, así que no prueba cuándo se hizo una entrada."
+   ],
+   [
+    "¿Dónde están mis datos?",
+    "Solo en este navegador de este dispositivo. No hay cuenta ni se sube nada. Borrar los datos del sitio los elimina: haz copias de vez en cuando."
+   ],
+   [
+    "¿Cuánto cuesta?",
+    "Un pago único, sin suscripción. Lemon Squeezy procesa el pago y envía tu clave de licencia."
+   ]
+  ],
+  "tryH": "Empieza tu registro hoy",
+  "tryB": "Abrir un caso lleva menos de un minuto.",
+  "payH": "Un pago. Sin suscripción.",
+  "payB": "Desbloquea todo: entradas selladas, buscador de patrones, escalado, informes, copia de seguridad y restauración. Tus registros se quedan en este dispositivo.",
+  "buyCta": "Comprar Marginlog",
+  "haveKey": "Ya tengo una clave de licencia"
  }
 }

@@ -7,7 +7,7 @@ const inv = () => ({ type: "invoice", client: " Acme GmbH ", clientEmail: "ap@ac
 test("profile is learned from an invoice, keyed by trimmed lower-case name", () => {
   const m = C.learn({}, inv());
   assert.deepEqual(Object.keys(m), ["acme gmbh"]);
-  assert.deepEqual(m["acme gmbh"], { email: "ap@acme.example", terms: 30, taxRate: 19, currency: "EUR", payinfo: "IBAN DE00", payLink: "https://pay.example/acme" });
+  assert.deepEqual(m["acme gmbh"], { email: "ap@acme.example", terms: 30, taxRate: 19, withholdingRate: 0, currency: "EUR", payinfo: "IBAN DE00", payLink: "https://pay.example/acme" });
 });
 test("quotes and nameless invoices teach nothing; later invoices replace the profile", () => {
   assert.deepEqual(C.learn({}, { ...inv(), type: "quote" }), {});
@@ -28,7 +28,7 @@ test("applyDefaults sets terms from the issue date and keeps items", () => {
 });
 test("cleanProfile rejects junk", () => {
   const p = C.cleanProfile({ email: "not mail", terms: 9999, taxRate: -3, currency: "usd", payinfo: "x".repeat(900), payLink: "http://insecure" });
-  assert.deepEqual(p, { email: "", terms: 14, taxRate: 0, currency: "", payinfo: "x".repeat(600), payLink: "" });
+  assert.deepEqual(p, { email: "", terms: 14, taxRate: 0, withholdingRate: 0, currency: "", payinfo: "x".repeat(600), payLink: "" });
 });
 test("validEmail and mailtoUrl", () => {
   assert.ok(C.validEmail("a.b+c@sub.example.com"));
