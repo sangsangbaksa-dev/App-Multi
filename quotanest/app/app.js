@@ -554,7 +554,7 @@
             delete copy.license;
             download('quotanest-data.json', JSON.stringify(copy, null, 2));
           } } }),
-          el('label', { cls: 'btn ghost', style: 'display:inline-block;cursor:pointer;margin:0', t: 'set_import' }, [fileIn])
+          el('label', { cls: 'btn ghost file-label', t: 'set_import' }, [fileIn])
         ]),
         el('div', { cls: 'row' }, [
           el('button', { cls: 'btn danger', type: 'button', t: 'set_clear', on: { click: function () {
