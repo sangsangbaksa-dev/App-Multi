@@ -126,6 +126,18 @@ test('suggestNext reports an exhausted ladder', async () => {
 test('sanitizeCase rejects inherited property names as kind', () => {
   assert.equal(C.sanitizeCase({ name: 'x', kind: 'constructor' }).kind, 'other'); assert.equal(C.sanitizeCase({ name: 'x', kind: '__proto__' }).kind, 'other');
 });
+
+test('inRange: open or closed day bounds on the entry day, invalid stamps never match', () => {
+  const at = '2026-10-10T23:30';
+  assert.equal(C.inRange(at, '', ''), true);
+  assert.equal(C.inRange(at, '2026-10-10', ''), true);
+  assert.equal(C.inRange(at, '2026-10-11', ''), false);
+  assert.equal(C.inRange(at, '', '2026-10-10'), true);
+  assert.equal(C.inRange(at, '', '2026-10-09'), false);
+  assert.equal(C.inRange(at, '2026-10-01', '2026-10-31'), true);
+  assert.equal(C.inRange('not a date', '', ''), false);
+});
+
 test('notice letter is built only from the log and uses the chosen deadline', async () => {
   const c = await mk([{ at: '2026-10-20T23:30', dur: 30, text: 'Loud bass until late' }, { at: '2026-10-25T03:00', text: 'Again, stomping' }, { at: '2026-10-30T14:00', text: 'Music' }]);
   c.name = 'Flat 3B'; c.counterpart = 'Mr Lee'; c.goal = 'Keep quiet after 22:00';

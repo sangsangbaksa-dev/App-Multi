@@ -74,6 +74,8 @@
   function events(entries) { var v = voidedIds(entries); return entries.filter(function (e) { return e.type === 'event' && !v[e.id]; }); }
   function addenda(entries, id) { return entries.filter(function (e) { return e.type === 'note' && e.ref === id; }); }
   function isLate(e) { var p = parseAt(e.at); return !!p && e.rec - p.ts > LATE_HOURS * 36e5; }
+  /* from/to are YYYY-MM-DD, either may be empty (open ended). Compares the calendar day of the entry's own time. */
+  function inRange(at, from, to) { var p = parseAt(at); if (!p) return false; if (from && p.day < from) return false; if (to && p.day > to) return false; return true; }
   function inQuiet(h, q) { if (!q) return false; var a = q[0], b = q[1]; return a === b ? false : (a < b ? h >= a && h < b : h >= a || h < b); }
 
   function heatmap(evs) {
@@ -340,7 +342,7 @@
   var api = {
     KINDS: KINDS, STEP_KINDS: STEP_KINDS, LATE_HOURS: LATE_HOURS,
     uid: uid, pad: pad, toLocalStamp: toLocalStamp, parseAt: parseAt, dayNum: dayNum, sha256Hex: sha256Hex, seal: seal, verifyChain: verifyChain, cleanTags: cleanTags, clampInt: clampInt,
-    events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
+    events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, inRange: inRange, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
     strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase,
     tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs, encryptText: encryptText, decryptText: decryptText, overview: overview, calendarAll: calendarAll, digest: digest
   };
