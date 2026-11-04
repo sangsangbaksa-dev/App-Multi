@@ -103,8 +103,8 @@
     });
     return input;
   }
-  function download(name, text) {
-    var blob = new Blob([text], { type: 'application/json' });
+  function download(name, text, type) {
+    var blob = new Blob([text], { type: type || 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = el('a', { href: url, download: name, hidden: true });
     document.body.appendChild(a);
@@ -121,6 +121,7 @@
     var input = el('textarea', { id: 'est-in', rows: '8', tp: 'est_in' });
     var out = el('div', { cls: 'card', 'aria-live': 'polite' });
     var actual = el('input', { type: 'number', min: '0', step: '1', id: 'est-actual' });
+    var rate = el('input', { type: 'number', min: '0', step: '0.01', id: 'est-rate' });
     var calibNote = el('p', { cls: 'note' });
 
     function factor() { return QN.calibrationFactor(state.calib); }
@@ -130,13 +131,16 @@
       last = true;
       var f = factor();
       var r = QN.estimateTokens(txt, { factor: f });
+      var cells = [
+        stat('est_out', fmt(r.tokens)),
+        stat('est_range', fmt(r.low) + '–' + fmt(r.high)),
+        stat('est_chars', fmt(r.chars)),
+        stat('est_factor', f.toFixed(2))
+      ];
+      var cost = QN.estimateCost(r.tokens, rate.value);
+      if (cost != null) cells.push(stat('est_cost', cost.toFixed(3)));
       out.replaceChildren(
-        el('div', { cls: 'stats' }, [
-          stat('est_out', fmt(r.tokens)),
-          stat('est_range', fmt(r.low) + '–' + fmt(r.high)),
-          stat('est_chars', fmt(r.chars)),
-          stat('est_factor', f.toFixed(2))
-        ]),
+        el('div', { cls: 'stats' }, cells),
         note('est_note')
       );
     }
@@ -164,6 +168,7 @@
       el('div', { cls: 'card' }, [
         el('label', { t: 'est_in' }), input,
         el('label', { t: 'est_file' }), file,
+        el('label', { t: 'est_rate' }), rate,
         el('div', { cls: 'row' }, [runBtn]),
         out
       ]),
@@ -263,11 +268,21 @@
         nodes.push(note('use_no_block'));
       }
       nodes.push(el('h3', { t: 'use_week' }));
-      nodes.push(el('div', { cls: 'stats' }, [
+      var weekCells = [
         stat('use_used', fmt(f.week.used)),
         stat('use_pct', pct(f.week.pct)),
         stat('use_week_per_day', fmt(f.week.perDay))
-      ]));
+      ];
+      if (f.week.remaining != null) weekCells.push(stat('use_week_left', fmt(f.week.remaining)));
+      nodes.push(el('div', { cls: 'stats' }, weekCells));
+      var daily = QN.dailyTotals(state.records, state.limits.metric, Date.now(), 14);
+      nodes.push(el('h3', { t: 'use_daily_h' }));
+      nodes.push(el('table', { cls: 'table' }, [el('tr', null, [el('th', { t: 'use_daily_day' }), el('th', { t: 'use_daily_tokens' })])].concat(daily.map(function (d) {
+        return el('tr', null, [el('td', null, [d.day]), el('td', null, [fmt(d.tokens)])]);
+      }))));
+      nodes.push(el('div', { cls: 'row' }, [el('button', { cls: 'btn ghost', type: 'button', t: 'use_csv', on: { click: function () {
+        download('quotanest-daily.csv', QN.toCsv(daily), 'text/csv');
+      } } })]));
       nodes.push(note('use_disclaimer'));
       box.replaceChildren.apply(box, nodes);
     }
