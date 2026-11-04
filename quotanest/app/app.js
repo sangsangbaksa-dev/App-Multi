@@ -10,6 +10,7 @@
   var MAX_RECORDS = 5000;
   var refreshers = [];
   var gate = null;
+  var gateMsg = null;
   var gateVisible = false;
 
   /* ---------- state ---------- */
@@ -102,8 +103,8 @@
     });
     return input;
   }
-  function download(name, text) {
-    var blob = new Blob([text], { type: 'application/json' });
+  function download(name, text, type) {
+    var blob = new Blob([text], { type: type || 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = el('a', { href: url, download: name, hidden: true });
     document.body.appendChild(a);
@@ -120,6 +121,7 @@
     var input = el('textarea', { id: 'est-in', rows: '8', tp: 'est_in' });
     var out = el('div', { cls: 'card', 'aria-live': 'polite' });
     var actual = el('input', { type: 'number', min: '0', step: '1', id: 'est-actual' });
+    var rate = el('input', { type: 'number', min: '0', step: '0.01', id: 'est-rate' });
     var calibNote = el('p', { cls: 'note' });
 
     function factor() { return QN.calibrationFactor(state.calib); }
@@ -129,13 +131,16 @@
       last = true;
       var f = factor();
       var r = QN.estimateTokens(txt, { factor: f });
+      var cells = [
+        stat('est_out', fmt(r.tokens)),
+        stat('est_range', fmt(r.low) + '–' + fmt(r.high)),
+        stat('est_chars', fmt(r.chars)),
+        stat('est_factor', f.toFixed(2))
+      ];
+      var cost = QN.estimateCost(r.tokens, rate.value);
+      if (cost != null) cells.push(stat('est_cost', cost.toFixed(3)));
       out.replaceChildren(
-        el('div', { cls: 'stats' }, [
-          stat('est_out', fmt(r.tokens)),
-          stat('est_range', fmt(r.low) + '–' + fmt(r.high)),
-          stat('est_chars', fmt(r.chars)),
-          stat('est_factor', f.toFixed(2))
-        ]),
+        el('div', { cls: 'stats' }, cells),
         note('est_note')
       );
     }
@@ -163,6 +168,7 @@
       el('div', { cls: 'card' }, [
         el('label', { t: 'est_in' }), input,
         el('label', { t: 'est_file' }), file,
+        el('label', { t: 'est_rate' }), rate,
         el('div', { cls: 'row' }, [runBtn]),
         out
       ]),
@@ -262,11 +268,21 @@
         nodes.push(note('use_no_block'));
       }
       nodes.push(el('h3', { t: 'use_week' }));
-      nodes.push(el('div', { cls: 'stats' }, [
+      var weekCells = [
         stat('use_used', fmt(f.week.used)),
         stat('use_pct', pct(f.week.pct)),
         stat('use_week_per_day', fmt(f.week.perDay))
-      ]));
+      ];
+      if (f.week.remaining != null) weekCells.push(stat('use_week_left', fmt(f.week.remaining)));
+      nodes.push(el('div', { cls: 'stats' }, weekCells));
+      var daily = QN.dailyTotals(state.records, state.limits.metric, Date.now(), 14);
+      nodes.push(el('h3', { t: 'use_daily_h' }));
+      nodes.push(el('table', { cls: 'table' }, [el('tr', null, [el('th', { t: 'use_daily_day' }), el('th', { t: 'use_daily_tokens' })])].concat(daily.map(function (d) {
+        return el('tr', null, [el('td', null, [d.day]), el('td', null, [fmt(d.tokens)])]);
+      }))));
+      nodes.push(el('div', { cls: 'row' }, [el('button', { cls: 'btn ghost', type: 'button', t: 'use_csv', on: { click: function () {
+        download('quotanest-daily.csv', QN.toCsv(daily), 'text/csv');
+      } } })]));
       nodes.push(note('use_disclaimer'));
       box.replaceChildren.apply(box, nodes);
     }
@@ -554,7 +570,8 @@
             delete copy.license;
             download('quotanest-data.json', JSON.stringify(copy, null, 2));
           } } }),
-          el('label', { cls: 'btn ghost', style: 'display:inline-block;cursor:pointer;margin:0', t: 'set_import' }, [fileIn])
+          /* The text sits in its own span: applyI18n() rewrites textContent of every [data-t] element, which would remove the input. */
+        el('label', { cls: 'btn ghost file-btn' }, [el('span', { t: 'set_import' }), fileIn])
         ]),
         el('div', { cls: 'row' }, [
           el('button', { cls: 'btn danger', type: 'button', t: 'set_clear', on: { click: function () {
@@ -572,12 +589,13 @@
   /* ---------- licence gate ---------- */
 
   function buildGate() {
-    var msg = el('p', { cls: 'note' });
+    var msg = el('p', { cls: 'note', id: 'gate-msg', role: 'status' });
+    gateMsg = msg;
     var key = el('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', id: 'gate-key', 'aria-label': 'licence key' });
     var unlock = el('button', { cls: 'btn', type: 'button', t: 'gate_unlock' });
     var buy = SITE.checkoutUrl
       ? el('a', { cls: 'btn ghost', href: SITE.checkoutUrl, rel: 'noopener', target: '_blank', t: 'gate_buy' })
-      : note('gate_not_sale');
+      : el('p', { cls: 'note', t: 'gate_not_sale' });
     var box = el('div', { cls: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'gate-t' }, [
       el('h2', { id: 'gate-t', t: 'gate_t' }),
       el('p', { t: 'gate_b' }),
@@ -619,20 +637,25 @@
     gateVisible = !!on;
     if (gate) gate.hidden = !on;
   }
+  function setGateMsg(k) {
+    if (gateMsg) gateMsg.textContent = k ? t(k) : '';
+  }
 
   /* On first load, ask the server whether licensing is configured. An unconfigured server answers configured:false
-     and the app stays open, like the other apps in this repository. A bad or missing key never reaches the upstream. */
+     and the app stays open, like the other apps in this repository. A bad or missing key never reaches the upstream.
+     If the server cannot answer (error page, network down, functions not deployed) the gate stays up and says so,
+     instead of showing an empty overlay with no explanation. */
   function probeLicence() {
     if (state.license.ok) return;
     showGate(true);
-    gate.querySelector('.note').textContent = t('gate_checking');
+    setGateMsg('gate_checking');
     fetch('/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
       .then(function (r) { return r.json().catch(function () { return {}; }); })
       .then(function (j) {
-        if (j && j.configured === false) showGate(false);
-        else gate.querySelector('.note').textContent = '';
+        if (j && j.configured === false) { showGate(false); return; }
+        setGateMsg(j && typeof j.configured === 'boolean' ? '' : 'gate_unreachable');
       })
-      .catch(function () { gate.querySelector('.note').textContent = t('gate_unreachable'); });
+      .catch(function () { setGateMsg('gate_unreachable'); });
   }
 
   /* ---------- shell ---------- */

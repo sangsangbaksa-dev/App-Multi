@@ -243,9 +243,52 @@
     out.week = {
       used: weekUsed,
       pct: opts.weekLimit > 0 ? weekUsed / opts.weekLimit : null,
+      remaining: opts.weekLimit > 0 ? Math.max(0, opts.weekLimit - weekUsed) : null,
       perDay: weekUsed / spanDays
     };
     return out;
+  }
+
+  /* ---------- daily totals, CSV and cost (added in the feature pass) ---------- */
+
+  var DAY = 24 * HOUR;
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  /* Local calendar day as YYYY-MM-DD, so a day matches what the user sees on their clock. */
+  function localDay(ts) {
+    var d = new Date(ts);
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  /* Tokens per local day for the last `days` days ending today, oldest first. Days with no records show 0. */
+  function dailyTotals(records, metric, now, days) {
+    var n = days > 0 ? Math.floor(days) : 14;
+    var byDay = Object.create(null);
+    (records || []).forEach(function (r) {
+      if (!r || !isFinite(r.ts)) return;
+      var key = localDay(r.ts);
+      byDay[key] = (byDay[key] || 0) + tokensOf(r, metric || 'io');
+    });
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var day = localDay(now - i * DAY);
+      out.push({ day: day, tokens: byDay[day] || 0 });
+    }
+    return out;
+  }
+
+  /* CSV of daily totals. Only ISO days and integers go in, so no cell can carry a formula. */
+  function toCsv(rows) {
+    var lines = ['day,tokens'];
+    (rows || []).forEach(function (r) { lines.push(r.day + ',' + Math.round(r.tokens || 0)); });
+    return lines.join('\n') + '\n';
+  }
+
+  /* Cost at a rate the user types in (per million tokens, any currency). Null when no rate is given. */
+  function estimateCost(tokens, ratePerMillion) {
+    var rate = Number(ratePerMillion);
+    if (!(rate > 0) || !isFinite(tokens)) return null;
+    return (Number(tokens) / 1000000) * rate;
   }
 
   /* ---------- model guide (editable defaults, dated) ---------- */
@@ -375,7 +418,11 @@
     GUIDE_ASOF: GUIDE_ASOF,
     analyzeInstructions: analyzeInstructions,
     summarizeSession: summarizeSession,
-    buildResumePrompt: buildResumePrompt
+    buildResumePrompt: buildResumePrompt,
+    dailyTotals: dailyTotals,
+    localDay: localDay,
+    toCsv: toCsv,
+    estimateCost: estimateCost
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
