@@ -422,6 +422,11 @@
     });
     return svg;
   }
+  function renameTagPrompt(tag) {
+    var nt = window.prompt(t('wRenameAsk', { tag: tag }), tag); if (nt === null) return;
+    var n = C.renameTag(st, tag, nt); if (!n) return;
+    save(); render(); toast(t('wRenamed', { n: n }));
+  }
   function viewInsights() {
     if (!st.entries.length) return h('div', { class: 'empty' }, h('h2', { text: t('emptyInsH') }), h('p', { text: t('emptyInsB') }));
     var sm = C.summary(st), out = h('div'), stats = h('div', { class: 'stats' });
@@ -445,12 +450,18 @@
       h('span', { class: 'grow' }, h('span', { class: 'title', text: whatOf(e) }), h('br'), h('span', { class: 'sub', text: (e.dir === 'out' ? t('toPerson', { name: pp.name }) : t('fromPerson', { name: pp.name })) })), h('span', { class: 'chip ' + C.status(e), text: statusText(e) })))); });
     var lo = C.longestOut(st); if (lo && lo.days >= 1) out.appendChild(h('div', { class: 'banner', text: t('longest', { what: lo.entry.kind === 'money' ? fmtMoney(C.remaining(lo.entry), lo.entry.currency) : lo.entry.title, name: (C.findPerson(st, lo.entry.personId) || {}).name, n: lo.days }) }));
     out.appendChild(h('div', { class: 'card' }, h('h2', { text: t('chart') }), chartSvg(C.monthlySeries(st, 6)), h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), t('cLent')), h('span', null, h('i', { style: 'background:var(--c2)' }), t('cBack')))));
+    var ob = C.overdueByPerson(st).slice(0, 5);
+    if (ob.length) { out.appendChild(h('h2', { class: 'sec', text: t('wOverdueWho') })); ob.forEach(function (x) { out.appendChild(h('div', { class: 'card', style: 'margin:6px 0' }, h('div', { class: 'head' }, h('span', { class: 'grow title', text: x.name }), h('span', { class: 'chip overdue', text: t('wOverdueN', { n: x.count }) })))); }); }
+    var cs = C.countByStatus(st), csRow = h('div', { class: 'stats' });
+    out.appendChild(h('h2', { class: 'sec', text: t('wStatusH') }));
+    [[cs.open, 'wOpen'], [cs.soon, 'wSoon'], [cs.overdue, 'wOverdue'], [cs.returned, 'wReturned'], [cs.written, 'wWritten']].forEach(function (x) { csRow.appendChild(h('div', { class: 'stat' }, h('b', { text: String(x[0]) }), h('span', { text: t(x[1]) }))); });
+    out.appendChild(csRow);
     var ts = C.tagSummary(st);
     if (ts.length) {
       out.appendChild(h('h2', { class: 'sec', text: t('tagSumH') }));
       ts.slice(0, 10).forEach(function (r) {
         var money = moneyMap(r.money);
-        out.appendChild(h('div', { class: 'card', style: 'margin:6px 0' }, h('div', { class: 'head' }, h('span', { class: 'grow title', text: '#' + r.tag }), h('span', { class: 'sub', text: t('tagCounts', { o: r.open, c: r.closed }) })), money ? h('p', { class: 'sub', style: 'margin:6px 0 0', text: t('tagOwed', { a: money }) }) : null));
+        out.appendChild(h('div', { class: 'card', style: 'margin:6px 0' }, h('div', { class: 'head' }, h('span', { class: 'grow title', text: '#' + r.tag }), h('span', { class: 'sub', text: t('tagCounts', { o: r.open, c: r.closed }) }), h('button', { type: 'button', class: 'btn ghost', text: t('wRename'), onclick: function () { renameTagPrompt(r.tag); } })), money ? h('p', { class: 'sub', style: 'margin:6px 0 0', text: t('tagOwed', { a: money }) }) : null));
       });
     }
     var rk = C.rankPeople(st).filter(function (x) { return x.s.open > 0; }).slice(0, 5);
