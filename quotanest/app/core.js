@@ -406,7 +406,115 @@
     return out.join('\n');
   }
 
+  /* ---------- second feature pass: history, reset timer, thresholds, sizes, summaries ---------- */
+
+  /* Groups sorted records into 5-hour blocks, same rule as forecast(). */
+  function groupBlocks(records, metric) {
+    var recs = (records || []).filter(function (r) { return r && isFinite(r.ts); }).slice().sort(function (a, b) { return a.ts - b.ts; });
+    var blocks = [];
+    recs.forEach(function (r) {
+      var last = blocks[blocks.length - 1];
+      if (!last || r.ts >= last.end) {
+        var start = Math.floor(r.ts / HOUR) * HOUR;
+        last = { start: start, end: start + BLOCK_MS, used: 0, count: 0 };
+        blocks.push(last);
+      }
+      last.used += tokensOf(r, metric || 'io');
+      last.count++;
+    });
+    return blocks;
+  }
+
+  /* The last `n` blocks, newest first. */
+  function blockHistory(records, metric, n) {
+    var keep = n > 0 ? Math.floor(n) : 5;
+    return groupBlocks(records, metric).slice(-keep).reverse();
+  }
+
+  /* Whole minutes left until a block resets. Null when there is no block end. */
+  function minutesToReset(now, blockEnd) {
+    if (!isFinite(blockEnd) || !isFinite(now)) return null;
+    return Math.max(0, Math.round((blockEnd - now) / 60000));
+  }
+
+  /* Counts records by where they came from. Anything unknown goes under "other". */
+  function countBySource(records) {
+    var out = { claude: 0, codex: 0, manual: 0, other: 0 };
+    (records || []).forEach(function (r) {
+      var s = r && r.source;
+      if (s === 'claude' || s === 'codex' || s === 'manual') out[s]++;
+      else out.other++;
+    });
+    return out;
+  }
+
+  /* Plain-text usage summary for copying. `labels` holds the strings to use. */
+  function usageSummaryText(f, labels, fmtNum) {
+    var n = fmtNum || function (x) { return String(Math.round(x || 0)); };
+    var L = labels || {};
+    var lines = [];
+    if (f && f.active) {
+      lines.push(L.block + ': ' + n(f.active.used) + (f.active.pct != null ? ' (' + Math.round(f.active.pct * 100) + '%)' : ''));
+    }
+    if (f && f.week) {
+      lines.push(L.week + ': ' + n(f.week.used) + (f.week.pct != null ? ' (' + Math.round(f.week.pct * 100) + '%)' : ''));
+      lines.push(L.perDay + ': ' + n(f.week.perDay));
+    }
+    return lines.join('\n');
+  }
+
+  /* Days until a weekly limit is reached at the current daily average. Null without a limit or average. */
+  function daysToWeekLimit(remaining, perDay) {
+    if (remaining == null || !(perDay > 0)) return null;
+    if (remaining <= 0) return 0;
+    return remaining / perDay;
+  }
+
+  /* Compares a token count with a limit the user typed. 'near' starts at 80% of the limit. */
+  function checkThreshold(tokens, limit) {
+    if (!(limit > 0)) return null;
+    if (tokens > limit) return 'over';
+    if (tokens >= limit * 0.8) return 'near';
+    return 'ok';
+  }
+
+  /* Rule of thumb for instruction files, not an official limit. */
+  function sizeVerdict(tokens) {
+    if (tokens <= 2000) return 'ok';
+    if (tokens <= 5000) return 'large';
+    return 'too_large';
+  }
+
+  /* Mean relative error of the corrected estimate against the user's own counts. Null with no usable pairs. */
+  function calibrationError(pairs) {
+    var factor = calibrationFactor(pairs);
+    var sum = 0, n = 0;
+    (pairs || []).forEach(function (p) {
+      if (p && p.estimated > 0 && p.actual > 0) {
+        sum += Math.abs(p.estimated * factor - p.actual) / p.actual;
+        n++;
+      }
+    });
+    return n ? sum / n : null;
+  }
+
+  /* Percent smaller after compression, clamped to 0..100. */
+  function percentSaved(before, after) {
+    if (!(before > 0)) return 0;
+    return Math.max(0, Math.min(100, Math.round((before - after) / before * 100)));
+  }
+
   var api = {
+    groupBlocks: groupBlocks,
+    blockHistory: blockHistory,
+    minutesToReset: minutesToReset,
+    countBySource: countBySource,
+    usageSummaryText: usageSummaryText,
+    daysToWeekLimit: daysToWeekLimit,
+    checkThreshold: checkThreshold,
+    sizeVerdict: sizeVerdict,
+    calibrationError: calibrationError,
+    percentSaved: percentSaved,
     estimateTokens: estimateTokens,
     calibrationFactor: calibrationFactor,
     compressText: compressText,
