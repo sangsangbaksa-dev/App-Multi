@@ -10,6 +10,7 @@
   var MAX_RECORDS = 5000;
   var refreshers = [];
   var gate = null;
+  var gateMsg = null;
   var gateVisible = false;
 
   /* ---------- state ---------- */
@@ -554,7 +555,8 @@
             delete copy.license;
             download('quotanest-data.json', JSON.stringify(copy, null, 2));
           } } }),
-          el('label', { cls: 'btn ghost', style: 'display:inline-block;cursor:pointer;margin:0', t: 'set_import' }, [fileIn])
+          /* The text sits in its own span: applyI18n() rewrites textContent of every [data-t] element, which would remove the input. */
+        el('label', { cls: 'btn ghost file-btn' }, [el('span', { t: 'set_import' }), fileIn])
         ]),
         el('div', { cls: 'row' }, [
           el('button', { cls: 'btn danger', type: 'button', t: 'set_clear', on: { click: function () {
@@ -572,12 +574,13 @@
   /* ---------- licence gate ---------- */
 
   function buildGate() {
-    var msg = el('p', { cls: 'note' });
+    var msg = el('p', { cls: 'note', id: 'gate-msg', role: 'status' });
+    gateMsg = msg;
     var key = el('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', id: 'gate-key', 'aria-label': 'licence key' });
     var unlock = el('button', { cls: 'btn', type: 'button', t: 'gate_unlock' });
     var buy = SITE.checkoutUrl
       ? el('a', { cls: 'btn ghost', href: SITE.checkoutUrl, rel: 'noopener', target: '_blank', t: 'gate_buy' })
-      : note('gate_not_sale');
+      : el('p', { cls: 'note', t: 'gate_not_sale' });
     var box = el('div', { cls: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'gate-t' }, [
       el('h2', { id: 'gate-t', t: 'gate_t' }),
       el('p', { t: 'gate_b' }),
@@ -619,20 +622,25 @@
     gateVisible = !!on;
     if (gate) gate.hidden = !on;
   }
+  function setGateMsg(k) {
+    if (gateMsg) gateMsg.textContent = k ? t(k) : '';
+  }
 
   /* On first load, ask the server whether licensing is configured. An unconfigured server answers configured:false
-     and the app stays open, like the other apps in this repository. A bad or missing key never reaches the upstream. */
+     and the app stays open, like the other apps in this repository. A bad or missing key never reaches the upstream.
+     If the server cannot answer (error page, network down, functions not deployed) the gate stays up and says so,
+     instead of showing an empty overlay with no explanation. */
   function probeLicence() {
     if (state.license.ok) return;
     showGate(true);
-    gate.querySelector('.note').textContent = t('gate_checking');
+    setGateMsg('gate_checking');
     fetch('/api/license', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
       .then(function (r) { return r.json().catch(function () { return {}; }); })
       .then(function (j) {
-        if (j && j.configured === false) showGate(false);
-        else gate.querySelector('.note').textContent = '';
+        if (j && j.configured === false) { showGate(false); return; }
+        setGateMsg(j && typeof j.configured === 'boolean' ? '' : 'gate_unreachable');
       })
-      .catch(function () { gate.querySelector('.note').textContent = t('gate_unreachable'); });
+      .catch(function () { setGateMsg('gate_unreachable'); });
   }
 
   /* ---------- shell ---------- */
