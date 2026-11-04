@@ -326,15 +326,18 @@
   function tripList(tr, ro) {
     var list = tr.trips.length ? h('ul', { class: 'trips' }, tr.trips.map(function (t) {
       var days = Object.keys(C.stayDays([t], C.todayStr())).length;
+      var clash = C.overlapPairs(tr, C.todayStr()).filter(function (p) { return p.a === t.id || p.b === t.id; })[0];
       return h('li', null, [
         h('div', null, [
           h('strong', null, t.place || '—'),
           h('span', { class: 'dates' }, fmt(t.from) + ' → ' + (t.to ? fmt(t.to) : T('today')) + ' · ' + days),
           t.from > C.todayStr() ? h('span', { class: 'chip plan' }, T('planned')) : null,
+          clash ? h('span', { class: 'dates warn' }, T('overlapWarn', { from: fmt(clash.from), to: fmt(clash.to) })) : null,
           t.note ? h('span', { class: 'dates note' }, t.note) : null
         ]),
         ro ? null : h('span', { class: 'rowbtns' }, [
           !t.to ? h('button', { class: 'ghost', onclick: function () { t.to = C.todayStr(); save(); render(); } }, T('leftToday')) : null,
+          h('button', { class: 'ghost', onclick: function () { C.copyTrip(tr, t.id, 365); save(); render(); } }, T('copyYear')),
           h('button', { class: 'ghost', onclick: function () { editing = t.id; render(); } }, T('edit')),
           h('button', { class: 'ghost x', 'aria-label': T('confTrip'), onclick: function () { if (confirm(T('confTrip'))) undoable(T('tripGone'), function () { C.removeTrip(tr, t.id); save(); render(); }); } }, '×')
         ])

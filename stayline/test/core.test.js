@@ -494,3 +494,52 @@ test('year report: one section per counter with rule, count and per-year table',
   assert.ok(md.includes('| 2026 | 10 |'));
   assert.ok(md.includes('Permit or visa valid until: 2030-01-01'));
 });
+
+test('overlapPairs: shared days are reported once with their range', () => {
+  const t = tr([['2026-06-01', '2026-06-10'], ['2026-06-08', '2026-06-15'], ['2026-07-01', '2026-07-02']]);
+  const p = C.overlapPairs(t, '2026-08-01');
+  assert.equal(p.length, 1);
+  assert.equal(p[0].from, '2026-06-08');
+  assert.equal(p[0].to, '2026-06-10');
+  assert.equal(p[0].days, 3);
+});
+test('overlapPairs: an ongoing trip runs through today', () => {
+  const t = tr([['2026-06-01', ''], ['2026-06-20', '2026-06-22']]);
+  const p = C.overlapPairs(t, '2026-06-21');
+  assert.equal(p.length, 1);
+  assert.equal(p[0].days, 2);
+});
+test('endOngoing: ends started open trips today, leaves planned ones alone', () => {
+  const t = tr([['2026-06-01', ''], ['2026-12-01', '']]);
+  assert.equal(C.endOngoing(t, '2026-06-10'), 1);
+  assert.equal(t.trips[0].to, '2026-06-10');
+  assert.equal(t.trips[1].to, '');
+  assert.equal(C.endOngoing(t, '2026-06-10'), 0);
+});
+test('copyTrip: moves a trip, keeps its length, rejects unknown ids', () => {
+  const t = tr([['2026-06-01', '2026-06-05']]);
+  t.trips[0].place = 'Rome';
+  assert.equal(C.copyTrip(t, 't0', 30), true);
+  const copy = t.trips.find(x => x.from === '2026-07-01');
+  assert.equal(copy.to, '2026-07-05');
+  assert.equal(copy.place, 'Rome');
+  assert.equal(C.copyTrip(t, 'nope', 5), false);
+  assert.equal(t.trips.length, 2);
+});
+test('copyTrip: an ongoing trip copies as ongoing', () => {
+  const t = tr([['2026-06-01', '']]);
+  assert.equal(C.copyTrip(t, 't0', -10), true);
+  assert.equal(t.trips.find(x => x.from === '2026-05-22').to, '');
+});
+test('i18n: new trip strings exist in all five languages with the same placeholders', () => {
+  const I = require('../app/i18n.js');
+  const ph = s => (s.match(/\{\w+\}/g) || []).sort().join();
+  for (const k of ['copyYear', 'overlapWarn']) {
+    const en = I.L.en[k];
+    assert.ok(en, k);
+    for (const lang of ['ko', 'ja', 'zh', 'es']) {
+      assert.ok(I.L[lang][k], lang + ' ' + k);
+      assert.equal(ph(I.L[lang][k]), ph(en), lang + ' ' + k);
+    }
+  }
+});
