@@ -88,3 +88,59 @@ test('aging: buckets open lent entries by how late they are', () => {
   s.entries.push(C.makeEntry({ title: 'b', personId: p.id, dir: 'in', date: '2026-09-01', due: '2026-09-02' }));
   assert.deepEqual(C.aging(s, now), { notDue: 3, late1to7: 1, late8to30: 1, late31plus: 1 });
 });
+
+const mkLoan = (s, person, o) => { const e = C.makeEntry(Object.assign({ title: 'x', personId: person.id, dir: 'out', date: '2026-10-01' }, o)); s.entries.push(e); return e; };
+test('dueFrom: adds days to a lent date and refuses bad input', () => {
+  assert.equal(C.dueFrom('2026-10-01', 14), '2026-10-15');
+  assert.equal(C.dueFrom('2026-10-01', -1), ''); assert.equal(C.dueFrom('nope', 7), ''); assert.equal(C.dueFrom('2026-10-01', 1.5), '');
+});
+test('dueWithin: open entries due from today up to N days ahead, soonest first', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina'); const now = '2026-11-01';
+  const a = mkLoan(s, p, { due: '2026-11-05' }); const b = mkLoan(s, p, { due: '2026-11-02' }); mkLoan(s, p, { due: '2026-11-20' }); mkLoan(s, p, { due: '2026-10-30' });
+  assert.deepEqual(C.dueWithin(s, 7, now).map(e => e.id), [b.id, a.id]);
+});
+test('lastActivity: latest of lent, repayment, extension, reminder and return dates', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina');
+  const e = mkLoan(s, p, { kind: 'money', amount: 100, due: '2026-12-01' });
+  C.repay(e, 20, '2026-10-20'); C.recordNudge(e, 'gentle', '2026-10-25');
+  assert.equal(C.lastActivity(e), '2026-10-25');
+});
+test('quiet: open entries with nothing new for N days', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina');
+  const old = mkLoan(s, p, { date: '2026-08-01' }); mkLoan(s, p, { date: '2026-10-25' }); const back = mkLoan(s, p, { date: '2026-08-01' }); C.markReturned(back, '2026-08-02');
+  assert.deepEqual(C.quiet(s, 30, '2026-11-01').map(e => e.id), [old.id]);
+});
+test('overdueByPerson: counts overdue entries per person, most first', () => {
+  const s = C.newState(); const a = C.addPerson(s, 'Ann'); const b = C.addPerson(s, 'Ben'); const now = '2026-11-01';
+  mkLoan(s, a, { due: '2026-10-01' }); mkLoan(s, a, { due: '2026-10-05' }); mkLoan(s, b, { due: '2026-10-20' }); mkLoan(s, b, { due: '2026-12-01' });
+  assert.deepEqual(C.overdueByPerson(s, now).map(x => [x.name, x.count]), [['Ann', 2], ['Ben', 1]]);
+});
+test('returnRate: share of returned, dated entries that came back on or before the due date', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina');
+  const ok = mkLoan(s, p, { due: '2026-10-10' }); C.markReturned(ok, '2026-10-09');
+  const late = mkLoan(s, p, { due: '2026-10-10' }); C.markReturned(late, '2026-10-12');
+  mkLoan(s, p, { due: '2026-10-10' }); // still open: not counted
+  assert.deepEqual(C.returnRate(s), { onTime: 1, late: 1, rate: 0.5 });
+  assert.deepEqual(C.returnRate(C.newState()), { onTime: 0, late: 0, rate: null });
+});
+test('renameTag: renames on every entry, case-insensitively, without duplicating', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina');
+  const a = mkLoan(s, p, { tags: 'Tools, books' }); const b = mkLoan(s, p, { tags: 'tools, garden' }); mkLoan(s, p, { tags: 'books' });
+  assert.equal(C.renameTag(s, 'TOOLS', 'hand tools'), 2);
+  assert.deepEqual(a.tags, ['hand tools', 'books']); assert.deepEqual(b.tags, ['hand tools', 'garden']);
+  assert.equal(C.renameTag(s, 'missing', 'x'), 0); assert.equal(C.renameTag(s, 'books', '  '), 0);
+});
+test('countByStatus: counts each state', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina'); const now = '2026-11-01';
+  mkLoan(s, p, { due: '2026-10-01' }); mkLoan(s, p, { due: '2026-11-02' }); mkLoan(s, p, { due: '2026-12-30' });
+  const r = mkLoan(s, p, {}); C.markReturned(r, '2026-10-02');
+  assert.deepEqual(C.countByStatus(s, now), { open: 1, soon: 1, overdue: 1, returned: 1, written: 0 });
+});
+test('personStatement: open entries for one person, and null for an unknown person', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina'); const q = C.addPerson(s, 'Jun');
+  const m = mkLoan(s, p, { kind: 'money', amount: 50, title: '', due: '2026-12-01' }); C.repay(m, 20, '2026-10-05');
+  mkLoan(s, q, { title: 'Ladder' }); const done = mkLoan(s, p, { title: 'Book' }); C.markReturned(done, '2026-10-03');
+  const st = C.personStatement(s, p.id, '2026-11-01');
+  assert.equal(st.person, 'Mina'); assert.deepEqual(st.rows.map(r => [r.kind, r.amount, r.status]), [['money', 30, 'open']]);
+  assert.equal(C.personStatement(s, 'nobody', '2026-11-01'), null);
+});

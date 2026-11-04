@@ -436,6 +436,9 @@
       [[ag.notDue, 'agingNotDue'], [ag.late1to7, 'agingW'], [ag.late8to30, 'agingM'], [ag.late31plus, 'agingL']].forEach(function (x) { agStats.appendChild(h('div', { class: 'stat' }, h('b', { text: String(x[0]) }), h('span', { text: t(x[1]) }))); });
       out.appendChild(agStats);
     }
+    var rr = C.returnRate(st), ps = [[String(C.dueWithin(st, 7).length), 'dueWeekN'], [String(C.quiet(st, 30).length), 'quietN']];
+    if (rr.rate !== null) ps.push([Math.round(rr.rate * 100) + '%', 'retRate']);
+    var pulse = h('div', { class: 'stats' }); ps.forEach(function (x) { pulse.appendChild(h('div', { class: 'stat' }, h('b', { text: x[0] }), h('span', { text: t(x[1]) }))); }); out.appendChild(pulse);
     var up = C.upcoming(st, 5); out.appendChild(h('h2', { class: 'sec', text: t('upcoming') }));
     if (!up.length) out.appendChild(h('div', { class: 'sub', text: t('upNone') }));
     up.forEach(function (e) { var pp = C.findPerson(st, e.personId) || { name: '?' }; out.appendChild(h('div', { class: 'card', style: 'margin:6px 0' }, h('button', { type: 'button', class: 'head', 'data-id': e.id, onclick: function () { detail(e); } },

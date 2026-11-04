@@ -254,6 +254,63 @@
     return out;
   }
 
+  /* ---- planning helpers ----
+     dueFrom: a due date N days after a lent date (for preset buttons). Returns '' when the input is not usable. */
+  function dueFrom(date, days) { return isDate(date) && Number.isInteger(days) && days >= 0 && days <= 3650 ? addDays(date, days) : ''; }
+  /* lastActivity: the latest date anything happened on an entry (lent, repayment, extension, reminder, return). */
+  function lastActivity(e) {
+    var dates = [e.date, e.returnedAt].concat((e.repayments || []).map(function (r) { return r.date; }), (e.extended || []).map(function (x) { return x.date; }), (e.nudges || []).map(function (n) { return n.date; })).filter(isDate);
+    return dates.length ? dates.sort().pop() : (e.date || today());
+  }
+  /* dueWithin: open entries due from today to N days ahead, soonest first. */
+  function dueWithin(st, days, now) {
+    var t = now || today(), end = addDays(t, Math.max(0, days | 0));
+    return st.entries.filter(function (e) { return !isClosed(e) && e.due && e.due >= t && e.due <= end; })
+      .sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+  }
+  /* quiet: open entries with nothing new for at least N days (a nudge, a repayment or an extension counts as activity). */
+  function quiet(st, days, now) {
+    var cut = addDays(now || today(), -Math.max(0, days | 0));
+    return st.entries.filter(function (e) { return !isClosed(e) && lastActivity(e) <= cut; });
+  }
+  /* overdueByPerson: how many entries are overdue per person, most first. */
+  function overdueByPerson(st, now) {
+    var m = Object.create(null);
+    st.entries.forEach(function (e) { if (!isClosed(e) && daysLate(e, now) > 0) m[e.personId] = (m[e.personId] || 0) + 1; });
+    return Object.keys(m).map(function (id) { var p = findPerson(st, id); return { personId: id, name: p ? p.name : '', count: m[id] }; })
+      .sort(function (a, b) { return b.count - a.count || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0); });
+  }
+  /* returnRate: of the entries that came back and had a due date, how many came back on or before it. */
+  function returnRate(st) {
+    var on = 0, late = 0;
+    st.entries.forEach(function (e) { if (e.returnedAt && e.due && !e.writtenOff) { if (e.returnedAt <= e.due) on++; else late++; } });
+    var n = on + late; return { onTime: on, late: late, rate: n ? on / n : null };
+  }
+  /* renameTag: rename a tag on every entry (case-insensitive match). Returns how many entries changed. */
+  function renameTag(st, from, to) {
+    var a = str(from, TAG_LEN).toLowerCase(), nt = str(to, TAG_LEN); if (!a || !nt) return 0;
+    var n = 0;
+    st.entries.forEach(function (e) {
+      if (!(e.tags || []).some(function (t) { return t.toLowerCase() === a; })) return;
+      e.tags = parseTags((e.tags || []).map(function (t) { return t.toLowerCase() === a ? nt : t; })); n++;
+    });
+    return n;
+  }
+  /* countByStatus: how many entries are in each state (open, soon, overdue, returned, written). */
+  function countByStatus(st, now) {
+    var c = { open: 0, soon: 0, overdue: 0, returned: 0, written: 0 };
+    st.entries.forEach(function (e) { var s = status(e, now); c[s] = (c[s] || 0) + 1; });
+    return c;
+  }
+  /* personStatement: the open entries with one person, as plain data for a statement or message. */
+  function personStatement(st, personId, now) {
+    var p = findPerson(st, personId); if (!p) return null;
+    var rows = st.entries.filter(function (e) { return e.personId === personId && !isClosed(e); }).map(function (e) {
+      return { id: e.id, dir: e.dir, kind: e.kind, title: e.title, amount: e.kind === 'money' ? remaining(e) : 0, currency: e.currency, due: e.due || '', status: status(e, now) };
+    });
+    return { person: p.name, rows: rows };
+  }
+
   /* ---- templates ---- */
   function fill(tpl, v) { return String(tpl).replace(/\{(\w+)\}/g, function (m, k) { return k in v ? v[k] : m; }); }
 
@@ -345,6 +402,6 @@
     paid: paid, remaining: remaining, isClosed: isClosed, status: status, daysLate: daysLate, daysLeft: daysLeft, repay: repay, markReturned: markReturned,
     writeOff: writeOff, reopen: reopen, extend: extend, makeEntry: makeEntry, validEntry: validEntry, findPerson: findPerson, personByName: personByName,
     addPerson: addPerson, removePerson: removePerson, personStats: personStats, summary: summary, monthlySeries: monthlySeries, rankPeople: rankPeople,
-    longestOut: longestOut, sortOpen: sortOpen, match: match, loanCheck: loanCheck, findOpenDuplicate: findOpenDuplicate, aging: aging, fill: fill, toCSV: toCSV, toICS: toICS, sanitize: sanitize, merge: merge, MAX_PHOTO: MAX_PHOTO };
+    longestOut: longestOut, sortOpen: sortOpen, match: match, loanCheck: loanCheck, findOpenDuplicate: findOpenDuplicate, aging: aging, dueFrom: dueFrom, lastActivity: lastActivity, dueWithin: dueWithin, quiet: quiet, overdueByPerson: overdueByPerson, returnRate: returnRate, renameTag: renameTag, countByStatus: countByStatus, personStatement: personStatement, fill: fill, toCSV: toCSV, toICS: toICS, sanitize: sanitize, merge: merge, MAX_PHOTO: MAX_PHOTO };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LN = api;
 })(typeof window !== 'undefined' ? window : globalThis);
