@@ -229,6 +229,31 @@
     return { level: level, s: s };
   }
 
+  /* ---- duplicate warning before saving ----
+     An open entry in the same direction, with the same person and the same title (case-insensitive),
+     means the user is probably about to record the same thing twice. Returns that entry or null. */
+  function findOpenDuplicate(st, o) {
+    var title = str(o.title).toLowerCase(); if (!title || !o.personId) return null;
+    return st.entries.find(function (e) {
+      return e.id !== o.id && e.dir === (o.dir === 'in' ? 'in' : 'out') && e.personId === o.personId && !isClosed(e) && str(e.title).toLowerCase() === title;
+    }) || null;
+  }
+
+  /* ---- how late are the open things I lent out ----
+     Buckets for open lent entries: no due date or not yet due, 1-7, 8-30 and 31+ days late. */
+  function aging(st, now) {
+    var out = { notDue: 0, late1to7: 0, late8to30: 0, late31plus: 0 };
+    st.entries.forEach(function (e) {
+      if (e.dir !== 'out' || isClosed(e)) return;
+      var late = daysLate(e, now);
+      if (late === 0) out.notDue++;
+      else if (late <= 7) out.late1to7++;
+      else if (late <= 30) out.late8to30++;
+      else out.late31plus++;
+    });
+    return out;
+  }
+
   /* ---- templates ---- */
   function fill(tpl, v) { return String(tpl).replace(/\{(\w+)\}/g, function (m, k) { return k in v ? v[k] : m; }); }
 
@@ -320,6 +345,6 @@
     paid: paid, remaining: remaining, isClosed: isClosed, status: status, daysLate: daysLate, daysLeft: daysLeft, repay: repay, markReturned: markReturned,
     writeOff: writeOff, reopen: reopen, extend: extend, makeEntry: makeEntry, validEntry: validEntry, findPerson: findPerson, personByName: personByName,
     addPerson: addPerson, removePerson: removePerson, personStats: personStats, summary: summary, monthlySeries: monthlySeries, rankPeople: rankPeople,
-    longestOut: longestOut, sortOpen: sortOpen, match: match, loanCheck: loanCheck, fill: fill, toCSV: toCSV, toICS: toICS, sanitize: sanitize, merge: merge, MAX_PHOTO: MAX_PHOTO };
+    longestOut: longestOut, sortOpen: sortOpen, match: match, loanCheck: loanCheck, findOpenDuplicate: findOpenDuplicate, aging: aging, fill: fill, toCSV: toCSV, toICS: toICS, sanitize: sanitize, merge: merge, MAX_PHOTO: MAX_PHOTO };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LN = api;
 })(typeof window !== 'undefined' ? window : globalThis);

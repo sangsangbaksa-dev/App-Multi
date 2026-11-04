@@ -6,7 +6,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
 h1{font:600 1.25rem/1.2 Georgia,"Times New Roman",serif;margin:0;letter-spacing:.2px}h2{font-size:1.2rem;margin:.2em 0}h3{font-size:1rem;margin:1.4em 0 .4em}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.top{display:flex;justify-content:space-between;align-items:center;padding:14px 0 8px}.topbtns{display:flex;gap:8px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:14px 0 8px}.topbtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 select,input,textarea,button{font:inherit;color:inherit}
 select,input:not([type=checkbox]):not([type=radio]),textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .topbtns select{width:auto}

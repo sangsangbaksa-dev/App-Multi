@@ -65,3 +65,26 @@ test('tag summary: open and closed counts, outstanding money per currency', () =
   assert.equal(cash.open, 2); assert.equal(cash.closed, 0); assert.deepEqual(cash.money, { USD: 25 });
   assert.equal(r.find(x => x.tag === 'tools').open, 1);
 });
+
+test('duplicate: same person, same direction, same title (any case), still open', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina'); const q = C.addPerson(s, 'Jun');
+  const a = C.makeEntry({ title: 'Power drill', personId: p.id, dir: 'out' }); s.entries.push(a);
+  assert.equal(C.findOpenDuplicate(s, { title: ' power DRILL ', personId: p.id, dir: 'out' }), a);
+  assert.equal(C.findOpenDuplicate(s, { title: 'Power drill', personId: q.id, dir: 'out' }), null, 'other person');
+  assert.equal(C.findOpenDuplicate(s, { title: 'Power drill', personId: p.id, dir: 'in' }), null, 'other direction');
+  assert.equal(C.findOpenDuplicate(s, { title: 'Ladder', personId: p.id, dir: 'out' }), null, 'other title');
+  assert.equal(C.findOpenDuplicate(s, { id: a.id, title: 'Power drill', personId: p.id, dir: 'out' }), null, 'editing itself is not a duplicate');
+});
+test('duplicate: a returned entry no longer counts', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina');
+  const a = C.makeEntry({ title: 'Book', personId: p.id, dir: 'out' }); C.markReturned(a, '2026-10-01'); s.entries.push(a);
+  assert.equal(C.findOpenDuplicate(s, { title: 'Book', personId: p.id, dir: 'out' }), null);
+});
+test('aging: buckets open lent entries by how late they are', () => {
+  const s = C.newState(); const p = C.addPerson(s, 'Mina'); const now = '2026-11-01';
+  const mk = (due, extra) => { const e = C.makeEntry(Object.assign({ title: 'x', personId: p.id, dir: 'out', date: '2026-09-01', due: due }, extra || {})); s.entries.push(e); return e; };
+  mk(''); mk('2026-11-05'); mk('2026-11-01'); mk('2026-10-27'); mk('2026-10-20'); mk('2026-09-30'); C.writeOff(mk('2026-09-30'));
+  const back = mk('2026-10-01'); C.markReturned(back, '2026-10-02');
+  s.entries.push(C.makeEntry({ title: 'b', personId: p.id, dir: 'in', date: '2026-09-01', due: '2026-09-02' }));
+  assert.deepEqual(C.aging(s, now), { notDue: 3, late1to7: 1, late8to30: 1, late31plus: 1 });
+});

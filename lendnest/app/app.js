@@ -148,6 +148,7 @@
     form.appendChild(h('div', { class: 'row' }, h('button', { type: 'button', text: t('cancel'), onclick: function () { if (!dirty) { d.close(); return; } confirmBox(t('discard'), t('discardBtn'), true).then(function (ok) { if (ok) d.close(); }); } }), h('button', { type: 'submit', class: 'pri', id: 'f-save', text: t('save') })));
     form.addEventListener('change', sync); person.addEventListener('input', sync);
     function setErr(msg, el) { err.textContent = msg; [title, person, amount, due].forEach(function (x) { x.removeAttribute('aria-invalid'); }); if (el) { el.setAttribute('aria-invalid', 'true'); el.focus(); } }
+    var dupOk = false;
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       /* another tab changed the data while this form was open: reload, keep the typed text, and let the user save again */
@@ -159,6 +160,12 @@
       if (o.due && o.date && o.due < o.date) { setErr(t('needDue'), due); return; }
       if (existing && o.kind !== existing.kind && (existing.repayments.length || C.isClosed(existing))) { setErr(t('kindLocked'), null); return; }
       if (existing && o.kind === 'money' && Number(o.amount) < C.round2(C.paid(existing) - existing.repayments.filter(function (r) { return r.auto; }).reduce(function (a, r) { return a + r.amount; }, 0)) - 0.000001) { setErr(t('amountBelowPaid'), amount); return; }
+      /* a new entry that repeats an open one (same person, direction and title) asks first; the answer is saved through requestSubmit */
+      if (dupOk) { dupOk = false; }
+      else if (!existing) {
+        var knownP = C.personByName(st, name), dup = knownP && C.findOpenDuplicate(st, Object.assign({}, o, { personId: knownP.id }));
+        if (dup) { confirmBox(t('dupAsk'), t('dupSave')).then(function (ok) { if (ok) { dupOk = true; form.requestSubmit(); } }); return; }
+      }
       var p = C.addPerson(st, name); o.personId = p.id;
       if (existing) {
         var prevPerson = existing.personId;
@@ -422,6 +429,13 @@
     if (moneyMap(sm.owedToMe)) stat(moneyMap(sm.owedToMe), t('owedToMe')); if (moneyMap(sm.iOwe)) stat(moneyMap(sm.iOwe), t('iOwe'));
     stat(String(sm.itemsOut), t('itemsOut')); stat(String(sm.itemsIn), t('itemsIn')); stat(String(sm.overdue), t('overdueN')); stat(String(sm.soon), t('soonN'));
     out.appendChild(stats);
+    var ag = C.aging(st);
+    if (ag.notDue + ag.late1to7 + ag.late8to30 + ag.late31plus) {
+      var agStats = h('div', { class: 'stats' });
+      out.appendChild(h('h2', { class: 'sec', text: t('agingH') }));
+      [[ag.notDue, 'agingNotDue'], [ag.late1to7, 'agingW'], [ag.late8to30, 'agingM'], [ag.late31plus, 'agingL']].forEach(function (x) { agStats.appendChild(h('div', { class: 'stat' }, h('b', { text: String(x[0]) }), h('span', { text: t(x[1]) }))); });
+      out.appendChild(agStats);
+    }
     var up = C.upcoming(st, 5); out.appendChild(h('h2', { class: 'sec', text: t('upcoming') }));
     if (!up.length) out.appendChild(h('div', { class: 'sub', text: t('upNone') }));
     up.forEach(function (e) { var pp = C.findPerson(st, e.personId) || { name: '?' }; out.appendChild(h('div', { class: 'card', style: 'margin:6px 0' }, h('button', { type: 'button', class: 'head', 'data-id': e.id, onclick: function () { detail(e); } },
