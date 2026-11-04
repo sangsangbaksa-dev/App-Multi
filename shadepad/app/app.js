@@ -87,7 +87,11 @@
   function renderSummary() {
     var s = $('summary');
     if (!last) { s.textContent = ''; return; }
-    s.textContent = last.occurrences === 0 ? t('app_found_none') : t('app_found', { n: last.occurrences });
+    var parts = [last.occurrences === 0 ? t('app_found_none') : t('app_found', { n: last.occurrences })];
+    var kinds = Object.keys(last.counts);
+    if (kinds.length) parts.push(kinds.map(function (k) { return t('app_kind_' + k) + ' ' + last.counts[k]; }).join(', ') + '.');
+    if (keepList.length) parts.push(t('app_summary_kept', { n: keepList.length }));
+    s.textContent = parts.join(' ');
   }
 
   function kindOf(tag) { return tag.slice(1, tag.lastIndexOf('_')); }
@@ -144,6 +148,11 @@
 
   /* ---------- actions ---------- */
 
+  /* Ctrl+Enter (Cmd+Enter on Mac) in the input hides the details. */
+  $('input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $('redact').click(); }
+  });
+
   $('redact').addEventListener('click', function () {
     lastInput = $('input').value;
     keepList = [];
@@ -170,7 +179,9 @@
     if (!last) { setMsg('restore_msg', t('app_no_map')); return; }
     var r = SP.restore($('reply').value, last.map);
     $('restored').value = r.text;
-    setMsg('restore_msg', r.replaced ? t('app_restore_done', { n: r.replaced }) : t('app_restore_none'));
+    var msg = r.replaced ? t('app_restore_done', { n: r.replaced }) : t('app_restore_none');
+    if (r.unknown.length) msg += ' ' + t('app_restore_unknown', { n: r.unknown.length });
+    setMsg('restore_msg', msg);
   });
 
   $('lang').addEventListener('change', function () {

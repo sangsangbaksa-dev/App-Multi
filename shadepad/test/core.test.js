@@ -159,3 +159,18 @@ test('restore accepts a tag the AI escaped, spaced or wrapped differently', () =
   assert.equal(SP.restore('**[SECRET_10]**', map).text, '**hunter2hunter2**');
   assert.equal(SP.restore('MY_EMAIL_1 and [EMAIL_19]', map).replaced, 0);
 });
+
+test('Stripe webhook, Google OAuth, Twilio, SendGrid, Hugging Face and Discord webhook secrets are hidden', () => {
+  assert.deepEqual(kinds('whsec_' + 'a'.repeat(32)), ['API_KEY']);
+  assert.deepEqual(kinds('GOCSPX-' + 'a'.repeat(28)), ['API_KEY']);
+  assert.deepEqual(kinds('SK' + '0123456789abcdef'.repeat(2)), ['API_KEY']);
+  assert.deepEqual(kinds('SG.' + 'a'.repeat(22) + '.' + 'b'.repeat(43)), ['API_KEY']);
+  assert.deepEqual(kinds('hf_' + 'a'.repeat(34)), ['API_KEY']);
+  assert.deepEqual(kinds('https://discord.com/api/webhooks/123456789012345678/abcDEF_ghi-JKL'), ['API_KEY']);
+});
+
+test('restore lists bracketed tags this text does not know, and ignores ordinary words like UTF_8', () => {
+  const back = SP.restore('[EMAIL_1] and [CARD_3] and EMAIL_1 and UTF_8', { '[EMAIL_1]': 'a@b.io' });
+  assert.equal(back.text, 'a@b.io and [CARD_3] and a@b.io and UTF_8');
+  assert.deepEqual(back.unknown, ['[CARD_3]']);
+});

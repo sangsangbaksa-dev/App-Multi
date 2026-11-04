@@ -60,6 +60,12 @@
     { kind: 'API_KEY', re: /\bxox[abposr]-[A-Za-z0-9-]{10,}/g },
     { kind: 'API_KEY', re: /\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g },
     { kind: 'API_KEY', re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+    { kind: 'API_KEY', re: /\bwhsec_[A-Za-z0-9]{24,}\b/g },
+    { kind: 'API_KEY', re: /\bGOCSPX-[A-Za-z0-9_-]{24,}/g },
+    { kind: 'API_KEY', re: /\bSK[0-9a-fA-F]{32}\b/g },
+    { kind: 'API_KEY', re: /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/g },
+    { kind: 'API_KEY', re: /\bhf_[A-Za-z0-9]{34}\b/g },
+    { kind: 'API_KEY', re: /https:\/\/discord(?:app)?\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+/g },
     { kind: 'API_KEY', re: /https:\/\/hooks\.slack\.com\/services\/T[A-Z0-9]+\/B[A-Z0-9]+\/[A-Za-z0-9]+/g },
     { kind: 'TOKEN', re: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g },
     /* Key then : or =, with optional quotes around the key (JSON) and the value (quoted values may hold spaces). */
@@ -152,7 +158,7 @@
      it may escape the brackets (\[EMAIL_1\]), drop them (EMAIL_1) or add spaces ([ EMAIL_1 ]). Those count too.
      Unknown tags are left as they are. Returns { text, replaced }. */
   function restore(input, map) {
-    var s = String(input == null ? '' : input), replaced = 0, lookup = {};
+    var s = String(input == null ? '' : input), replaced = 0, lookup = {}, unknown = [];
     Object.keys(map || {}).forEach(function (tag) {
       var m = /^\[([A-Z_]+)_(\d+)\]$/.exec(tag);
       if (m) lookup[m[1] + '_' + m[2]] = map[tag];
@@ -160,11 +166,15 @@
     var re = /\\?\[\s*([A-Z][A-Z_]*?)_(\d+)\s*\\?\]|(?<![A-Za-z0-9_])([A-Z][A-Z_]*?)_(\d+)(?![A-Za-z0-9_])/g;
     s = s.replace(re, function (all, k1, n1, k2, n2) {
       var key = (k1 || k2) + '_' + (k1 ? n1 : n2);
-      if (!Object.prototype.hasOwnProperty.call(lookup, key)) return all;
+      if (!Object.prototype.hasOwnProperty.call(lookup, key)) {
+        var tag = '[' + key + ']';
+        if (k1 && unknown.indexOf(tag) < 0) unknown.push(tag);
+        return all;
+      }
       replaced++;
       return lookup[key];
     });
-    return { text: s, replaced: replaced };
+    return { text: s, replaced: replaced, unknown: unknown };
   }
 
   /* A short, partly masked view of a value, for the list on screen. */
