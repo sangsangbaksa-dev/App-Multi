@@ -619,12 +619,43 @@
     });
     return out.join('\n');
   }
+  /* ---- trip helpers: overlaps, ending an ongoing stay, copying a trip ---- */
+  /* pairs of trips that share at least one stay day (those days count once). Ongoing trips run through `today`. */
+  function overlapPairs(tr, today) {
+    today = today || todayStr();
+    var t = dn(today), list = (tr.trips || []).map(function (x) {
+      var a = dn(x.from), b = x.to ? dn(x.to) : t;
+      return { id: x.id, a: a, b: b, ok: !isNaN(a) && !isNaN(b) && b >= a };
+    }).filter(function (x) { return x.ok; }), out = [];
+    for (var i = 0; i < list.length; i++) for (var j = i + 1; j < list.length; j++) {
+      var lo = Math.max(list[i].a, list[j].a), hi = Math.min(list[i].b, list[j].b);
+      if (lo <= hi) out.push({ a: list[i].id, b: list[j].id, from: str(lo), to: str(hi), days: hi - lo + 1 });
+    }
+    return out;
+  }
+  /* "I am leaving today": every ongoing trip (no end date) that has started by `today` ends on `today`. Returns how many changed. */
+  function endOngoing(tr, today) {
+    today = today || todayStr();
+    var n = 0;
+    (tr.trips || []).forEach(function (x) {
+      if (!x.to && validDate(x.from) && dn(x.from) <= dn(today)) { x.to = today; n++; }
+    });
+    return n;
+  }
+  /* copy a trip, moved `shift` days later (or earlier if negative), keeping its length and place. Ongoing stays stay ongoing. */
+  function copyTrip(tr, id, shift) {
+    var src = (tr.trips || []).filter(function (x) { return x.id === id; })[0];
+    if (!src) return false;
+    var k = Math.max(-3650, Math.min(3650, Math.floor(+shift) || 0));
+    return addTrip(tr, { place: src.place, note: src.note, from: addDays(src.from, k), to: src.to ? addDays(src.to, k) : '' });
+  }
   var API = {
     oneLine: oneLine, parseIcs: parseIcs, permitWatch: permitWatch, yearReport: yearReport,
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
     validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, placeStats: placeStats, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
-    compareRules: compareRules, yearStats: yearStats, encodeShare: encodeShare, decodeShare: decodeShare, safeLastDay: safeLastDay, borderSheet: borderSheet, cleanBuffer: cleanBuffer, cleanNote: cleanNote, validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey
+    compareRules: compareRules, yearStats: yearStats, encodeShare: encodeShare, decodeShare: decodeShare, safeLastDay: safeLastDay, borderSheet: borderSheet, cleanBuffer: cleanBuffer, cleanNote: cleanNote, validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey,
+    overlapPairs: overlapPairs, endOngoing: endOngoing, copyTrip: copyTrip
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;
 })(typeof window !== 'undefined' ? window : globalThis);
