@@ -202,3 +202,38 @@ test('calendarAll: one calendar with open deadlines from every active case; dige
   assert.ok(md.includes('Flat 3B (Noise or neighbour)') || md.includes('Flat 3B ('));
   assert.ok(!md.includes('Old'));
 });
+
+test('pattern helpers: severity counts, average gap, monthly rows, witness and reported counts', () => {
+  const evs = [
+    { at: '2026-01-05T10:00', sev: 1, witness: 'Ann', reported: true },
+    { at: '2026-01-15T10:00', sev: 5, witness: '', reported: false },
+    { at: '2026-03-01T22:00', sev: 5, witness: 'Bo', reported: false },
+    { at: 'bad', sev: 9 }
+  ];
+  assert.deepEqual(C.sevCounts(evs), [1, 0, 0, 0, 2]);
+  assert.equal(C.avgGapDays(evs.slice(0, 3)), 27.5, 'Jan 5 to Mar 1 is 55 days over two gaps');
+  assert.equal(C.avgGapDays(evs.slice(0, 1)), null);
+  assert.equal(C.avgGapDays([{ at: 'bad' }, { at: '2026-01-01T00:00' }]), null, 'undated entries are skipped');
+  const now = new Date(2026, 2, 15, 12).getTime(), rows = C.monthlyCounts(evs.slice(0, 3), now, 3);
+  assert.deepEqual(rows, [{ m: '2026-01', n: 2 }, { m: '2026-02', n: 0 }, { m: '2026-03', n: 1 }]);
+  assert.equal(C.witnessCount(evs), 2);
+  assert.equal(C.reportedCount(evs), 1);
+});
+
+test('sevSplit: mean severity of the last 30 days against the 30 before, null when empty', () => {
+  const now = new Date(2026, 5, 30, 12).getTime();
+  const evs = [
+    { at: '2026-06-20T10:00', sev: 4 }, { at: '2026-06-01T10:00', sev: 2 }, // inside last 30 days
+    { at: '2026-05-10T10:00', sev: 5 }, // 30 to 60 days ago
+    { at: '2025-01-01T10:00', sev: 1 } // too old
+  ];
+  assert.deepEqual(C.sevSplit(evs, now), { recent: 3, before: 5 });
+  assert.deepEqual(C.sevSplit([], now), { recent: null, before: null });
+});
+
+test('nearDuplicates: entries within the window on either side, invalid stamp matches nothing', () => {
+  const evs = [{ at: '2026-06-01T10:00' }, { at: '2026-06-01T10:30' }, { at: '2026-06-01T10:31' }, { at: '2026-06-01T09:29' }];
+  assert.equal(C.nearDuplicates(evs, '2026-06-01T10:00', 30).length, 2);
+  assert.equal(C.nearDuplicates(evs, '2026-06-01T10:00', 60).length, 4);
+  assert.deepEqual(C.nearDuplicates(evs, 'nope', 30), []);
+});

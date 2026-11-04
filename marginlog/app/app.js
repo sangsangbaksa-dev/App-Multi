@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var C = window.MLCore, I = window.MLI18n, KEY = 'marginlog:v1';
-  var S = { cases: [], cur: null, tab: 'log', lang: 'en', f: { q: '', tag: '', sev: 0, voided: false, from: '', to: '' } };
+  var S = { cases: [], cur: null, tab: 'log', lang: 'en', sort: 'new', f: { q: '', tag: '', sev: 0, voided: false, from: '', to: '' } };
   var persisted = null, stale = false, blocked = false, corruptKey = null, lastTrig = null, root = document.getElementById('root'), pending = { photos: [] }, toastTimer = null, liveTimer = null, undoBuf = null;
 
   function t(k, v) {
@@ -130,6 +130,8 @@
     var f = S.f; if (f.sev && e.sev < f.sev) return false;
     if (f.tag && e.tags.indexOf(f.tag) < 0) return false;
     if ((f.from || f.to) && !C.inRange(e.at, f.from, f.to)) return false;
+    if (f.late && !C.isLate(e)) return false;
+    if (f.photos && !(e.photos && e.photos.length)) return false;
     if (f.q) { var q = f.q.toLowerCase(); if ((e.text + ' ' + e.witness + ' ' + e.tags.join(' ') + ' ' + C.addenda(c.entries, e.id).map(function (n) { return n.text; }).join(' ')).toLowerCase().indexOf(q) < 0) return false; }
     return true;
   }
@@ -137,12 +139,15 @@
     var v = C.voidedIds(c.entries), all = c.entries.filter(function (e) { return e.type === 'event' && (S.f.voided || !v[e.id]); });
     if (!c.entries.some(function (e) { return e.type === 'event'; })) return '<div class="empty small"><h3>' + esc(t('logEmptyH')) + '</h3><p>' + esc(t('logEmptyB')) + '</p></div>';
     var tags = {}; C.events(c.entries).forEach(function (e) { e.tags.forEach(function (x) { tags[x] = 1; }); });
-    var list = all.filter(function (e) { return matches(e, c); }).sort(function (a, b) { return a.at < b.at ? 1 : -1; });
+    var list = all.filter(function (e) { return matches(e, c); }).sort(function (a, b) { var r = a.at < b.at ? 1 : -1; return S.sort === 'old' ? -r : r; });
     var h = '<form class="filters" role="search" id="filters" autocomplete="off"><label class="sr" for="fq">' + esc(t('search')) + '</label><input id="fq" type="search" placeholder="' + esc(t('search')) + '" value="' + esc(S.f.q) + '" maxlength="60">' +
       '<label class="sr" for="ftag">' + esc(t('tagsWord')) + '</label><select id="ftag"><option value="">' + esc(t('anyTag')) + '</option>' + Object.keys(tags).sort().map(function (x) { return '<option' + (S.f.tag === x ? ' selected' : '') + ' value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('') + '</select>' +
       '<label class="sr" for="fsev">' + esc(t('sevWord')) + '</label><select id="fsev"><option value="0">' + esc(t('anySev')) + '</option>' + [2, 3, 4, 5].map(function (n) { return '<option' + (S.f.sev === n ? ' selected' : '') + ' value="' + n + '">' + esc(t('sevMin', { n: n })) + '</option>'; }).join('') + '</select>' +
       '<label class="sr" for="ffrom">' + esc(t('dateFrom')) + '</label><input id="ffrom" type="date" title="' + esc(t('dateFrom')) + '" value="' + esc(S.f.from) + '">' +
       '<label class="sr" for="fto">' + esc(t('dateTo')) + '</label><input id="fto" type="date" title="' + esc(t('dateTo')) + '" value="' + esc(S.f.to) + '">' +
+      '<label class="chk"><input type="checkbox" id="flate"' + (S.f.late ? ' checked' : '') + '> ' + esc(t('lateOnly')) + '</label>' +
+      '<label class="chk"><input type="checkbox" id="fphoto"' + (S.f.photos ? ' checked' : '') + '> ' + esc(t('photosOnly')) + '</label>' +
+      '<label class="sr" for="fsort">' + esc(t('sortWord')) + '</label><select id="fsort"><option value="new"' + (S.sort !== 'old' ? ' selected' : '') + '>' + esc(t('sortNew')) + '</option><option value="old"' + (S.sort === 'old' ? ' selected' : '') + '>' + esc(t('sortOld')) + '</option></select>' +
       '<label class="chk"><input type="checkbox" id="fvoid"' + (S.f.voided ? ' checked' : '') + '> ' + esc(t('showVoided')) + '</label></form>';
     if (!list.length) return h + '<div class="empty small"><p>' + esc(t(!all.length ? 'allVoided' : 'noMatch')) + '</p><button type="button" class="ghost" data-act="clearf">' + esc(t('clearFilters')) + '</button></div>';
     h += '<p class="count" role="status">' + esc(t('showing', { n: list.length, t: all.length })) + '</p><ol class="entries">';
@@ -184,6 +189,11 @@
       (c.quiet ? '<li>' + esc(t('fact_quiet', { n: st.quiet, a: C.pad(c.quiet[0]) + ':00', b: C.pad(c.quiet[1]) + ':00' })) + '</li>' : '') +
       (st.late ? '<li>' + esc(t('fact_late', { n: st.late })) + '</li>' : '') +
       '<li>' + esc(t('fact_trend_' + st.trend, { a: st.last30, b: st.prev30 })) + '</li></ul>';
+    var sc = C.sevCounts(evs), scMax = Math.max.apply(null, sc.concat([1])), mc = C.monthlyCounts(evs, now(), 6), mcMax = Math.max.apply(null, mc.map(function (x) { return x.n; }).concat([1])), gap = C.avgGapDays(evs), split = C.sevSplit(evs, now());
+    h += '<h3>' + esc(t('sevBreak')) + '</h3><ul class="tagbars">' + sc.map(function (n, i) { return '<li><span class="tn">' + esc(t('sevWord')) + ' ' + (i + 1) + '</span><span class="tbar" aria-hidden="true"><i style="width:' + Math.round(100 * n / scMax) + '%"></i></span><span class="tc">' + n + '</span></li>'; }).join('') + '</ul>';
+    h += '<h3>' + esc(t('byMonth')) + '</h3><ul class="tagbars">' + mc.map(function (x) { return '<li><span class="tn">' + esc(x.m) + '</span><span class="tbar" aria-hidden="true"><i style="width:' + Math.round(100 * x.n / mcMax) + '%"></i></span><span class="tc">' + x.n + '</span></li>'; }).join('') + '</ul>';
+    h += '<ul class="facts">' + (gap !== null ? '<li>' + esc(t('avgGap', { n: gap })) + '</li>' : '') + '<li>' + esc(t('witnessFact', { n: C.witnessCount(evs), t: evs.length })) + '</li><li>' + esc(t('reportedFact', { n: C.reportedCount(evs), t: evs.length })) + '</li>' +
+      (split.recent !== null || split.before !== null ? '<li>' + esc(t('sevTrend', { a: split.recent == null ? '–' : split.recent, b: split.before == null ? '–' : split.before })) + '</li>' : '') + '</ul>';
     var tc = C.tagCounts(evs, 6);
     if (tc.length) h += '<h3>' + esc(t('tagsH')) + '</h3><ul class="tagbars">' + tc.map(function (x) { return '<li><span class="tn">#' + esc(x.tag) + '</span><span class="tbar" aria-hidden="true"><i style="width:' + Math.round(100 * x.n / tc[0].n) + '%"></i></span><span class="tc">' + x.n + '</span></li>'; }).join('') + '</ul>';
     return h;
@@ -308,10 +318,11 @@
       for (var i = 0; i < pending.photos.length; i++) { var data = pending.photos[i], h = await C.sha256Hex(data), id = C.uid(); await photoPut(id, data); photos.push({ id: id, h: h }); }
     } catch (e) { return err(t('photoStoreFail')); }
     var last = c.entries[c.entries.length - 1], e = await C.seal(last ? last.hash : '', { type: 'event', at: at, rec: now(), text: text, sev: sev, dur: dur === '' ? 0 : +dur, tags: $('#e-tags', form).value, witness: $('#e-wit', form).value.trim(), photos: photos, reported: $('#e-rep', form).checked });
+    var near = C.nearDuplicates(C.events(c.entries), at, 30);
     c.entries.push(e); var liveWas = c.live; if (pre && pre.live) c.live = null;
     if (!save()) { c.entries.pop(); c.live = liveWas; photos.forEach(function (p) { photoDel(p.id); }); return err(saveMsg()); }
     bumpCp(c);
-    pending.photos = []; closeDialog(); S.tab = 'log'; render(); toast(t('sealed', { h: e.hash.slice(0, 8) }));
+    pending.photos = []; closeDialog(); S.tab = 'log'; render(); toast(near.length ? t('nearDup') : t('sealed', { h: e.hash.slice(0, 8) }));
   }
   function noteDialog(c, id) {
     openDialog('<h2 id="dlg-h">' + esc(t('addNote')) + '</h2><p class="hint">' + esc(t('noteHelp')) + '</p><label for="n-text">' + esc(t('noteText')) + '</label><textarea id="n-text" rows="3" maxlength="1000" required></textarea>' + btnRow('sealSave'), async function (form) {
@@ -537,6 +548,9 @@
     else if (el.id === 'ftag') { S.f.tag = el.value; render(); }
     else if (el.id === 'fsev') { S.f.sev = +el.value; render(); }
     else if (el.id === 'fvoid') { S.f.voided = el.checked; render(); }
+    else if (el.id === 'flate') { S.f.late = el.checked; render(); }
+    else if (el.id === 'fphoto') { S.f.photos = el.checked; render(); }
+    else if (el.id === 'fsort') { S.sort = el.value; render(); }
     else if (el.id === 'ffrom') { S.f.from = el.value; render(); }
     else if (el.id === 'fto') { S.f.to = el.value; render(); }
   });
