@@ -143,7 +143,8 @@
       mergeAsk: 'Merge this backup into your current data? OK merges (nothing is lost). Cancel replaces everything with the backup.',
       merged: 'Merged: {a} new pack(s), {m} updated.',
       statsCsvBtn: 'Stats CSV',
-      moveBtn: 'Move', movePh: 'New date (YYYY-MM-DD)', moveBad: 'That date is not valid.', moveDone: 'Lesson moved.', stampAll: 'Stamp all', stampAllAsk: 'Stamp {n} lessons for today?', stampAllDone: '{n} lessons stamped.', copyDay: 'Copy list'
+      moveBtn: 'Move', movePh: 'New date (YYYY-MM-DD)', moveBad: 'That date is not valid.', moveDone: 'Lesson moved.', stampAll: 'Stamp all', stampAllAsk: 'Stamp {n} lessons for today?', stampAllDone: '{n} lessons stamped.', copyDay: 'Copy list',
+      copyTomorrow: 'Copy tomorrow', copyWeek: 'Copy this week', nextLessonLabel: 'Next: {d}', dupBtn: 'Duplicate', dupDone: '{name} duplicated as a new pack.', skipRangeBtn: 'Skip dates', skipRangePh: 'Skip from and to (YYYY-MM-DD YYYY-MM-DD)', skipRangeDone: '{n} planned lessons skipped.', skipRangeBad: 'Enter two valid dates, the first one earlier.', dupWarn: '{n} lesson dates are stamped twice. Check the lesson log.', packExpBtn: 'Export this pack', sortName: 'Sort by name', sortStatus: 'Sort by status'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -287,7 +288,8 @@
       mergeAsk: '이 백업을 현재 데이터에 합칠까요? 확인은 합치기(지워지는 것 없음), 취소는 백업으로 전체 교체입니다.',
       merged: '합쳤습니다: 새 수강권 {a}개, 갱신 {m}개.',
       statsCsvBtn: '통계 CSV',
-      moveBtn: '날짜 변경', movePh: '새 날짜 (YYYY-MM-DD)', moveBad: '날짜 형식이 올바르지 않아요.', moveDone: '수업 날짜를 바꿨어요.', stampAll: '전부 도장', stampAllAsk: '오늘 수업 {n}개에 도장을 찍을까요?', stampAllDone: '수업 {n}개에 도장을 찍었어요.', copyDay: '목록 복사'
+      moveBtn: '날짜 변경', movePh: '새 날짜 (YYYY-MM-DD)', moveBad: '날짜 형식이 올바르지 않아요.', moveDone: '수업 날짜를 바꿨어요.', stampAll: '전부 도장', stampAllAsk: '오늘 수업 {n}개에 도장을 찍을까요?', stampAllDone: '수업 {n}개에 도장을 찍었어요.', copyDay: '목록 복사',
+      copyTomorrow: '내일 목록 복사', copyWeek: '이번 주 일정 복사', nextLessonLabel: '다음: {d}', dupBtn: '복제', dupDone: '{name} 새 묶음으로 복제했어요.', skipRangeBtn: '날짜 건너뛰기', skipRangePh: '건너뛸 기간 (YYYY-MM-DD YYYY-MM-DD)', skipRangeDone: '예정된 수업 {n}개를 건너뛰었어요.', skipRangeBad: '유효한 날짜 두 개를 입력하세요. 시작일이 먼저여야 해요.', dupWarn: '같은 날 두 번 도장이 찍힌 수업이 {n}개 있어요. 수업 기록을 확인하세요.', packExpBtn: '이 묶음 내보내기', sortName: '이름순 정렬', sortStatus: '상태순 정렬'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -431,7 +433,8 @@
       mergeAsk: 'このバックアップを現在のデータに統合しますか?OKで統合(何も失われません)、キャンセルでバックアップに完全に置き換えます。',
       merged: '統合しました:新規 {a} 件、更新 {m} 件。',
       statsCsvBtn: '集計CSV',
-      moveBtn: '日付変更', movePh: '新しい日付 (YYYY-MM-DD)', moveBad: '日付の形式が正しくありません。', moveDone: 'レッスンの日付を変更しました。', stampAll: 'すべて押す', stampAllAsk: '今日のレッスン{n}件に押しますか？', stampAllDone: '{n}件のレッスンに押しました。', copyDay: 'リストをコピー'
+      moveBtn: '日付変更', movePh: '新しい日付 (YYYY-MM-DD)', moveBad: '日付の形式が正しくありません。', moveDone: 'レッスンの日付を変更しました。', stampAll: 'すべて押す', stampAllAsk: '今日のレッスン{n}件に押しますか？', stampAllDone: '{n}件のレッスンに押しました。', copyDay: 'リストをコピー',
+      copyTomorrow: '明日の予定をコピー', copyWeek: '今週の予定をコピー', nextLessonLabel: '次回: {d}', dupBtn: '複製', dupDone: '{name} を新しいパックとして複製しました。', skipRangeBtn: '日付をスキップ', skipRangePh: 'スキップ期間 (YYYY-MM-DD YYYY-MM-DD)', skipRangeDone: '予定のレッスン{n}件をスキップしました。', skipRangeBad: '有効な日付を2つ、開始日を先に入力してください。', dupWarn: '同じ日に二重に押されたレッスンが{n}件あります。レッスン履歴を確認してください。', packExpBtn: 'このパックを書き出す', sortName: '名前順', sortStatus: '状態順'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -575,7 +578,8 @@
       mergeAsk: '要把此备份合并到当前数据吗?确定为合并(不会丢失任何内容),取消则用备份完全替换。',
       merged: '已合并:新增 {a} 个,更新 {m} 个。',
       statsCsvBtn: '统计 CSV',
-      moveBtn: '改期', movePh: '新日期 (YYYY-MM-DD)', moveBad: '日期格式不正确。', moveDone: '课程日期已更改。', stampAll: '全部盖章', stampAllAsk: '为今天的 {n} 节课盖章吗？', stampAllDone: '已为 {n} 节课盖章。', copyDay: '复制名单'
+      moveBtn: '改期', movePh: '新日期 (YYYY-MM-DD)', moveBad: '日期格式不正确。', moveDone: '课程日期已更改。', stampAll: '全部盖章', stampAllAsk: '为今天的 {n} 节课盖章吗？', stampAllDone: '已为 {n} 节课盖章。', copyDay: '复制名单',
+      copyTomorrow: '复制明天名单', copyWeek: '复制本周安排', nextLessonLabel: '下一节：{d}', dupBtn: '复制', dupDone: '已将 {name} 复制为新课时包。', skipRangeBtn: '跳过日期', skipRangePh: '跳过的日期范围 (YYYY-MM-DD YYYY-MM-DD)', skipRangeDone: '已跳过 {n} 节计划课程。', skipRangeBad: '请输入两个有效日期，开始日期要在前。', dupWarn: '有 {n} 个课程日期被重复盖章，请检查课程记录。', packExpBtn: '导出此课时包', sortName: '按名字排序', sortStatus: '按状态排序'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -719,7 +723,8 @@
       mergeAsk: '¿Combinar esta copia con tus datos actuales? Aceptar combina (no se pierde nada). Cancelar lo reemplaza todo por la copia.',
       merged: 'Combinado: {a} bono(s) nuevo(s), {m} actualizado(s).',
       statsCsvBtn: 'CSV de estadísticas',
-      moveBtn: 'Cambiar fecha', movePh: 'Nueva fecha (AAAA-MM-DD)', moveBad: 'Esa fecha no es válida.', moveDone: 'Clase movida.', stampAll: 'Sellar todas', stampAllAsk: '¿Sellar {n} clases de hoy?', stampAllDone: '{n} clases selladas.', copyDay: 'Copiar lista'
+      moveBtn: 'Cambiar fecha', movePh: 'Nueva fecha (AAAA-MM-DD)', moveBad: 'Esa fecha no es válida.', moveDone: 'Clase movida.', stampAll: 'Sellar todas', stampAllAsk: '¿Sellar {n} clases de hoy?', stampAllDone: '{n} clases selladas.', copyDay: 'Copiar lista',
+      copyTomorrow: 'Copiar mañana', copyWeek: 'Copiar esta semana', nextLessonLabel: 'Próxima: {d}', dupBtn: 'Duplicar', dupDone: '{name} duplicado como bono nuevo.', skipRangeBtn: 'Omitir fechas', skipRangePh: 'Omitir desde y hasta (AAAA-MM-DD AAAA-MM-DD)', skipRangeDone: '{n} clases planificadas omitidas.', skipRangeBad: 'Escribe dos fechas válidas, la inicial primero.', dupWarn: '{n} fechas de clase están selladas dos veces. Revisa el registro de clases.', packExpBtn: 'Exportar este bono', sortName: 'Ordenar por nombre', sortStatus: 'Ordenar por estado'
     }
   };
   function pick(pref) {

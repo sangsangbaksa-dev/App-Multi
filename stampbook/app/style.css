@@ -107,3 +107,5 @@ u.k-plan{background:transparent;border:1.5px solid var(--ink)}.dots u.k-plan{wid
 @media(prefers-reduced-motion:no-preference){.slot.fresh{animation:press .34s cubic-bezier(.2,.8,.3,1)}@keyframes press{0%{transform:rotate(var(--r,-6deg)) scale(1.9);opacity:0}55%{transform:rotate(var(--r,-6deg)) scale(.92);opacity:1}100%{transform:rotate(var(--r,-6deg)) scale(1)}}}
 .weekbox summary{cursor:pointer;font:700 16px var(--serif);min-height:32px}.wkday{margin-top:10px}.wkday b{font-size:13px;color:var(--mute)}
 .weekbox{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;margin:0 0 16px}
+.pctbar{height:4px;border-radius:2px;background:rgba(127,127,127,.25);overflow:hidden;margin:6px 0}
+.pctbar i{display:block;height:100%;background:currentColor;opacity:.6}
