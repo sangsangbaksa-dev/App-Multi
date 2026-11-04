@@ -543,3 +543,68 @@ test('i18n: new trip strings exist in all five languages with the same placehold
     }
   }
 });
+
+test('tripLengthStats: finished trips only, average, median and longest', () => {
+  const t = tr([['2026-01-01', '2026-01-03'], ['2026-02-01', '2026-02-10'], ['2026-03-01', ''], ['2026-04-01', '2026-04-02']]);
+  const s = C.tripLengthStats(t, '2026-06-01');
+  assert.equal(s.count, 3);
+  assert.equal(s.longest, 10);
+  assert.equal(s.median, 3);
+  assert.equal(s.average, 5);
+  assert.deepEqual(C.tripLengthStats(tr([]), '2026-06-01'), { count: 0, average: 0, median: 0, longest: 0 });
+});
+test('gapsBetweenTrips: merges overlaps, reports only real gaps', () => {
+  const t = tr([['2026-01-01', '2026-01-10'], ['2026-01-05', '2026-01-12'], ['2026-01-20', '2026-01-21'], ['2026-01-22', '2026-01-25']]);
+  const g = C.gapsBetweenTrips(t, '2026-06-01');
+  assert.deepEqual(g, [{ from: '2026-01-13', to: '2026-01-19', days: 7 }]);
+});
+test('daysUntilNextTrip: nearest planned start after today, or null', () => {
+  const t = tr([['2026-06-01', '2026-06-02'], ['2026-07-10', '2026-07-12'], ['2026-08-01', '']]);
+  assert.equal(C.daysUntilNextTrip(t, '2026-06-20'), 20);
+  assert.equal(C.daysUntilNextTrip(tr([['2026-01-01', '2026-01-02']]), '2026-06-20'), null);
+});
+test('weekdayCounts: stay days per weekday, Monday first', () => {
+  // 2026-06-01 is a Monday; 2026-06-06 is a Saturday
+  const t = tr([['2026-06-01', '2026-06-07']]);
+  const w = C.weekdayCounts(t, '2026-06-07', 7);
+  assert.deepEqual(w, [1, 1, 1, 1, 1, 1, 1]);
+  const w2 = C.weekdayCounts(tr([['2026-06-06', '2026-06-06']]), '2026-06-07', 7);
+  assert.equal(w2[5], 1);
+});
+test('tripsInRange: trips touching a range, with the days inside it', () => {
+  const t = tr([['2026-01-01', '2026-01-10'], ['2026-02-01', '2026-02-05'], ['2026-03-01', '']]);
+  const r = C.tripsInRange(t, '2026-01-05', '2026-02-02', '2026-06-01');
+  assert.equal(r.length, 2);
+  assert.equal(r[0].daysInRange, 6);
+  assert.equal(r[1].daysInRange, 2);
+  assert.deepEqual(C.tripsInRange(t, '2026-02-10', '2026-01-01', '2026-06-01'), []);
+});
+test('tripIssues: flags bad dates, duplicates and missing places', () => {
+  const t = { id: 'x', rule: C.PRESETS.schengen, trips: [
+    { id: 'a', place: 'Rome', from: '2026-01-01', to: '2026-01-05' },
+    { id: 'b', place: 'Rome', from: '2026-01-01', to: '2026-01-05' },
+    { id: 'c', place: '', from: '2026-03-10', to: '2026-03-02' },
+    { id: 'd', place: 'Oslo', from: '2026-02-30', to: '' }
+  ] };
+  const k = C.tripIssues(t, '2026-06-01').map(i => i.id + ':' + i.kind);
+  assert.ok(k.includes('b:duplicate'));
+  assert.ok(k.includes('c:no_place'));
+  assert.ok(k.includes('c:reversed'));
+  assert.ok(k.includes('d:bad_from'));
+  assert.equal(C.tripIssues(tr([['2026-01-01', '2026-01-02']]), '2026-06-01').length, 1);
+});
+test('shiftPlanned: moves only trips after the cut-off', () => {
+  const t = tr([['2026-01-01', '2026-01-02'], ['2026-07-01', '2026-07-03'], ['2026-08-01', '']]);
+  assert.equal(C.shiftPlanned(t, 10, '2026-06-01'), 2);
+  assert.equal(t.trips.find(x => x.from === '2026-07-11').to, '2026-07-13');
+  assert.equal(t.trips.find(x => x.from === '2026-01-01').to, '2026-01-02');
+  assert.equal(C.shiftPlanned(t, 0, '2026-06-01'), 0);
+  const far = tr([['2026-12-30', '2026-12-31']]);
+  assert.equal(C.shiftPlanned(far, 2000, '2026-06-01'), 1);
+  assert.equal(far.trips[0].from, C.addDays('2026-12-30', 2000));
+});
+test('shareLine: one plain sentence with used, limit and days left', () => {
+  const t = tr([['2026-06-01', '2026-06-10']]);
+  t.name = 'Me';
+  assert.equal(C.shareLine(t, '2026-06-10'), 'Me: used 10 of 90 (80 left) in the 180 days to 2026-06-10');
+});
