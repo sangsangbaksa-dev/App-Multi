@@ -32,6 +32,7 @@ window.SP_I18N = {
     app_session_note: 'The originals are held in memory on this page only. Reloading the page clears them.',
     app_kind_API_KEY: 'API key', app_kind_PRIVATE_KEY: 'Private key', app_kind_TOKEN: 'Token', app_kind_SECRET: 'Password or secret',
     app_kind_EMAIL: 'Email', app_kind_PHONE: 'Phone', app_kind_CARD: 'Card number', app_kind_IP: 'IP address', app_kind_ID_NUMBER: 'Resident ID',
+   app_keep: 'Keep visible', app_hide_it: 'Hide again', app_kept: 'kept visible', app_kind_BANK_ACCOUNT: 'Bank account (IBAN)', app_kind_SSN: 'US SSN',
     gate_t: 'Unlock Shadepad', gate_b: 'One payment, unlocked on this device with your licence key.', gate_key: 'Licence key',
     gate_unlock: 'Unlock', gate_buy: 'Buy a licence', gate_checking: 'Checking the licence…',
     gate_invalid: 'That key is not valid for Shadepad.', gate_refunded: 'That key has been refunded or disabled.', gate_unreachable: 'Could not reach the licence server. Try again in a moment.'
@@ -67,6 +68,7 @@ window.SP_I18N = {
     app_session_note: '원본은 이 페이지의 메모리에만 보관됩니다. 페이지를 새로고침하면 지워집니다.',
     app_kind_API_KEY: 'API 키', app_kind_PRIVATE_KEY: '개인키', app_kind_TOKEN: '토큰', app_kind_SECRET: '비밀번호 또는 비밀 값',
     app_kind_EMAIL: '이메일', app_kind_PHONE: '전화번호', app_kind_CARD: '카드번호', app_kind_IP: 'IP 주소', app_kind_ID_NUMBER: '주민등록번호',
+   app_keep: '보이게 두기', app_hide_it: '다시 가리기', app_kept: '그대로 둠', app_kind_BANK_ACCOUNT: '계좌번호(IBAN)', app_kind_SSN: '미국 SSN',
     gate_t: 'Shadepad 잠금 해제', gate_b: '한 번 결제하면 라이선스 키로 이 기기에서 잠금이 풀립니다.', gate_key: '라이선스 키',
     gate_unlock: '잠금 해제', gate_buy: '라이선스 구매', gate_checking: '라이선스를 확인하는 중…',
     gate_invalid: '이 키는 Shadepad에서 유효하지 않습니다.', gate_refunded: '이 키는 환불되었거나 비활성화되었습니다.', gate_unreachable: '라이선스 서버에 연결할 수 없습니다. 잠시 후 다시 시도하세요.'
@@ -102,6 +104,7 @@ window.SP_I18N = {
     app_session_note: '元の値はこのページのメモリにだけ保持されます。ページを再読み込みすると消えます。',
     app_kind_API_KEY: 'APIキー', app_kind_PRIVATE_KEY: '秘密鍵', app_kind_TOKEN: 'トークン', app_kind_SECRET: 'パスワードまたは秘密情報',
     app_kind_EMAIL: 'メール', app_kind_PHONE: '電話番号', app_kind_CARD: 'カード番号', app_kind_IP: 'IPアドレス', app_kind_ID_NUMBER: '住民登録番号',
+   app_keep: '表示したままにする', app_hide_it: '再び隠す', app_kept: '表示のまま', app_kind_BANK_ACCOUNT: '口座番号(IBAN)', app_kind_SSN: '米国SSN',
     gate_t: 'Shadepadのロックを解除', gate_b: '一度のお支払いで、ライセンスキーによりこの端末でロックが解除されます。', gate_key: 'ライセンスキー',
     gate_unlock: 'ロック解除', gate_buy: 'ライセンスを購入', gate_checking: 'ライセンスを確認しています…',
     gate_invalid: 'このキーはShadepadでは無効です。', gate_refunded: 'このキーは返金済みか、無効になっています。', gate_unreachable: 'ライセンスサーバーに接続できませんでした。しばらくしてから再試行してください。'
@@ -137,6 +140,7 @@ window.SP_I18N = {
     app_session_note: '原值只保存在本页面的内存中。刷新页面后会被清除。',
     app_kind_API_KEY: 'API 密钥', app_kind_PRIVATE_KEY: '私钥', app_kind_TOKEN: '令牌', app_kind_SECRET: '密码或机密',
     app_kind_EMAIL: '邮箱', app_kind_PHONE: '电话', app_kind_CARD: '卡号', app_kind_IP: 'IP 地址', app_kind_ID_NUMBER: '居民登录号',
+   app_keep: '保持可见', app_hide_it: '重新隐藏', app_kept: '保持可见状态', app_kind_BANK_ACCOUNT: '银行账号(IBAN)', app_kind_SSN: '美国SSN',
     gate_t: '解锁 Shadepad', gate_b: '一次付款，用许可证密钥在本设备上解锁。', gate_key: '许可证密钥',
     gate_unlock: '解锁', gate_buy: '购买许可证', gate_checking: '正在检查许可证…',
     gate_invalid: '该密钥对 Shadepad 无效。', gate_refunded: '该密钥已退款或被停用。', gate_unreachable: '无法连接许可证服务器，请稍后再试。'
@@ -172,6 +176,7 @@ window.SP_I18N = {
     app_session_note: 'Los originales se guardan solo en la memoria de esta página. Recargarla los borra.',
     app_kind_API_KEY: 'Clave de API', app_kind_PRIVATE_KEY: 'Clave privada', app_kind_TOKEN: 'Token', app_kind_SECRET: 'Contraseña o secreto',
     app_kind_EMAIL: 'Correo', app_kind_PHONE: 'Teléfono', app_kind_CARD: 'Número de tarjeta', app_kind_IP: 'Dirección IP', app_kind_ID_NUMBER: 'Número de residente',
+   app_keep: 'Dejar visible', app_hide_it: 'Ocultar de nuevo', app_kept: 'dejado visible', app_kind_BANK_ACCOUNT: 'Cuenta bancaria (IBAN)', app_kind_SSN: 'SSN de EE. UU.',
     gate_t: 'Desbloquea Shadepad', gate_b: 'Un pago, desbloqueado en este dispositivo con tu clave de licencia.', gate_key: 'Clave de licencia',
     gate_unlock: 'Desbloquear', gate_buy: 'Comprar una licencia', gate_checking: 'Comprobando la licencia…',
     gate_invalid: 'Esa clave no es válida para Shadepad.', gate_refunded: 'Esa clave ha sido reembolsada o desactivada.', gate_unreachable: 'No se pudo conectar con el servidor de licencias. Inténtalo de nuevo en un momento.'
