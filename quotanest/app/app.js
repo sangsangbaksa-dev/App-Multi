@@ -123,7 +123,14 @@
     var actual = el('input', { type: 'number', min: '0', step: '1', id: 'est-actual' });
     var rate = el('input', { type: 'number', min: '0', step: '0.01', id: 'est-rate' });
     var calibNote = el('p', { cls: 'note' });
+    var limitIn = el('input', { type: 'number', min: '0', step: '1', id: 'est-limit' });
 
+    function drawCalib() {
+      var e = QN.calibrationError(state.calib);
+      calibNote.textContent = state.calib.length
+        ? t('est_calib_done') + (e != null ? ' ' + t('est_error', { p: Math.round(e * 100) }) : '')
+        : '';
+    }
     function factor() { return QN.calibrationFactor(state.calib); }
     function run(silent) {
       var txt = input.value;
@@ -139,12 +146,13 @@
       ];
       var cost = QN.estimateCost(r.tokens, rate.value);
       if (cost != null) cells.push(stat('est_cost', cost.toFixed(3)));
-      out.replaceChildren(
-        el('div', { cls: 'stats' }, cells),
-        note('est_note')
-      );
+      var verdict = QN.checkThreshold(r.tokens, limitIn.value);
+      var verdictCls = verdict === 'over' ? 'bad' : verdict === 'near' ? 'warn' : 'good';
+      var nodes = [el('div', { cls: 'stats' }, cells), note('est_note')];
+      if (verdict) nodes.push(el('p', { cls: verdictCls, t: 'est_' + verdict }));
+      out.replaceChildren.apply(out, nodes);
     }
-    refreshers.push(function () { if (last) run(true); calibNote.textContent = state.calib.length ? t('est_calib_done') : ''; });
+    refreshers.push(function () { if (last) run(true); drawCalib(); });
 
     var save1 = el('button', { cls: 'btn', type: 'button', t: 'est_calib_btn', on: { click: function () {
       var txt = input.value;
@@ -153,11 +161,11 @@
       state.calib.push({ estimated: QN.estimateTokens(txt).tokens, actual: n });
       if (state.calib.length > 20) state.calib = state.calib.slice(-20);
       save();
-      calibNote.textContent = t('est_calib_done');
+      drawCalib();
       run(true);
     } } });
     var reset = el('button', { cls: 'btn ghost', type: 'button', t: 'est_calib_reset', on: { click: function () {
-      state.calib = []; save(); calibNote.textContent = ''; run(true);
+      state.calib = []; save(); drawCalib(); run(true);
     } } });
 
     var file = fileButton(function (txt) { input.value = txt; run(); });
@@ -169,6 +177,7 @@
         el('label', { t: 'est_in' }), input,
         el('label', { t: 'est_file' }), file,
         el('label', { t: 'est_rate' }), rate,
+        el('label', { t: 'est_limit' }), limitIn,
         el('div', { cls: 'row' }, [runBtn]),
         out
       ]),
@@ -197,6 +206,7 @@
           stat('cmp_after', fmt(r.after)),
           stat('cmp_saved', fmt(r.saved))
         ]),
+        el('p', { cls: 'note' }, [t('cmp_pct', { p: QN.percentSaved(r.before, r.after) })]),
         ops.length ? el('ul', { cls: 'plain' }, ops) : note('cmp_none'),
         note('cmp_note')
       );
@@ -264,6 +274,8 @@
           stat('use_rate', fmt(a.rate) + ' /h')
         ]));
         nodes.push(eta);
+        var mins = QN.minutesToReset(Date.now(), a.end);
+        if (mins != null) nodes.push(el('p', { cls: 'note' }, [t('use_reset_in', { h: Math.floor(mins / 60), m: mins % 60 })]));
       } else {
         nodes.push(note('use_no_block'));
       }
@@ -275,6 +287,18 @@
       ];
       if (f.week.remaining != null) weekCells.push(stat('use_week_left', fmt(f.week.remaining)));
       nodes.push(el('div', { cls: 'stats' }, weekCells));
+      var dl = QN.daysToWeekLimit(f.week.remaining, f.week.perDay);
+      if (dl != null && dl > 0) nodes.push(el('p', { cls: 'note' }, [t('use_days_left', { d: dl.toFixed(1) })]));
+      var src = QN.countBySource(state.records);
+      nodes.push(el('p', { cls: 'note' }, [t('use_sources', { c: fmt(src.claude), x: fmt(src.codex), m: fmt(src.manual) })]));
+      var history = QN.blockHistory(state.records, state.limits.metric, 5);
+      if (history.length) {
+        nodes.push(el('h3', { t: 'use_blocks_h' }));
+        nodes.push(el('ul', { cls: 'plain' }, history.map(function (b) {
+          var when = new Date(b.start).toLocaleString(LOCALE[state.lang] || 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          return el('li', null, [when + ' — ' + fmt(b.used) + ' · ' + b.count]);
+        })));
+      }
       var daily = QN.dailyTotals(state.records, state.limits.metric, Date.now(), 14);
       nodes.push(el('h3', { t: 'use_daily_h' }));
       nodes.push(el('table', { cls: 'table' }, [el('tr', null, [el('th', { t: 'use_daily_day' }), el('th', { t: 'use_daily_tokens' })])].concat(daily.map(function (d) {
@@ -282,6 +306,9 @@
       }))));
       nodes.push(el('div', { cls: 'row' }, [el('button', { cls: 'btn ghost', type: 'button', t: 'use_csv', on: { click: function () {
         download('quotanest-daily.csv', QN.toCsv(daily), 'text/csv');
+      } } })]));
+      nodes.push(el('div', { cls: 'row' }, [el('button', { cls: 'btn ghost', type: 'button', t: 'use_copy_summary', on: { click: function () {
+        copyText(QN.usageSummaryText(f, { block: t('use_active'), week: t('use_week'), perDay: t('use_week_per_day') }, fmt));
       } } })]));
       nodes.push(note('use_disclaimer'));
       box.replaceChildren.apply(box, nodes);
@@ -427,7 +454,7 @@
       var parts = [];
       parts.push(el('h3', { t: 'doc_files' }));
       parts.push(el('ul', { cls: 'plain' }, r.files.map(function (f) {
-        return el('li', null, [f.name + ' — ' + fmt(f.chars) + ' ' + t('doc_chars') + ', ' + fmt(f.lines) + ' ' + t('doc_lines') + ', ' + fmt(f.tokens) + ' ' + t('doc_tokens')]);
+        return el('li', null, [f.name + ' — ' + fmt(f.chars) + ' ' + t('doc_chars') + ', ' + fmt(f.lines) + ' ' + t('doc_lines') + ', ' + fmt(f.tokens) + ' ' + t('doc_tokens') + ' · ' + t('doc_size_' + QN.sizeVerdict(f.tokens))]);
       })));
       if (!r.duplicates.length && !r.verbose.length && !r.splits.length) {
         parts.push(note('doc_none'));
@@ -473,6 +500,7 @@
     var input = el('textarea', { id: 'res-in', rows: '8', tp: 'res_in' });
     var sum = el('div', { cls: 'card', 'aria-live': 'polite' });
     var prompt = el('textarea', { readonly: '', rows: '8', 'aria-label': 'resume prompt' });
+    var resTok = el('p', { cls: 'note' });
     var last = false;
 
     function list(arr) {
@@ -484,6 +512,7 @@
       last = true;
       var s = QN.summarizeSession(txt);
       prompt.value = QN.buildResumePrompt(s, state.lang);
+      resTok.textContent = t('res_tokens', { n: fmt(QN.estimateTokens(prompt.value).tokens) });
       sum.replaceChildren(
         el('h3', { t: 'res_goal' }), el('p', null, [s.goal || '-']),
         el('h3', { t: 'res_decisions' }), list(s.decisions),
@@ -506,7 +535,7 @@
       ]),
       sum,
       el('div', { cls: 'card' }, [
-        el('label', { t: 'res_prompt' }), prompt,
+        el('label', { t: 'res_prompt' }), prompt, resTok,
         el('div', { cls: 'row' }, [el('button', { cls: 'btn ghost', type: 'button', t: 'res_copy', on: { click: function () { if (prompt.value) copyText(prompt.value); } } })])
       ])
     ]);
