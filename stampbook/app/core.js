@@ -512,8 +512,64 @@
     return agenda(packs, date, 1).map(function (e) { return (e.time ? e.time + '  ' : '') + e.student; }).join('\n');
   }
 
+  /* ---- v2: plans, duplicates, skips, backups ---- */
+  /* plain text of the planned lessons for n days from `from`, one date per block, e.g. "2026-11-05\n  18:00  Ann". Empty when nothing is planned. */
+  function weekText(packs, from, n) {
+    return weekPlan(packs, from, n).map(function (d) {
+      return d.date + '\n' + d.items.map(function (x) { return '  ' + (x.time ? x.time + '  ' : '') + x.student; }).join('\n');
+    }).join('\n');
+  }
+  /* the next planned lesson of one pack from `from` (within 366 days), or null when none is planned */
+  function nextLesson(p, from) {
+    var u = upcoming(p, from, 366);
+    return u.length ? { date: u[0].date, time: u[0].time } : null;
+  }
+  /* a new pack for the same student and terms (price, lessons, validity, weekly schedule), starting `start`, with no stamps */
+  function duplicatePack(p, start, id) {
+    var m = monthsOf(p), q = {
+      id: id || 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), student: p.student, total: p.total, price: p.price,
+      currency: p.currency || 'USD', start: start, months: m, expires: m > 0 ? addMonths(start, m) : '', stamps: [], paid: true
+    };
+    if (p.schedule) q.schedule = { days: p.schedule.days.slice(), time: p.schedule.time || '' };
+    if (p.ink) q.ink = p.ink;
+    return q;
+  }
+  /* skip every planned lesson between from and to (inclusive, YYYY-MM-DD, at most 366 days). Returns how many were added, or -1 for bad input. */
+  function skipRange(p, from, to) {
+    var re = /^\d{4}-\d{2}-\d{2}$/;
+    if (!re.test(String(from || '')) || !re.test(String(to || '')) || to < from || daysBetween(from, to) > 366) return -1;
+    if (!p.schedule || !p.schedule.days || !p.schedule.days.length) return 0;
+    var sk = p.schedule.skip || [], added = 0;
+    for (var d = from, i = 0; d <= to && i <= 366; i++, d = addDays(from, i)) {
+      if (p.schedule.days.indexOf(parse(d).getDay()) !== -1 && sk.indexOf(d) === -1) { sk.push(d); added++; }
+    }
+    sk.sort();
+    if (sk.length) p.schedule.skip = sk;
+    return added;
+  }
+  /* stamps that share a date within one pack: [{packId, student, date, count}] */
+  function duplicateDates(packs) {
+    var out = [];
+    packs.forEach(function (p) {
+      var c = {};
+      p.stamps.forEach(function (s) { c[s.date] = (c[s.date] || 0) + 1; });
+      Object.keys(c).sort().forEach(function (d) { if (c[d] > 1) out.push({ packId: p.id, student: p.student, date: d, count: c[d] }); });
+    });
+    return out;
+  }
+  /* one pack as a JSON backup in the same shape as a full backup, so the import button can restore it */
+  function packBackup(p) { return JSON.stringify({ v: 1, packs: [p] }, null, 2); }
+  /* distinct student names, sorted, for autocomplete */
+  function knownStudents(packs) {
+    var seen = {}, out = [];
+    packs.forEach(function (p) { var n = String(p.student || '').trim(); if (n && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = 1; out.push(n); } });
+    return out.sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0; });
+  }
+  /* share of the lessons used, 0-100, for a progress bar */
+  function percentUsed(p) { return p.total > 0 ? Math.min(100, Math.round(used(p) / p.total * 100)) : 0; }
+
   var API = {
-    INK_COUNT: INK_COUNT, setClosures: setClosures, inkOf: inkOf, setInk: setInk, weekPlan: weekPlan, justCompleted: justCompleted, moveStamp: moveStamp, stampPlanned: stampPlanned, dayPlanText: dayPlanText,
+    INK_COUNT: INK_COUNT, setClosures: setClosures, inkOf: inkOf, setInk: setInk, weekPlan: weekPlan, justCompleted: justCompleted, moveStamp: moveStamp, stampPlanned: stampPlanned, dayPlanText: dayPlanText, weekText: weekText, nextLesson: nextLesson, duplicatePack: duplicatePack, skipRange: skipRange, duplicateDates: duplicateDates, packBackup: packBackup, knownStudents: knownStudents, percentUsed: percentUsed,
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, setNext: setNext, NEXT_MAX: NEXT_MAX, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
