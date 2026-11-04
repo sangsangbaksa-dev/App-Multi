@@ -534,7 +534,7 @@ test('copyTrip: an ongoing trip copies as ongoing', () => {
 test('i18n: new trip strings exist in all five languages with the same placeholders', () => {
   const I = require('../app/i18n.js');
   const ph = s => (s.match(/\{\w+\}/g) || []).sort().join();
-  for (const k of ['copyYear', 'overlapWarn']) {
+  for (const k of ['copyYear', 'overlapWarn', 'insightH', 'insLen', 'insNoLen', 'insNext', 'insNextNone', 'insGapsH', 'insGap', 'insNoGap', 'insWeekH', 'insIssues', 'insCopy', 'insEndAll', 'insEndConf', 'insEnded']) {
     const en = I.L.en[k];
     assert.ok(en, k);
     for (const lang of ['ko', 'ja', 'zh', 'es']) {

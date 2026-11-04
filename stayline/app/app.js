@@ -565,6 +565,33 @@
           h('span', { class: 'chip st-' + r.state }, leftText(r.left))]);
       }))]);
   }
+  function insightsCard(tr) {
+    var today = C.todayStr(), len = C.tripLengthStats(tr, today), gaps = C.gapsBetweenTrips(tr, today);
+    var next = C.daysUntilNextTrip(tr, today), wk = C.weekdayCounts(tr, today, 365), issues = C.tripIssues(tr, today);
+    var openNow = tr.trips.filter(function (x) { return !x.to && x.from <= today; }).length;
+    var wkFmt = new Intl.DateTimeFormat(lang, { weekday: 'short', timeZone: 'UTC' });
+    var wkRow = h('ul', { class: 'alerts weekdays' }, wk.map(function (n, i) {
+      var day = new Date(Date.UTC(2026, 0, 5 + i)); // 2026-01-05 is a Monday
+      return h('li', null, h('span', null, wkFmt.format(day) + ' ' + n));
+    }));
+    return h('section', { class: 'card' }, [h('h2', null, T('insightH')),
+      h('p', null, len.count ? T('insLen', { n: len.count, avg: len.average, med: len.median, max: len.longest }) : T('insNoLen')),
+      h('p', null, next === null ? T('insNextNone') : T('insNext', { n: next })),
+      issues.length ? h('p', { class: 'warn' }, T('insIssues', { n: issues.length })) : null,
+      h('h3', null, T('insGapsH')),
+      gaps.length ? h('ul', { class: 'alerts' }, gaps.slice(-8).map(function (g) { return h('li', null, h('span', null, T('insGap', { from: fmt(g.from), to: fmt(g.to), n: g.days }))); })) : h('p', { class: 'muted' }, T('insNoGap')),
+      h('h3', null, T('insWeekH')), wkRow,
+      h('div', { class: 'row wrap' }, [
+        h('button', { class: 'ghost', onclick: function () {
+          var txt = C.shareLine(tr, today);
+          (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast(T('copied')); }, function () { toast(T('copyFail')); });
+        } }, T('insCopy')),
+        openNow ? h('button', { class: 'ghost', onclick: function () {
+          if (!confirm(T('insEndConf'))) return;
+          undoable(T('insEnded', { n: openNow }), function () { C.endOngoing(tr, today); save(); render(); });
+        } }, T('insEndAll')) : null
+      ])]);
+  }
   function statsCard(tr) {
     var st = C.yearStats(tr, C.todayStr());
     if (!st.trips) return h('section', { class: 'card' }, [h('h2', null, T('statsH')), h('p', { class: 'muted' }, T('statsNone'))]);
@@ -597,7 +624,7 @@
       if (state.trackers.length > 1) kids.push(overview());
       kids.push(board(tr), keyDates(tr), planner(tr), itinerary(tr), rulesCard(tr));
       if (state.trackers.length > 1) kids.push(groupCard());
-      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), placesCard(tr), statsCard(tr), auditCard(tr), borderCard(tr), tripList(tr));
+      kids.push(calendarCard(tr), forecastCard(tr), monthCard(tr), placesCard(tr), statsCard(tr), insightsCard(tr), auditCard(tr), borderCard(tr), tripList(tr));
       var pr = h('div', { class: 'printonly' }, [h('h1', null, T('printTitle') + ' — ' + tr.name)]);
       kids.push(pr);
     }
