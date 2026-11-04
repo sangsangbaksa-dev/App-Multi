@@ -649,13 +649,108 @@
     var k = Math.max(-3650, Math.min(3650, Math.floor(+shift) || 0));
     return addTrip(tr, { place: src.place, note: src.note, from: addDays(src.from, k), to: src.to ? addDays(src.to, k) : '' });
   }
+  /* ---- more trip analytics (pure, no UI yet) ---- */
+  function tripSpan(x, today) {
+    var a = dn(x.from), b = x.to ? dn(x.to) : dn(today);
+    return isNaN(a) || isNaN(b) || b < a ? null : { a: a, b: b };
+  }
+  /* average and median length (days) of finished trips, and the longest one. Ongoing trips are left out. */
+  function tripLengthStats(tr, today) {
+    today = today || todayStr();
+    var lens = (tr.trips || []).filter(function (x) { return x.to && tripSpan(x, today); })
+      .map(function (x) { var sp = tripSpan(x, today); return sp.b - sp.a + 1; }).sort(function (a, b) { return a - b; });
+    if (!lens.length) return { count: 0, average: 0, median: 0, longest: 0 };
+    var sum = lens.reduce(function (n, v) { return n + v; }, 0), mid = lens.length >> 1;
+    return { count: lens.length, average: Math.round(sum / lens.length * 10) / 10,
+      median: lens.length % 2 ? lens[mid] : (lens[mid - 1] + lens[mid]) / 2, longest: lens[lens.length - 1] };
+  }
+  /* days spent outside between consecutive stays (merged, so overlaps do not create fake gaps). Oldest first. */
+  function gapsBetweenTrips(tr, today) {
+    today = today || todayStr();
+    var spans = (tr.trips || []).map(function (x) { return tripSpan(x, today); }).filter(Boolean).sort(function (a, b) { return a.a - b.a; });
+    var merged = [], out = [];
+    spans.forEach(function (sp) {
+      var last = merged[merged.length - 1];
+      if (last && sp.a <= last.b + 1) last.b = Math.max(last.b, sp.b); else merged.push({ a: sp.a, b: sp.b });
+    });
+    for (var i = 1; i < merged.length; i++) {
+      var g = merged[i].a - merged[i - 1].b - 1;
+      if (g > 0) out.push({ from: str(merged[i - 1].b + 1), to: str(merged[i].a - 1), days: g });
+    }
+    return out;
+  }
+  /* how many days until the next planned trip starts (null if none is planned after today) */
+  function daysUntilNextTrip(tr, today) {
+    today = today || todayStr();
+    var t = dn(today), best = null;
+    (tr.trips || []).forEach(function (x) {
+      var a = dn(x.from);
+      if (!isNaN(a) && a > t && (best === null || a < best)) best = a;
+    });
+    return best === null ? null : best - t;
+  }
+  /* stay days per weekday over the last `days` days up to today. Index 0 = Monday. */
+  function weekdayCounts(tr, today, days) {
+    today = today || todayStr(); days = days || 365;
+    var set = stayDays(tr.trips, today), end = dn(today), out = [0, 0, 0, 0, 0, 0, 0];
+    for (var d = end - days + 1; d <= end; d++) if (set[d]) out[(new Date(d * 86400000).getUTCDay() + 6) % 7]++;
+    return out;
+  }
+  /* trips that touch the range [from, to], with how many of their days fall inside it */
+  function tripsInRange(tr, from, to, today) {
+    today = today || todayStr();
+    var lo = dn(from), hi = dn(to), out = [];
+    if (isNaN(lo) || isNaN(hi) || hi < lo) return out;
+    (tr.trips || []).forEach(function (x) {
+      var sp = tripSpan(x, today);
+      if (!sp) return;
+      var a = Math.max(sp.a, lo), b = Math.min(sp.b, hi);
+      if (a <= b) out.push({ id: x.id, place: x.place || '', from: x.from, to: x.to || '', daysInRange: b - a + 1 });
+    });
+    return out;
+  }
+  /* data checks: invalid or reversed dates, exact duplicates, trips that start after they end, and trips with no place */
+  function tripIssues(tr, today) {
+    today = today || todayStr();
+    var issues = [], seen = {};
+    (tr.trips || []).forEach(function (x) {
+      if (!validDate(x.from)) issues.push({ id: x.id, kind: 'bad_from' });
+      else if (x.to && !validDate(x.to)) issues.push({ id: x.id, kind: 'bad_to' });
+      else if (x.to && dn(x.to) < dn(x.from)) issues.push({ id: x.id, kind: 'reversed' });
+      else if (validDate(x.from) && dn(x.from) > dn(today) + 365 * 5) issues.push({ id: x.id, kind: 'far_future' });
+      var key = x.from + '|' + (x.to || '');
+      if (seen[key]) issues.push({ id: x.id, kind: 'duplicate' }); else seen[key] = true;
+      if (!String(x.place || '').trim()) issues.push({ id: x.id, kind: 'no_place' });
+    });
+    return issues;
+  }
+  /* move every planned trip (starting after `after`, default today) by `days`. Returns how many moved. Stops if a move would leave the valid range. */
+  function shiftPlanned(tr, days, after) {
+    after = after || todayStr();
+    var k = Math.floor(+days) || 0, n = 0;
+    if (!k) return 0;
+    var moved = (tr.trips || []).filter(function (x) { return validDate(x.from) && dn(x.from) > dn(after); });
+    if (moved.some(function (x) { return !validDate(addDays(x.from, k)) || (x.to && !validDate(addDays(x.to, k))); })) return 0;
+    moved.forEach(function (x) { x.from = addDays(x.from, k); if (x.to) x.to = addDays(x.to, k); n++; });
+    tr.trips.sort(function (a, b) { return a.from < b.from ? 1 : a.from > b.from ? -1 : 0; });
+    return n;
+  }
+  /* one line for sharing: "Used 45 of 90 (45 left) in the 180 days to 2026-11-04" */
+  function shareLine(tr, today) {
+    today = today || todayStr();
+    var s = summary(tr, today), r = s.rule;
+    var basis = r.kind === 'year' ? 'calendar year to ' + today : 'the ' + r.window + ' days to ' + today;
+    return (tr.name || 'Counter') + ': used ' + s.used + ' of ' + r.limit + (s.left >= 0 ? ' (' + s.left + ' left)' : ' (' + (-s.left) + ' over)') + ' in ' + basis;
+  }
   var API = {
     oneLine: oneLine, parseIcs: parseIcs, permitWatch: permitWatch, yearReport: yearReport,
     PRESETS: PRESETS, dn: dn, str: str, todayStr: todayStr, addDays: addDays, validDate: validDate, cleanRule: cleanRule,
     stayDays: stayDays, usedOn: usedOn, summary: summary, maxStay: maxStay, lastDay: lastDay, earliestEntry: earliestEntry, strip: strip,
     validDraft: validDraft, simulate: simulate, addDraft: addDraft, removeDraft: removeDraft, commitDrafts: commitDrafts, forecast: forecast, groupMaxStay: groupMaxStay, groupEarliest: groupEarliest, monthlyUsage: monthlyUsage, placeStats: placeStats, autoItinerary: autoItinerary, calendarMonth: calendarMonth, addMonth: addMonth, audit: audit, urgent: urgent, itineraryText: itineraryText, arrivalWindows: arrivalWindows, parseTrips: parseTrips, alerts: alerts, alertsIcs: alertsIcs,
     compareRules: compareRules, yearStats: yearStats, encodeShare: encodeShare, decodeShare: decodeShare, safeLastDay: safeLastDay, borderSheet: borderSheet, cleanBuffer: cleanBuffer, cleanNote: cleanNote, validTrip: validTrip, addTrip: addTrip, updateTrip: updateTrip, sanitize: sanitize, removeTrip: removeTrip, toCsv: toCsv, toIcs: toIcs, csvCell: csvCell, makeKey: makeKey, validKey: validKey,
-    overlapPairs: overlapPairs, endOngoing: endOngoing, copyTrip: copyTrip
+    overlapPairs: overlapPairs, endOngoing: endOngoing, copyTrip: copyTrip,
+    tripLengthStats: tripLengthStats, gapsBetweenTrips: gapsBetweenTrips, daysUntilNextTrip: daysUntilNextTrip, weekdayCounts: weekdayCounts,
+    tripsInRange: tripsInRange, tripIssues: tripIssues, shiftPlanned: shiftPlanned, shareLine: shareLine
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SL = API;
 })(typeof window !== 'undefined' ? window : globalThis);
