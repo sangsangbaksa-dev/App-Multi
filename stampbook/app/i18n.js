@@ -142,7 +142,8 @@
       skipped: 'Skipped',
       mergeAsk: 'Merge this backup into your current data? OK merges (nothing is lost). Cancel replaces everything with the backup.',
       merged: 'Merged: {a} new pack(s), {m} updated.',
-      statsCsvBtn: 'Stats CSV'
+      statsCsvBtn: 'Stats CSV',
+      moveBtn: 'Move', movePh: 'New date (YYYY-MM-DD)', moveBad: 'That date is not valid.', moveDone: 'Lesson moved.', stampAll: 'Stamp all', stampAllAsk: 'Stamp {n} lessons for today?', stampAllDone: '{n} lessons stamped.', copyDay: 'Copy list'
     },
     ko: {
       name: '한국어', app: '스탬프북', tag: '수업마다 도장 꾹. 횟수로 다툴 일 없습니다.',
@@ -285,7 +286,8 @@
       skipped: '건너뜀',
       mergeAsk: '이 백업을 현재 데이터에 합칠까요? 확인은 합치기(지워지는 것 없음), 취소는 백업으로 전체 교체입니다.',
       merged: '합쳤습니다: 새 수강권 {a}개, 갱신 {m}개.',
-      statsCsvBtn: '통계 CSV'
+      statsCsvBtn: '통계 CSV',
+      moveBtn: '날짜 변경', movePh: '새 날짜 (YYYY-MM-DD)', moveBad: '날짜 형식이 올바르지 않아요.', moveDone: '수업 날짜를 바꿨어요.', stampAll: '전부 도장', stampAllAsk: '오늘 수업 {n}개에 도장을 찍을까요?', stampAllDone: '수업 {n}개에 도장을 찍었어요.', copyDay: '목록 복사'
     },
     ja: {
       name: '日本語', app: 'スタンプブック', tag: 'レッスンごとに一つ、押す。回数で揉めない。',
@@ -428,7 +430,8 @@
       skipped: 'スキップ済み',
       mergeAsk: 'このバックアップを現在のデータに統合しますか?OKで統合(何も失われません)、キャンセルでバックアップに完全に置き換えます。',
       merged: '統合しました:新規 {a} 件、更新 {m} 件。',
-      statsCsvBtn: '集計CSV'
+      statsCsvBtn: '集計CSV',
+      moveBtn: '日付変更', movePh: '新しい日付 (YYYY-MM-DD)', moveBad: '日付の形式が正しくありません。', moveDone: 'レッスンの日付を変更しました。', stampAll: 'すべて押す', stampAllAsk: '今日のレッスン{n}件に押しますか？', stampAllDone: '{n}件のレッスンに押しました。', copyDay: 'リストをコピー'
     },
     zh: {
       name: '中文', app: '印章本', tag: '上一节,盖一个章。课时数,不再扯皮。',
@@ -571,7 +574,8 @@
       skipped: '已跳过',
       mergeAsk: '要把此备份合并到当前数据吗?确定为合并(不会丢失任何内容),取消则用备份完全替换。',
       merged: '已合并:新增 {a} 个,更新 {m} 个。',
-      statsCsvBtn: '统计 CSV'
+      statsCsvBtn: '统计 CSV',
+      moveBtn: '改期', movePh: '新日期 (YYYY-MM-DD)', moveBad: '日期格式不正确。', moveDone: '课程日期已更改。', stampAll: '全部盖章', stampAllAsk: '为今天的 {n} 节课盖章吗？', stampAllDone: '已为 {n} 节课盖章。', copyDay: '复制名单'
     },
     es: {
       name: 'Español', app: 'Sellos', tag: 'Cada clase, un sello. Nadie discute la cuenta.',
@@ -714,7 +718,8 @@
       skipped: 'Omitida',
       mergeAsk: '¿Combinar esta copia con tus datos actuales? Aceptar combina (no se pierde nada). Cancelar lo reemplaza todo por la copia.',
       merged: 'Combinado: {a} bono(s) nuevo(s), {m} actualizado(s).',
-      statsCsvBtn: 'CSV de estadísticas'
+      statsCsvBtn: 'CSV de estadísticas',
+      moveBtn: 'Cambiar fecha', movePh: 'Nueva fecha (AAAA-MM-DD)', moveBad: 'Esa fecha no es válida.', moveDone: 'Clase movida.', stampAll: 'Sellar todas', stampAllAsk: '¿Sellar {n} clases de hoy?', stampAllDone: '{n} clases selladas.', copyDay: 'Copiar lista'
     }
   };
   function pick(pref) {

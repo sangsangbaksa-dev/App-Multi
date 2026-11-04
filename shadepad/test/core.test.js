@@ -104,3 +104,58 @@ test('key=value and key: value assignments with generic values are hidden', () =
   assert.equal(SP.redact('secret: xK9bQ2mZ7vLp4RtY8wNc3HsE6uJd1FgA').text, 'secret: [SECRET_1]');
   assert.equal(SP.redact('access_key=AKIDEXAMPLE1').text, 'access_key=[SECRET_1]');
 });
+
+test('JSON keys with quotes around the key are hidden', () => {
+  const r = SP.redact('{"password": "hunter2hunter2", "apiKey": "abcd1234efgh"}');
+  assert.equal(r.text, '{"password": "[SECRET_1]", "apiKey": "[SECRET_2]"}');
+  assert.equal(SP.redact('{"api_key":"abcd1234efgh"}').text, '{"api_key":"[SECRET_1]"}');
+});
+
+test('quoted secret values that contain spaces are hidden whole', () => {
+  const r = SP.redact('password="correct horse battery"');
+  assert.equal(r.text, 'password="[SECRET_1]"');
+  assert.equal(r.map['[SECRET_1]'], 'correct horse battery');
+  assert.equal(SP.redact("token='abc def ghi'").text, "token='[SECRET_1]'");
+});
+
+test('Bearer and Basic credentials are hidden', () => {
+  const r = SP.redact('Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123456789');
+  assert.equal(r.text, 'Authorization: Bearer [TOKEN_1]');
+  assert.equal(r.map['[TOKEN_1]'], 'abcdefghijklmnopqrstuvwxyz0123456789');
+  assert.equal(SP.redact('curl -H "Authorization: Basic dXNlcjpwYXNzd29yZA=="').text.includes('dXNlcjpwYXNzd29yZA'), false);
+});
+
+test('the password in a URL with credentials is hidden, the host is kept', () => {
+  const r = SP.redact('DATABASE_URL=postgres://user:s3cretpass@db.example.com:5432/app');
+  assert.equal(r.text, 'DATABASE_URL=postgres://user:[SECRET_1]@db.example.com:5432/app');
+  assert.equal(r.map['[SECRET_1]'], 's3cretpass');
+});
+
+test('restore brings back values from quoted and JSON secrets', () => {
+  const r = SP.redact('{"password": "hunter2hunter2"}');
+  assert.equal(SP.restore('Use the value [SECRET_1] in the config.', r.map).text, 'Use the value hunter2hunter2 in the config.');
+});
+
+test('IBAN, US SSN, Slack webhooks and npm tokens are hidden; invalid look-alikes are not', () => {
+  assert.deepEqual(kinds('IBAN DE89 3704 0044 0532 0130 00'), ['BANK_ACCOUNT']);
+  assert.deepEqual(kinds('IBAN DE00 3704 0044 0532 0130 00'), []);
+  assert.deepEqual(kinds('ssn 123-45-6789'), ['SSN']);
+  assert.deepEqual(kinds('ssn 000-12-3456 or 666-12-3456 or 123-00-4567'), []);
+  assert.deepEqual(kinds('https://hooks.slack.com/services/T0ABC123/B0ABC123/abcdEFGH1234'), ['API_KEY']);
+  assert.deepEqual(kinds('npm_' + 'a'.repeat(36)), ['API_KEY']);
+});
+
+test('keep leaves a value visible and does not let another rule hide it instead', () => {
+  const text = 'card 4111 1111 1111 1111 and mail kim@example.com';
+  const r = SP.redact(text, { keep: ['4111 1111 1111 1111'] });
+  assert.equal(r.text, 'card 4111 1111 1111 1111 and mail [EMAIL_1]');
+  assert.deepEqual(r.counts, { EMAIL: 1 });
+});
+
+test('restore accepts a tag the AI escaped, spaced or wrapped differently', () => {
+  const map = { '[EMAIL_1]': 'kim@example.com', '[SECRET_10]': 'hunter2hunter2' };
+  assert.equal(SP.restore('\\[EMAIL_1\\]', map).text, 'kim@example.com');
+  assert.equal(SP.restore('[ EMAIL_1 ] or EMAIL_1', map).text, 'kim@example.com or kim@example.com');
+  assert.equal(SP.restore('**[SECRET_10]**', map).text, '**hunter2hunter2**');
+  assert.equal(SP.restore('MY_EMAIL_1 and [EMAIL_19]', map).replaced, 0);
+});

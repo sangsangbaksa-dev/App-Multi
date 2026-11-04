@@ -32,6 +32,9 @@
 
   /* In-memory only: the originals for restoring. Lost on reload by design. */
   var last = null;
+  /* The text as it was hidden, and the values the user chose to leave visible. */
+  var lastInput = '';
+  var keepList = [];
 
   /* ---------- helpers ---------- */
 
@@ -89,25 +92,52 @@
 
   function kindOf(tag) { return tag.slice(1, tag.lastIndexOf('_')); }
 
+  /* One row per distinct value found, hidden or kept, with a button to switch it. */
   function renderTags() {
     var list = $('tags');
     list.textContent = '';
     if (!last) return;
-    Object.keys(last.map).forEach(function (tag) {
+    var seen = {};
+    SP.findAll(lastInput).forEach(function (f) {
+      var key = f.kind + '\n' + f.value;
+      if (seen[key]) return;
+      seen[key] = true;
+      var kept = keepList.indexOf(f.value) >= 0;
+      var tag = kept ? '' : Object.keys(last.map).filter(function (k) { return last.map[k] === f.value && kindOf(k) === f.kind; })[0];
       var li = document.createElement('li');
       var code = document.createElement('code');
-      code.textContent = tag;
+      code.textContent = kept ? t('app_kept') : (tag || '');
       var kind = document.createElement('span');
       kind.className = 'kind';
-      kind.textContent = t('app_kind_' + kindOf(tag));
+      kind.textContent = t('app_kind_' + f.kind);
       var pv = document.createElement('span');
       pv.className = 'pv';
-      pv.textContent = SP.preview(last.map[tag]);
+      pv.textContent = SP.preview(f.value);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn ghost small';
+      btn.textContent = kept ? t('app_hide_it') : t('app_keep');
+      btn.addEventListener('click', function () { toggleKeep(f.value); });
       li.appendChild(code);
       li.appendChild(kind);
       li.appendChild(pv);
+      li.appendChild(btn);
       list.appendChild(li);
     });
+  }
+
+  /* Runs the hide step again on the same text, so a changed choice is reflected in the output and the restore map. */
+  function hide() {
+    last = SP.redact(lastInput, { keep: keepList });
+    $('output').value = last.text;
+    renderSummary();
+    renderTags();
+  }
+
+  function toggleKeep(value) {
+    var i = keepList.indexOf(value);
+    if (i >= 0) keepList.splice(i, 1); else keepList.push(value);
+    hide();
   }
 
   function setMsg(id, msg) { $(id).textContent = msg || ''; }
@@ -115,15 +145,15 @@
   /* ---------- actions ---------- */
 
   $('redact').addEventListener('click', function () {
-    var r = SP.redact($('input').value);
-    last = r;
-    $('output').value = r.text;
-    renderSummary();
-    renderTags();
+    lastInput = $('input').value;
+    keepList = [];
+    hide();
   });
 
   $('clear').addEventListener('click', function () {
     last = null;
+    lastInput = '';
+    keepList = [];
     $('input').value = '';
     $('output').value = '';
     $('reply').value = '';

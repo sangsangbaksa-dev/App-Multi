@@ -151,7 +151,7 @@
       var p = state.packs.filter(function (x) { return x.id === e.packId; })[0];
       return h('li', {}, [e.time ? h('span', { class: 'ld' }, e.time) : null, h('b', {}, e.student), h('span', { class: 'ln' }, T('left', { n: C.remaining(p) })),
         h('button', { class: 'ghost sm', onclick: function () { C.toggleSkip(p, today); save(); render(); } }, T('skip')),
-        h('button', { class: 'stampbtn sm', onclick: function () { stamp(p, today); } }, T('stampToday'))]); }))]));
+        h('button', { class: 'stampbtn sm', onclick: function () { stamp(p, today); } }, T('stampToday'))]); })), h('div', { class: 'row', style: 'margin-top:8px' }, [h('button', { class: 'ghost sm', onclick: function () { if (confirm(T('stampAllAsk', { n: plan.length }))) { var k = C.stampPlanned(state.packs, today); save(); render(); toast(T('stampAllDone', { n: k })); } } }, T('stampAll')), h('button', { class: 'ghost sm', onclick: function () { copy(C.dayPlanText(state.packs, today), T('remindCopied')); } }, T('copyDay'))])]));
     var wk = C.weekPlan(state.packs, today, 7);
     if (state.packs.length) root.appendChild(h('details', { class: 'weekbox', open: wk.length ? 'open' : false }, [h('summary', {}, T('weekH') + (wk.length ? ' (' + wk.reduce(function (n, d) { return n + d.items.length; }, 0) + ')' : '')),
       wk.length ? h('div', {}, wk.map(function (d) { return h('div', { class: 'wkday' }, [h('b', {}, d.date === today ? T('todayH') : fmt({ weekday: 'short', month: 'short', day: 'numeric' }, d.date)),
@@ -360,7 +360,8 @@
       p.stamps.length ? h('ul', {}, p.stamps.slice().reverse().map(function (s) {
         return h('li', {}, [h('span', { class: 'ld' }, s.date), s.kind ? h('span', { class: 'tag t-' + s.kind }, T(s.kind === 'noshow' ? 'kNoshow' : 'kExcused')) : null, s.mk ? h('span', { class: 'tag t-mk' }, T('mkTag')) : null,
           h('span', { class: 'ln' }, s.note || ''),
-          h('button', { class: 'ghost sm', 'aria-label': T('editNote') + ' ' + s.date, onclick: function () { var v = prompt(T('notePh'), s.note || ''); if (v !== null) { C.setNote(p, s.id, v); save(); render(); } } }, T('editNote'))]);
+          h('button', { class: 'ghost sm', 'aria-label': T('editNote') + ' ' + s.date, onclick: function () { var v = prompt(T('notePh'), s.note || ''); if (v !== null) { C.setNote(p, s.id, v); save(); render(); } } }, T('editNote')),
+          h('button', { class: 'ghost sm', 'aria-label': T('moveBtn') + ' ' + s.date, onclick: function () { var v = prompt(T('movePh'), s.date); if (v === null) return; if (C.moveStamp(p, s.id, v.trim())) { save(); render(); toast(T('moveDone')); } else toast(T('moveBad')); } }, T('moveBtn'))]);
       })) : h('p', { class: 'note' }, T('histEmpty'))]);
     var sch = scheduleEditor(p);
     return h('section', { class: 'card ' + st, 'aria-label': p.student }, [
