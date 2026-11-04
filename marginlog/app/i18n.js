@@ -2,6 +2,7 @@
 (function (root) {
   var L = {};
   L.en = {
+    lateOnly: 'Recorded late only', photosOnly: 'With photos only', sortWord: 'Sort', sortNew: 'Newest first', sortOld: 'Oldest first', sevBreak: 'Severity breakdown', byMonth: 'By month', avgGap: 'Average days between entries: {n}', witnessFact: 'Entries with a witness: {n} of {t}', reportedFact: 'Entries reported to someone: {n} of {t}', sevTrend: 'Average severity, last 30 days: {a}, the 30 before: {b}', nearDup: 'Saved. Another entry is within 30 minutes of this one, so check the times.',
     dateFrom: 'From', dateTo: 'To', copyCase: 'Copy setup to a new case', copyCaseHelp: 'Starts a new case with the same type, other party, goal and quiet hours. No entries are copied.', copyCaseBtn: 'Copy setup',
     ovIcs: 'Download deadlines (.ics)', ovDigest: 'Download digest (.md)', ovNoDeadlines: 'No open deadlines to export.', dgTitle: 'Marginlog digest', dgAttention: 'Needs attention', dgNone: 'Nothing overdue.', dgCases: 'Cases', dgRecent: '{n} in the last 30 days', dgOverdueItem: '{step} in {case} was due {d}',
     passLabel: 'Passphrase (optional)', passHint: 'Encrypts the backup file. Without it the file is plain JSON. A forgotten passphrase cannot be recovered.', passShort: 'Use at least 8 characters for the passphrase.', passNeeded: 'This backup is encrypted. Type its passphrase above, then choose the file again.', passWrong: 'The passphrase does not match this backup, or the file was changed.', overviewBtn: 'Overview', overviewH: 'All cases', overviewHelp: 'A quick look at every case. Open one to carry on.', ovEntries: '{n} entries', ovLast: 'Last: {d}', ovOverdue: '{n} overdue', ovOpen: '{n} open steps', ovStrength: 'Evidence {s}', ovArchived: 'archived', ovNone: 'No cases yet.',
@@ -117,6 +118,7 @@
     tagsH: 'What it is about'
   };
   L.ko = {
+    lateOnly: '늦게 기록한 것만', photosOnly: '사진이 있는 기록만', sortWord: '정렬', sortNew: '최신순', sortOld: '오래된순', sevBreak: '심각도별 분포', byMonth: '월별', avgGap: '기록 사이 평균 간격: {n}일', witnessFact: '목격자가 있는 기록: {t}건 중 {n}건', reportedFact: '외부에 알린 기록: {t}건 중 {n}건', sevTrend: '평균 심각도 — 최근 30일: {a}, 그 이전 30일: {b}', nearDup: '저장했습니다. 이 기록과 30분 이내에 다른 기록이 있으니 시간을 확인하세요.',
     dateFrom: '시작일', dateTo: '종료일', copyCase: '설정을 복사해 새 사건 만들기', copyCaseHelp: '같은 유형, 상대방, 목표, 조용한 시간을 가진 새 사건을 만듭니다. 기록은 복사되지 않습니다.', copyCaseBtn: '설정 복사',
     ovIcs: '기한 내보내기 (.ics)', ovDigest: '요약 내보내기 (.md)', ovNoDeadlines: '내보낼 열린 기한이 없습니다.', dgTitle: 'Marginlog 요약', dgAttention: '확인 필요', dgNone: '기한이 지난 항목이 없습니다.', dgCases: '사건', dgRecent: '최근 30일 {n}건', dgOverdueItem: '{case}의 {step} 기한: {d}',
     passLabel: '암호 문구(선택)', passHint: '백업 파일을 암호화합니다. 비워 두면 일반 JSON입니다. 암호 문구를 잊으면 복구할 수 없습니다.', passShort: '암호 문구는 8자 이상이어야 합니다.', passNeeded: '이 백업은 암호화되어 있습니다. 위에 암호 문구를 입력한 뒤 파일을 다시 선택하세요.', passWrong: '암호 문구가 맞지 않거나 파일이 바뀌었습니다.', overviewBtn: '전체 보기', overviewH: '모든 사건', overviewHelp: '사건마다 한눈에 봅니다. 열어서 이어서 작성하세요.', ovEntries: '기록 {n}건', ovLast: '마지막: {d}', ovOverdue: '기한 초과 {n}건', ovOpen: '진행 중 {n}단계', ovStrength: '증거 점수 {s}', ovArchived: '보관됨', ovNone: '아직 사건이 없습니다.',
@@ -232,6 +234,7 @@
     tagsH: '무엇에 관한 것인가'
   };
   L.ja = {
+    lateOnly: '遅れて記録したものだけ', photosOnly: '写真ありのみ', sortWord: '並び順', sortNew: '新しい順', sortOld: '古い順', sevBreak: '深刻度の内訳', byMonth: '月別', avgGap: '記録間の平均日数: {n}日', witnessFact: '目撃者ありの記録: {t}件中{n}件', reportedFact: '第三者に通報した記録: {t}件中{n}件', sevTrend: '平均深刻度 — 直近30日: {a}、その前の30日: {b}', nearDup: '保存しました。この記録の30分以内に別の記録があります。時刻を確認してください。',
     dateFrom: '開始日', dateTo: '終了日', copyCase: '設定をコピーして新しい案件を作成', copyCaseHelp: '同じ種類、相手、目的、静穏時間で新しい案件を作成します。記録はコピーされません。', copyCaseBtn: '設定をコピー',
     ovIcs: '期限を書き出す (.ics)', ovDigest: 'ダイジェストを書き出す (.md)', ovNoDeadlines: '書き出す未完了の期限がありません。', dgTitle: 'Marginlog ダイジェスト', dgAttention: '要確認', dgNone: '期限超過はありません。', dgCases: '案件', dgRecent: '直近30日 {n}件', dgOverdueItem: '{case}の{step}、期限 {d}',
     passLabel: 'パスフレーズ（任意）', passHint: 'バックアップファイルを暗号化します。空欄なら通常のJSONです。パスフレーズを忘れると復元できません。', passShort: 'パスフレーズは8文字以上にしてください。', passNeeded: 'このバックアップは暗号化されています。上にパスフレーズを入力してから、ファイルを選び直してください。', passWrong: 'パスフレーズが一致しないか、ファイルが変更されています。', overviewBtn: '一覧', overviewH: 'すべての案件', overviewHelp: '各案件をひと目で確認できます。開いて続けてください。', ovEntries: '記録 {n}件', ovLast: '最終: {d}', ovOverdue: '期限超過 {n}件', ovOpen: '未完了 {n}段階', ovStrength: '証拠スコア {s}', ovArchived: 'アーカイブ', ovNone: 'まだ案件がありません。',
@@ -347,6 +350,7 @@
     tagsH: '何についてか'
   };
   L.zh = {
+    lateOnly: '仅显示延迟记录', photosOnly: '仅显示有照片的记录', sortWord: '排序', sortNew: '最新优先', sortOld: '最早优先', sevBreak: '严重度分布', byMonth: '按月', avgGap: '记录之间的平均天数：{n}', witnessFact: '有证人的记录：{n} / {t}', reportedFact: '已报告给他人的记录：{n} / {t}', sevTrend: '平均严重度：最近 30 天 {a}，之前 30 天 {b}', nearDup: '已保存。与这条记录相隔 30 分钟内还有另一条记录，请核对时间。',
     dateFrom: '开始日期', dateTo: '结束日期', copyCase: '复制设置到新事项', copyCaseHelp: '以相同的类型、对方、目标和安静时段新建事项。不会复制记录。', copyCaseBtn: '复制设置',
     ovIcs: '导出期限 (.ics)', ovDigest: '导出摘要 (.md)', ovNoDeadlines: '没有可导出的未完成期限。', dgTitle: 'Marginlog 摘要', dgAttention: '需要关注', dgNone: '没有逾期项。', dgCases: '事项', dgRecent: '最近 30 天 {n} 条', dgOverdueItem: '{case}的{step}，到期 {d}',
     passLabel: '口令（可选）', passHint: '用于加密备份文件。留空则为普通 JSON。忘记口令将无法恢复。', passShort: '口令至少需要 8 个字符。', passNeeded: '此备份已加密。请先在上方输入口令，再重新选择文件。', passWrong: '口令不匹配，或文件已被修改。', overviewBtn: '总览', overviewH: '全部事项', overviewHelp: '快速查看每个事项，打开即可继续记录。', ovEntries: '{n} 条记录', ovLast: '最近: {d}', ovOverdue: '逾期 {n} 项', ovOpen: '未完成 {n} 步', ovStrength: '证据评分 {s}', ovArchived: '已归档', ovNone: '还没有事项。',
@@ -462,6 +466,7 @@
     tagsH: '主要涉及什么'
   };
   L.es = {
+    lateOnly: 'Solo las registradas con retraso', photosOnly: 'Solo con fotos', sortWord: 'Orden', sortNew: 'Más recientes primero', sortOld: 'Más antiguas primero', sevBreak: 'Desglose por gravedad', byMonth: 'Por mes', avgGap: 'Días medios entre entradas: {n}', witnessFact: 'Entradas con testigo: {n} de {t}', reportedFact: 'Entradas comunicadas a alguien: {n} de {t}', sevTrend: 'Gravedad media: últimos 30 días {a}, los 30 anteriores {b}', nearDup: 'Guardado. Hay otra entrada a menos de 30 minutos de esta; revisa las horas.',
     dateFrom: 'Desde', dateTo: 'Hasta', copyCase: 'Copiar configuración a un caso nuevo', copyCaseHelp: 'Crea un caso nuevo con el mismo tipo, otra parte, objetivo y horario de silencio. No se copian entradas.', copyCaseBtn: 'Copiar configuración',
     ovIcs: 'Descargar plazos (.ics)', ovDigest: 'Descargar resumen (.md)', ovNoDeadlines: 'No hay plazos abiertos que exportar.', dgTitle: 'Resumen de Marginlog', dgAttention: 'Requiere atención', dgNone: 'Nada vencido.', dgCases: 'Casos', dgRecent: '{n} en los últimos 30 días', dgOverdueItem: '{step} en {case} vencía el {d}',
     passLabel: 'Frase de contraseña (opcional)', passHint: 'Cifra el archivo de copia. Si lo dejas vacío, es JSON normal. Si olvidas la frase, no se puede recuperar.', passShort: 'La frase debe tener al menos 8 caracteres.', passNeeded: 'Esta copia está cifrada. Escribe su frase arriba y vuelve a elegir el archivo.', passWrong: 'La frase no coincide con esta copia, o el archivo fue modificado.', overviewBtn: 'Resumen', overviewH: 'Todos los casos', overviewHelp: 'Una vista rápida de cada caso. Ábrelo para seguir.', ovEntries: '{n} entradas', ovLast: 'Última: {d}', ovOverdue: '{n} vencidos', ovOpen: '{n} pasos abiertos', ovStrength: 'Evidencia {s}', ovArchived: 'archivado', ovNone: 'Aún no hay casos.',

@@ -128,6 +128,14 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   await pg.fill('#ffrom', ''); await pg.fill('#fto', ago(2).slice(0, 10)); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 1);
   assert.ok((await pg.textContent('.entry')).includes('Old repair'));
   await pg.fill('#fto', ''); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 2);
+  // sort, recorded-late and with-photos filters; near-duplicate warning on save
+  await pg.selectOption('#fsort', 'old'); assert.ok((await pg.locator('.entry').first().textContent()).includes('Old repair'));
+  await pg.selectOption('#fsort', 'new'); assert.ok((await pg.locator('.entry').first().textContent()).includes('Fresh repair'));
+  await pg.click('#flate'); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 1); assert.ok((await pg.textContent('.entry')).includes('Old repair'));
+  await pg.click('#flate'); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 2);
+  await pg.click('#fphoto'); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 0); await pg.click('#fphoto'); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 2);
+  await log({ at: ago(0, 0, 20), text: 'Same night, twenty minutes later' });
+  assert.ok((await pg.textContent('#toast')).includes('within 30 minutes'));
   // landing pages render
   for (const l of ['', 'ko/', 'ja/', 'zh/', 'es/']) { const r = await pg.goto(base + '/' + l); assert.equal(r.status(), 200); assert.ok(await pg.locator('h1').count() === 1 && await pg.locator('a.cta').count() >= 1, l); }
   await pg.goto(base + '/'); await pg.screenshot({ path: out + '/08-landing.png', fullPage: true });

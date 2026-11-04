@@ -76,6 +76,39 @@
   function isLate(e) { var p = parseAt(e.at); return !!p && e.rec - p.ts > LATE_HOURS * 36e5; }
   /* from/to are YYYY-MM-DD, either may be empty (open ended). Compares the calendar day of the entry's own time. */
   function inRange(at, from, to) { var p = parseAt(at); if (!p) return false; if (from && p.day < from) return false; if (to && p.day > to) return false; return true; }
+  /* ---------- pattern helpers (pure, over event lists) ---------- */
+  function sevCounts(evs) { var out = [0, 0, 0, 0, 0]; evs.forEach(function (e) { if (e.sev >= 1 && e.sev <= 5) out[e.sev - 1]++; }); return out; }
+  /* mean days between the first and last entry, spread over the gaps; null with fewer than two dated entries */
+  function avgGapDays(evs) {
+    var days = evs.map(function (e) { return dayNum(e.at); }).filter(function (d) { return d != null; }).sort(function (a, b) { return a - b; });
+    if (days.length < 2) return null;
+    return Math.round(10 * (days[days.length - 1] - days[0]) / (days.length - 1)) / 10;
+  }
+  /* one row per calendar month, oldest first, ending with the current month */
+  function monthlyCounts(evs, nowTs, months) {
+    months = clampInt(months || 6, 1, 24);
+    var now = new Date(nowTs), out = [], idx = {}, i, d, key;
+    for (i = months - 1; i >= 0; i--) { d = new Date(now.getFullYear(), now.getMonth() - i, 1); key = d.getFullYear() + '-' + pad(d.getMonth() + 1); idx[key] = out.length; out.push({ m: key, n: 0 }); }
+    evs.forEach(function (e) { var p = parseAt(e.at); if (!p) return; var k = p.y + '-' + pad(p.m); if (idx[k] != null) out[idx[k]].n++; });
+    return out;
+  }
+  function witnessCount(evs) { return evs.filter(function (e) { return !!e.witness; }).length; }
+  function reportedCount(evs) { return evs.filter(function (e) { return !!e.reported; }).length; }
+  /* mean severity over the last 30 days and the 30 days before; null where a window has no rated entry */
+  function sevSplit(evs, nowTs) {
+    var now = new Date(nowTs), todayN = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 864e5), r = { s: 0, n: 0 }, b = { s: 0, n: 0 };
+    evs.forEach(function (e) {
+      var dn = dayNum(e.at); if (dn == null || !e.sev) return; var ago = todayN - dn;
+      if (ago >= 0 && ago < 30) { r.s += e.sev; r.n++; } else if (ago >= 30 && ago < 60) { b.s += e.sev; b.n++; }
+    });
+    return { recent: r.n ? Math.round(10 * r.s / r.n) / 10 : null, before: b.n ? Math.round(10 * b.s / b.n) / 10 : null };
+  }
+  /* entries whose time is within `minutes` of atStamp (inclusive) */
+  function nearDuplicates(evs, atStamp, minutes) {
+    var p = parseAt(atStamp); if (!p) return [];
+    var win = clampInt(minutes == null ? 30 : minutes, 1, 1440) * 6e4;
+    return evs.filter(function (e) { var q = parseAt(e.at); return !!q && Math.abs(q.ts - p.ts) <= win; });
+  }
   function inQuiet(h, q) { if (!q) return false; var a = q[0], b = q[1]; return a === b ? false : (a < b ? h >= a && h < b : h >= a || h < b); }
 
   function heatmap(evs) {
@@ -342,7 +375,7 @@
   var api = {
     KINDS: KINDS, STEP_KINDS: STEP_KINDS, LATE_HOURS: LATE_HOURS,
     uid: uid, pad: pad, toLocalStamp: toLocalStamp, parseAt: parseAt, dayNum: dayNum, sha256Hex: sha256Hex, seal: seal, verifyChain: verifyChain, cleanTags: cleanTags, clampInt: clampInt,
-    events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, inRange: inRange, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
+    events: events, addenda: addenda, voidedIds: voidedIds, isLate: isLate, inQuiet: inQuiet, inRange: inRange, sevCounts: sevCounts, avgGapDays: avgGapDays, monthlyCounts: monthlyCounts, witnessCount: witnessCount, reportedCount: reportedCount, sevSplit: sevSplit, nearDuplicates: nearDuplicates, heatmap: heatmap, weekly: weekly, topBand: topBand, stats: stats,
     strength: strength, caseStrength: caseStrength, ladder: ladder, suggestNext: suggestNext, toCsv: toCsv, reportMarkdown: reportMarkdown, sanitizeCase: sanitizeCase,
     tagCounts: tagCounts, readiness: readiness, addDays: addDays, noticeLetter: noticeLetter, toIcs: toIcs, encryptText: encryptText, decryptText: decryptText, overview: overview, calendarAll: calendarAll, digest: digest
   };
