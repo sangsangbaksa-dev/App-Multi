@@ -2,6 +2,7 @@
 (function (root) {
   var L = {};
   L.en = {
+    dateFrom: 'From', dateTo: 'To', copyCase: 'Copy setup to a new case', copyCaseHelp: 'Starts a new case with the same type, other party, goal and quiet hours. No entries are copied.', copyCaseBtn: 'Copy setup',
     name: 'English', language: 'Language', dataBtn: 'Backup', close: 'Close', cancel: 'Cancel', save: 'Save', delete: 'Delete', undo: 'Undo',
     days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], min: 'min', hShort: 'h',
     emptyH: 'Start a log you can prove', emptyB: 'Pick what you are dealing with. Marginlog keeps a dated, tamper-evident record of each incident, shows the pattern, and builds the report you hand to a landlord, HR, mediator or officer.',
@@ -76,6 +77,7 @@
     liveDropped: 'Timer discarded.'
   };
   L.ko = {
+    dateFrom: '시작일', dateTo: '종료일', copyCase: '설정을 복사해 새 사건 만들기', copyCaseHelp: '같은 유형, 상대방, 목표, 조용한 시간을 가진 새 사건을 만듭니다. 기록은 복사되지 않습니다.', copyCaseBtn: '설정 복사',
     name: '한국어', language: '언어', dataBtn: '백업', close: '닫기', cancel: '취소', save: '저장', delete: '삭제', undo: '되돌리기',
     days: ['월', '화', '수', '목', '금', '토', '일'], min: '분', hShort: '시간',
     emptyH: '증명할 수 있는 기록을 시작하세요', emptyB: '어떤 문제인지 고르세요. Marginlog는 사건마다 날짜가 찍힌 위·변조 방지 기록을 남기고, 패턴을 보여 주고, 집주인·인사팀·조정위원·담당 기관에 낼 보고서를 만들어 줍니다.',
@@ -150,6 +152,7 @@
     liveDropped: '타이머를 버렸습니다.'
   };
   L.ja = {
+    dateFrom: '開始日', dateTo: '終了日', copyCase: '設定をコピーして新しい案件を作成', copyCaseHelp: '同じ種類、相手、目的、静穏時間で新しい案件を作成します。記録はコピーされません。', copyCaseBtn: '設定をコピー',
     name: '日本語', language: '言語', dataBtn: 'バックアップ', close: '閉じる', cancel: 'キャンセル', save: '保存', delete: '削除', undo: '元に戻す',
     days: ['月', '火', '水', '木', '金', '土', '日'], min: '分', hShort: '時間',
     emptyH: '証明できる記録を始めましょう', emptyB: '悩みの種類を選んでください。Marginlog は出来事ごとに日付入りの改ざん検知つき記録を残し、パターンを示し、大家・人事・調停人・担当機関に渡す報告書を作ります。',
@@ -224,6 +227,7 @@
     liveDropped: 'タイマーを破棄しました。'
   };
   L.zh = {
+    dateFrom: '开始日期', dateTo: '结束日期', copyCase: '复制设置到新事项', copyCaseHelp: '以相同的类型、对方、目标和安静时段新建事项。不会复制记录。', copyCaseBtn: '复制设置',
     name: '中文', language: '语言', dataBtn: '备份', close: '关闭', cancel: '取消', save: '保存', delete: '删除', undo: '撤销',
     days: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], min: '分钟', hShort: '小时',
     emptyH: '开始一份能拿出来证明的记录', emptyB: '选择你遇到的问题。Marginlog 为每次事件留下带日期、可发现篡改的记录，展示规律，并生成可交给房东、人事、调解员或主管部门的报告。',
@@ -298,6 +302,7 @@
     liveDropped: '已放弃计时。'
   };
   L.es = {
+    dateFrom: 'Desde', dateTo: 'Hasta', copyCase: 'Copiar configuración a un caso nuevo', copyCaseHelp: 'Crea un caso nuevo con el mismo tipo, otra parte, objetivo y horario de silencio. No se copian entradas.', copyCaseBtn: 'Copiar configuración',
     name: 'Español', language: 'Idioma', dataBtn: 'Respaldo', close: 'Cerrar', cancel: 'Cancelar', save: 'Guardar', delete: 'Borrar', undo: 'Deshacer',
     days: ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'], min: 'min', hShort: 'h',
     emptyH: 'Empieza un registro que puedas demostrar', emptyB: 'Elige a qué te enfrentas. Marginlog guarda un registro fechado y a prueba de manipulación de cada incidente, muestra el patrón y prepara el informe para el casero, RR. HH., mediador o autoridad.',

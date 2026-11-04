@@ -126,3 +126,14 @@ test('suggestNext reports an exhausted ladder', async () => {
 test('sanitizeCase rejects inherited property names as kind', () => {
   assert.equal(C.sanitizeCase({ name: 'x', kind: 'constructor' }).kind, 'other'); assert.equal(C.sanitizeCase({ name: 'x', kind: '__proto__' }).kind, 'other');
 });
+
+test('inRange: open or closed day bounds on the entry day, invalid stamps never match', () => {
+  const at = '2026-10-10T23:30';
+  assert.equal(C.inRange(at, '', ''), true);
+  assert.equal(C.inRange(at, '2026-10-10', ''), true);
+  assert.equal(C.inRange(at, '2026-10-11', ''), false);
+  assert.equal(C.inRange(at, '', '2026-10-10'), true);
+  assert.equal(C.inRange(at, '', '2026-10-09'), false);
+  assert.equal(C.inRange(at, '2026-10-01', '2026-10-31'), true);
+  assert.equal(C.inRange('not a date', '', ''), false);
+});

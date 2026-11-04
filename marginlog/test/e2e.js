@@ -113,6 +113,21 @@ const ago = (days, h = 22, m = 30) => { const d = new Date(); d.setDate(d.getDat
   await pg.click('#tab-case'); await pg.click('[data-act=archive]'); assert.ok((await pg.locator('#casesel option:checked').textContent()).includes('Second'));
   await pg.selectOption('#casesel', { index: 0 }); await pg.click('#tab-case'); await pg.click('[data-act=archive]');
   await pg.selectOption('#casesel', { label: 'Second (archived)' }).catch(() => {}); 
+  // copy setup: a new case with the same type, other party and goal; no entries are copied
+  await pg.click('[data-act=newcase][data-kind=""]'); await pg.fill('#c-name', 'Template'); await pg.fill('#c-who', 'Landlord Ltd'); await pg.fill('#c-goal', 'Repairs done'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.hero');
+  await pg.click('#tab-case'); await pg.click('[data-act=copycase]');
+  assert.equal(await pg.inputValue('#c-name'), ''); assert.equal(await pg.inputValue('#c-who'), 'Landlord Ltd'); assert.equal(await pg.inputValue('#c-goal'), 'Repairs done');
+  await pg.fill('#c-name', 'Template copy'); await pg.click('dialog button[type=submit]'); await pg.waitForSelector('.hero');
+  assert.equal(await pg.locator('.caserow option:checked').textContent(), 'Template copy'); assert.ok((await pg.locator('.big').textContent()).includes('Nothing logged'));
+  // date range: From / To narrow the log list by the day of each entry
+  await log({ at: ago(3, 9, 0), text: 'Old repair request, no reply for weeks' });
+  await log({ at: ago(0, 0, 5), text: 'Fresh repair request, still no answer' });
+  assert.equal(await pg.locator('.entry').count(), 2);
+  await pg.fill('#ffrom', ago(1).slice(0, 10)); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 1);
+  assert.ok((await pg.textContent('.entry')).includes('Fresh repair'));
+  await pg.fill('#ffrom', ''); await pg.fill('#fto', ago(2).slice(0, 10)); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 1);
+  assert.ok((await pg.textContent('.entry')).includes('Old repair'));
+  await pg.fill('#fto', ''); await pg.waitForFunction(() => document.querySelectorAll('.entry').length === 2);
   // landing pages render
   for (const l of ['', 'ko/', 'ja/', 'zh/', 'es/']) { const r = await pg.goto(base + '/' + l); assert.equal(r.status(), 200); assert.ok(await pg.locator('h1').count() === 1 && await pg.locator('a.cta').count() >= 1, l); }
   await pg.goto(base + '/'); await pg.screenshot({ path: out + '/08-landing.png', fullPage: true });

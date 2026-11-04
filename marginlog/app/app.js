@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var C = window.MLCore, I = window.MLI18n, KEY = 'marginlog:v1';
-  var S = { cases: [], cur: null, tab: 'log', lang: 'en', f: { q: '', tag: '', sev: 0, voided: false } };
+  var S = { cases: [], cur: null, tab: 'log', lang: 'en', f: { q: '', tag: '', sev: 0, voided: false, from: '', to: '' } };
   var persisted = null, stale = false, blocked = false, corruptKey = null, lastTrig = null, root = document.getElementById('root'), pending = { photos: [] }, toastTimer = null, liveTimer = null, undoBuf = null;
 
   function t(k, v) {
@@ -129,6 +129,7 @@
   function matches(e, c) {
     var f = S.f; if (f.sev && e.sev < f.sev) return false;
     if (f.tag && e.tags.indexOf(f.tag) < 0) return false;
+    if ((f.from || f.to) && !C.inRange(e.at, f.from, f.to)) return false;
     if (f.q) { var q = f.q.toLowerCase(); if ((e.text + ' ' + e.witness + ' ' + e.tags.join(' ') + ' ' + C.addenda(c.entries, e.id).map(function (n) { return n.text; }).join(' ')).toLowerCase().indexOf(q) < 0) return false; }
     return true;
   }
@@ -140,6 +141,8 @@
     var h = '<form class="filters" role="search" id="filters" autocomplete="off"><label class="sr" for="fq">' + esc(t('search')) + '</label><input id="fq" type="search" placeholder="' + esc(t('search')) + '" value="' + esc(S.f.q) + '" maxlength="60">' +
       '<label class="sr" for="ftag">' + esc(t('tagsWord')) + '</label><select id="ftag"><option value="">' + esc(t('anyTag')) + '</option>' + Object.keys(tags).sort().map(function (x) { return '<option' + (S.f.tag === x ? ' selected' : '') + ' value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('') + '</select>' +
       '<label class="sr" for="fsev">' + esc(t('sevWord')) + '</label><select id="fsev"><option value="0">' + esc(t('anySev')) + '</option>' + [2, 3, 4, 5].map(function (n) { return '<option' + (S.f.sev === n ? ' selected' : '') + ' value="' + n + '">' + esc(t('sevMin', { n: n })) + '</option>'; }).join('') + '</select>' +
+      '<label class="sr" for="ffrom">' + esc(t('dateFrom')) + '</label><input id="ffrom" type="date" title="' + esc(t('dateFrom')) + '" value="' + esc(S.f.from) + '">' +
+      '<label class="sr" for="fto">' + esc(t('dateTo')) + '</label><input id="fto" type="date" title="' + esc(t('dateTo')) + '" value="' + esc(S.f.to) + '">' +
       '<label class="chk"><input type="checkbox" id="fvoid"' + (S.f.voided ? ' checked' : '') + '> ' + esc(t('showVoided')) + '</label></form>';
     if (!list.length) return h + '<div class="empty small"><p>' + esc(t(!all.length ? 'allVoided' : 'noMatch')) + '</p><button type="button" class="ghost" data-act="clearf">' + esc(t('clearFilters')) + '</button></div>';
     h += '<p class="count" role="status">' + esc(t('showing', { n: list.length, t: all.length })) + '</p><ol class="entries">';
@@ -201,6 +204,7 @@
   }
   function caseTab(c) {
     var h = '<form id="caseform-inline" class="form" autocomplete="off"><p class="hint">' + esc(t('kind_' + c.kind)) + '</p><button type="button" class="sec" data-act="editcase">' + esc(t('editCase')) + '</button></form>';
+    h += '<p class="hint">' + esc(t('copyCaseHelp')) + '</p><div class="btns wrap"><button type="button" class="ghost" data-act="copycase">' + esc(t('copyCaseBtn')) + '</button></div>';
     h += '<p class="hint">' + esc(t('sealExplain')) + '</p><div class="btns wrap"><button type="button" class="ghost" data-act="archive">' + esc(c.archived ? t('unarchive') : t('archive')) + '</button><button type="button" class="ghost danger" data-act="delcase">' + esc(t('deleteCase')) + '</button></div>';
     return h;
   }
@@ -330,13 +334,14 @@
       if (!save()) { c.steps.pop(); return err(saveMsg()); } closeDialog(); S.tab = 'steps'; render(); toast(t('stepSaved'));
     });
   }
-  function caseDialog(kind, existing) {
-    var c = existing, k = c ? c.kind : kind || 'other', q = c ? c.quiet : C.KINDS[k].quiet;
+  /* tpl (optional): an existing case whose type, other party, goal and quiet hours pre-fill a new case. No entries are copied. */
+  function caseDialog(kind, existing, tpl) {
+    var c = existing, src = c || tpl || null, k = src ? src.kind : kind || 'other', q = src ? src.quiet : C.KINDS[k].quiet;
     openDialog('<h2 id="dlg-h">' + esc(t(c ? 'editCase' : 'newCase')) + '</h2>' +
       '<label for="c-kind">' + esc(t('caseKind')) + '</label><select id="c-kind"' + (c ? ' disabled' : '') + '>' + Object.keys(C.KINDS).map(function (x) { return '<option value="' + x + '"' + (x === k ? ' selected' : '') + '>' + esc(t('kind_' + x)) + '</option>'; }).join('') + '</select>' +
       '<label for="c-name">' + esc(t('caseName')) + '</label><input id="c-name" maxlength="80" required value="' + esc(c ? c.name : '') + '" placeholder="' + esc(t('caseNamePh')) + '">' +
-      '<label for="c-who">' + esc(t('counterpart')) + '</label><input id="c-who" maxlength="80" value="' + esc(c ? c.counterpart : '') + '" placeholder="' + esc(t('counterpartPh')) + '">' +
-      '<label for="c-goal">' + esc(t('goal')) + '</label><input id="c-goal" maxlength="200" value="' + esc(c ? c.goal : '') + '" placeholder="' + esc(t('goalPh')) + '">' +
+      '<label for="c-who">' + esc(t('counterpart')) + '</label><input id="c-who" maxlength="80" value="' + esc(src ? src.counterpart : '') + '" placeholder="' + esc(t('counterpartPh')) + '">' +
+      '<label for="c-goal">' + esc(t('goal')) + '</label><input id="c-goal" maxlength="200" value="' + esc(src ? src.goal : '') + '" placeholder="' + esc(t('goalPh')) + '">' +
       '<fieldset><legend>' + esc(t('quietWord')) + '</legend><label class="chk"><input type="checkbox" id="c-qon"' + (q ? ' checked' : '') + '> ' + esc(t('quietOn')) + '</label><div class="two"><div><label for="c-qa">' + esc(t('quietFrom')) + '</label><input id="c-qa" type="number" min="0" max="23" value="' + (q ? q[0] : 22) + '"></div><div><label for="c-qb">' + esc(t('quietTo')) + '</label><input id="c-qb" type="number" min="0" max="23" value="' + (q ? q[1] : 7) + '"></div></div></fieldset>' + btnRow(), function (form) {
       var name = $('#c-name', form).value.trim(); if (!name) { $('#c-name', form).focus(); return err(t('errName')); }
       if ($('#c-qon', form).checked && ($('#c-qa', form).value === '' || $('#c-qb', form).value === '')) return err(t('errQuiet'));
@@ -428,6 +433,7 @@
     var act = b.getAttribute('data-act'), c = cur(), id = b.getAttribute('data-id'); lastTrig = act + '|' + (id || '');
     if (act === 'data') return dataDialog();
     if (act === 'newcase') return caseDialog(b.getAttribute('data-kind') || 'other');
+    if (act === 'copycase') return caseDialog(null, null, c);
     if (!c) return;
     if (act === 'tab') { S.tab = b.getAttribute('data-tab'); render(); var tb = $('#tab-' + S.tab); tb && tb.focus(); if (S.tab === 'report') fillReport(); return; }
     if (act === 'log') return entryDialog(c);
@@ -439,7 +445,7 @@
     if (act === 'addstep') return stepDialog(c, b.getAttribute('data-kind'));
     if (act === 'stepdone') { var sd = (c.steps || []).filter(function (s) { return s.id === id; })[0]; if (sd) { sd.done = true; if (!save()) { sd.done = false; return; } } render(); if (S.tab === 'report') fillReport(); return; }
     if (act === 'stepdel') { var del = c.steps.filter(function (s) { return s.id === id; })[0]; var oldSteps = c.steps; c.steps = c.steps.filter(function (s) { return s.id !== id; }); if (!save()) { c.steps = oldSteps; return; } render(); toast(t('stepRemoved'), t('undo'), function () { c.steps.push(del); if (!save()) c.steps.pop(); render(); }); return; }
-    if (act === 'clearf') { S.f = { q: '', tag: '', sev: 0, voided: S.f.voided }; return render(); }
+    if (act === 'clearf') { S.f = { q: '', tag: '', sev: 0, voided: S.f.voided, from: '', to: '' }; return render(); }
     if (act === 'editcase') return caseDialog(null, c);
     if (act === 'archive') { c.archived = !c.archived; if (!save()) { c.archived = !c.archived; return; } render(); toast(t(c.archived ? 'archivedMsg' : 'unarchivedMsg')); return; }
     if (act === 'delcase') {
@@ -461,10 +467,12 @@
   root.addEventListener('change', function (ev) {
     var el = ev.target;
     if (el.id === 'lang') { S.lang = el.value; save(); render(); if (S.tab === 'report') fillReport(); }
-    else if (el.id === 'casesel') { S.cur = el.value; S.f = { q: '', tag: '', sev: 0, voided: false }; save(); render(); if (S.tab === 'report') fillReport(); }
+    else if (el.id === 'casesel') { S.cur = el.value; S.f = { q: '', tag: '', sev: 0, voided: false, from: '', to: '' }; save(); render(); if (S.tab === 'report') fillReport(); }
     else if (el.id === 'ftag') { S.f.tag = el.value; render(); }
     else if (el.id === 'fsev') { S.f.sev = +el.value; render(); }
     else if (el.id === 'fvoid') { S.f.voided = el.checked; render(); }
+    else if (el.id === 'ffrom') { S.f.from = el.value; render(); }
+    else if (el.id === 'fto') { S.f.to = el.value; render(); }
   });
   function onSearch(ev) {
     if (ev.target.id === 'fq' && !ev.isComposing) { S.f.q = ev.target.value; var pos = ev.target.selectionStart; render(); var q = $('#fq'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } }
