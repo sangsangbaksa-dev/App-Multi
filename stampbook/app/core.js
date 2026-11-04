@@ -488,8 +488,32 @@
   /* true when the stamp with this id was the one that used up the pack */
   function justCompleted(p, id) { return remaining(p) === 0 && p.stamps.length > 0 && counted(p).slice(-1)[0].id === id; }
 
+  /* ---- fixes and bulk actions ---- */
+  /* move one stamp to another date (a mistaken tap, or a lesson that happened on another day). Keeps its note, kind and make-up flag. */
+  function moveStamp(p, id, date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return false;
+    var s = p.stamps.filter(function (x) { return x.id === id; })[0];
+    if (!s) return false;
+    s.date = date;
+    p.stamps.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    return true;
+  }
+  /* stamp every planned lesson due on `date`, one per pack. Lessons already stamped on that day are not planned, so pressing twice does nothing. Returns the count. */
+  function stampPlanned(packs, date) {
+    var n = 0;
+    agenda(packs, date, 1).forEach(function (e) {
+      var p = packs.filter(function (x) { return x.id === e.packId; })[0];
+      if (p && addStamp(p, date, '', '', false)) n++;
+    });
+    return n;
+  }
+  /* plain text of the planned lessons on one day, one line each ("18:00  Mina"), for copying to a parent or a reminder. Empty day gives ''. */
+  function dayPlanText(packs, date) {
+    return agenda(packs, date, 1).map(function (e) { return (e.time ? e.time + '  ' : '') + e.student; }).join('\n');
+  }
+
   var API = {
-    INK_COUNT: INK_COUNT, setClosures: setClosures, inkOf: inkOf, setInk: setInk, weekPlan: weekPlan, justCompleted: justCompleted,
+    INK_COUNT: INK_COUNT, setClosures: setClosures, inkOf: inkOf, setInk: setInk, weekPlan: weekPlan, justCompleted: justCompleted, moveStamp: moveStamp, stampPlanned: stampPlanned, dayPlanText: dayPlanText,
     todayStr: todayStr, parse: parse, daysBetween: daysBetween, addDays: addDays, addMonths: addMonths,
     counted: counted, used: used, setNote: setNote, monthsOf: monthsOf, renew: renew, extend: extend, attention: attention, matches: matches, remaining: remaining, perLesson: perLesson, unearned: unearned, status: status, daysLeft: daysLeft,
     addStamp: addStamp, makeupsOwed: makeupsOwed, makeupList: makeupList, pace: pace, waiveMakeups: waiveMakeups, setNext: setNext, NEXT_MAX: NEXT_MAX, packsAtRisk: packsAtRisk, receipt: receipt, removeStamp: removeStamp, monthStats: monthStats, totalUnearned: totalUnearned, lapsed: lapsed,
