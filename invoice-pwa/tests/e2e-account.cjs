@@ -1,3 +1,4 @@
+const proInit = require("./pro-init.cjs");
 // Run: node tests/e2e-account.cjs  (needs playwright + tests/serve.cjs on :8123)
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
@@ -5,9 +6,10 @@ const URL = "http://localhost:8123/app";
 (async () => {
   const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--no-sandbox"] }).catch(() => chromium.launch());
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+  await proInit(p);
   const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(URL, { waitUntil: "load" });
-  await p.evaluate(() => { localStorage.clear(); });
+  await p.evaluate(() => { localStorage.clear(); localStorage.setItem("qb.license", JSON.stringify("PRO-TEST-0001-ZCUY")); });
   await p.reload({ waitUntil: "load" });
   assert.equal(await p.textContent("#btn-account"), "Log in");
   await p.click("#btn-account");

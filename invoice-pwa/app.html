@@ -37,6 +37,8 @@
   <section id="list-view" class="noprint">
     <p class="muted" data-i18n="privacy"></p>
     <div id="dash" class="cards"></div>
+    <div id="reminders-box" class="box" data-pro></div>
+    <div id="goal-box" class="box" data-pro></div>
     <div id="fx"></div>
     <div id="clientsum"></div>
     <div id="ageing"></div>
@@ -303,7 +305,7 @@
   <form method="dialog" id="lic-form">
     <input id="lic" data-i18n-ph="licKey" data-i18n-aria="licKey" aria-label="License key" autocomplete="off">
     <button value="ok" class="primary" data-i18n="activate"></button>
-    <button value="cancel" data-i18n="close"></button>
+    <button id="lic-close" value="cancel" data-i18n="close"></button>
   </form>
 </dialog>
 <script src="cloud-i18n.js"></script><script src="cloud-sync.js"></script><script src="cloud-panel.js"></script>

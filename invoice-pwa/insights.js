@@ -145,7 +145,7 @@ export function initInsights({ download, getInvoices, isPro, openUpgrade, today,
     $("#tips-list").innerHTML = PLAYBOOK.map((e) => {
       const x = entryFor(e, I.getLang());
       const open = e.free || pro;
-      const head = `<h3 class="h tip-h">${esc(x.title)} ${e.free ? `<span class="badge">${esc(I.t("tipsFree"))}</span>` : (pro ? "" : `<span class="badge">${esc(I.t("tipsProBadge"))}</span>`)}</h3>`;
+      const head = `<h3 class="h tip-h">${esc(x.title)}</h3>`;
       if (!open) return `<article class="tip locked" data-tip="${esc(e.id)}">${head}<p class="muted">${esc(I.t("tipsLocked"))}</p><button type="button" class="accent" data-tip-up>${esc(I.t("goPro"))}</button></article>`;
       return `<article class="tip">${head}<ul class="ticks">${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul></article>`;
     }).join("");

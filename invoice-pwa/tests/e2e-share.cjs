@@ -1,3 +1,4 @@
+const proInit = require("./pro-init.cjs");
 // Run: node tests/e2e-share.cjs  (needs playwright + tests/serve.cjs on :8123)
 // Covers the Pro features added around client links: share link, payment log, remembered client, saved items, combined totals.
 const { chromium } = require("playwright");
@@ -8,8 +9,10 @@ const BASE = "http://localhost:8123";
   const key = makeLicense("AB12", "CD34");
   const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--no-sandbox"] }).catch(() => chromium.launch());
   const ctx = await b.newContext({ permissions: ["clipboard-read", "clipboard-write"], serviceWorkers: "block" });
+  await proInit(ctx);
   const errs = [];
   const p = await ctx.newPage();
+  await proInit(p);
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.addInitScript((k) => { if (!localStorage.getItem("qb.license")) localStorage.setItem("qb.license", JSON.stringify(k)); }, key);
   await p.goto(BASE + "/app", { waitUntil: "load" });
@@ -28,6 +31,7 @@ const BASE = "http://localhost:8123";
   const link = await p.evaluate(() => navigator.clipboard.readText());
   assert.match(link, /view\.html#d=/);
   const v = await ctx.newPage();
+  await proInit(v);
   v.on("pageerror", (e) => errs.push(String(e)));
   await v.goto(link.replace(/^https?:\/\/[^/]+/, BASE), { waitUntil: "load" });
   assert.match(await v.innerText("#vw-status"), /overdue/);

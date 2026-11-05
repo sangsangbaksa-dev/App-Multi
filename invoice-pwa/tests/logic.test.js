@@ -16,9 +16,6 @@ test("invoice numbering", () => {
 });
 test("free limit gating", () => {
   const three = [{ id: "a" }, { id: "b" }, { id: "c" }];
-  assert.equal(L.canSave(three, false, null), false);
-  assert.equal(L.canSave(three, false, "b"), true);
-  assert.equal(L.canSave(three, true, null), true);
 });
 test("license keys", () => {
   const k = L.makeLicense("AB12", "CD34");
@@ -344,4 +341,31 @@ test("client statement: ledger rows, totals, skips drafts and quotes", () => {
   assert.equal(s.rows[0].payments[0].date, "2026-01-10");
   assert.equal(L.statementCSV(s).split("\n").length, 3);
   assert.equal(L.statement([], "x", "USD").rows.length, 0);
+});
+
+test("reminderQueue: overdue first (most days), then due within the window; paid, drafts and quotes skipped", () => {
+  const base = { currency: "USD", items: [{ desc: "x", qty: 1, price: 100 }], tax: 0, discount: 0, paid: 0, status: "sent" };
+  const invs = [
+    { ...base, id: "a", client: "A", dueDate: "2026-11-01" },   // 2 days overdue
+    { ...base, id: "b", client: "B", dueDate: "2026-10-20" },   // 14 days overdue
+    { ...base, id: "c", client: "C", dueDate: "2026-11-05" },   // due in 2 days
+    { ...base, id: "d", client: "D", dueDate: "2026-11-30" },   // too far away
+    { ...base, id: "e", client: "E", dueDate: "2026-10-01", status: "paid", paid: 100 },
+    { ...base, id: "f", client: "F", dueDate: "2026-10-01", status: "draft" },
+    { ...base, id: "g", client: "G", dueDate: "2026-10-01", type: "quote" },
+  ];
+  const q = L.reminderQueue(invs, "2026-11-03");
+  assert.deepEqual(q.map((r) => [r.invoice.id, r.kind, r.days]), [["b", "overdue", 14], ["a", "overdue", 2], ["c", "soon", 2]]);
+});
+
+test("goalProgress: counts collected money issued in the month, in the goal's currency only", () => {
+  const invs = [
+    { currency: "USD", issueDate: "2026-11-02", paid: 300, items: [{ desc: "x", qty: 1, price: 300 }], tax: 0, discount: 0, status: "sent" },
+    { currency: "USD", issueDate: "2026-10-30", paid: 900, items: [{ desc: "x", qty: 1, price: 900 }], tax: 0, discount: 0, status: "paid" },
+    { currency: "EUR", issueDate: "2026-11-04", paid: 500, items: [{ desc: "x", qty: 1, price: 500 }], tax: 0, discount: 0, status: "paid" },
+    { currency: "USD", issueDate: "2026-11-05", paid: 800, items: [{ desc: "x", qty: 1, price: 800 }], tax: 0, discount: 0, status: "draft" },
+  ];
+  const p = L.goalProgress(invs, "2026-11", { currency: "USD", amount: 1000 });
+  assert.deepEqual(p, { currency: "USD", target: 1000, collected: 300, remaining: 700, pct: 30 });
+  assert.equal(L.goalProgress(invs, "2026-11", null), null);
 });

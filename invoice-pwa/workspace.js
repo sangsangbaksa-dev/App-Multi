@@ -36,7 +36,6 @@ export function initWorkspace(ctx) {
 
   // ---------- sheets ----------
   function newSheet(name, cells = {}) {
-    if (!isPro() && sheets.length >= L.FREE_SHEETS) { openUpgrade(I.t("sheetLimit", { n: L.FREE_SHEETS })); return null; }
     const sz = S.sheetSize(cells);
     const sh = { id: id(), name: name || `${I.t("sheetDefault")} ${sheets.length + 1}`, cells, rows: sz.rows, cols: sz.cols };
     sheets.push(sh);
@@ -185,7 +184,6 @@ export function initWorkspace(ctx) {
     renderDocList();
   }
   $("#doc-new").onclick = () => {
-    if (!isPro() && docs.length >= L.FREE_DOCS) return openUpgrade(I.t("docLimit", { n: L.FREE_DOCS }));
     openDoc({ id: id(), title: "", client: "", body: "" });
   };
   const openDocCard = (e) => {
@@ -207,7 +205,6 @@ export function initWorkspace(ctx) {
   };
   $("#doc-save").onclick = () => {
     const d = { ...doc, title: $("#doc-title").value.trim(), client: $("#doc-client").value.trim(), body: $("#doc-body").value };
-    if (!isPro() && !docs.some((x) => x.id === d.id) && docs.length >= L.FREE_DOCS) return openUpgrade(I.t("docLimit", { n: L.FREE_DOCS }));
     const i = docs.findIndex((x) => x.id === d.id);
     if (i >= 0) docs[i] = d; else docs.unshift(d);
     saveDocs();

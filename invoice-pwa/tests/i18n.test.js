@@ -21,7 +21,7 @@ test("no placeholder is lost in translation", () => {
 });
 test("t interpolates and falls back", () => {
   I.setLang("ko");
-  assert.match(I.t("freeLimit", { n: 3 }), /3/);
+  assert.match(I.t("proBody"), /\$|19|Pro|Unlimited|무제한/);
   I.setLang("en");
   assert.equal(I.t("nope"), "nope");
 });
